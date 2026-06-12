@@ -19,7 +19,7 @@ Use esta skill para tarefas como:
 - testar migrations;
 - testar services;
 - testar endpoints;
-- testar pipeline;
+- testar exportação CSV;
 - testar versionamento;
 - testar sync;
 - testar curadoria;
@@ -42,6 +42,7 @@ Criar testes para garantir:
 - criar `card` com versão 1;
 - criar versão 2 sem alterar versão 1;
 - `card_id` permanece igual;
+- `public_id` é único, imutável e permanece igual;
 - `current_version_id` aponta para a versão correta;
 - `version_number` é incrementado;
 - duas versões do mesmo cartão não têm mesmo `version_number`;
@@ -58,7 +59,7 @@ Criar testes para garantir:
 - cartão sem `explanation_text` não publica;
 - cartão sem disciplina válida não publica;
 - cartão sem assunto válido não publica;
-- cartão sem evidência não publica;
+- cartão sem evidência não publica quando a política do deck exigir;
 - status inválido não publica.
 
 ## Testes obrigatórios de evidência
@@ -69,17 +70,28 @@ Criar testes para garantir:
 - `card_evidence` aponta para `knowledge_chunk`;
 - `knowledge_chunk` aponta para `knowledge_source`;
 - fonte inativa ou vencida não é usada para publicação sem aviso;
-- explicação não é aceita sem evidência quando status for `published`.
+- explicação não é aceita sem evidência quando a política do deck exigir.
 
 ## Testes obrigatórios de sync
 
 Criar testes para garantir:
 
 - release contém `release_items`;
+- release e itens são imutáveis;
 - endpoint de sync retorna apenas mudanças desde release informada;
 - ações `added`, `updated`, `removed`, `deprecated` são suportadas;
 - update retorna `card_id` e novo `card_version_id`;
 - progresso do usuário pode continuar vinculado ao `card_id`.
+- nova versão em revisão não oculta versão publicada atual.
+
+## Testes obrigatórios de CSV
+
+- inclui `public_id`, `card_id` e `card_version_id`;
+- conteúdo corresponde à versão da release;
+- UTF-8 é preservado;
+- aspas, delimitadores e quebras de linha são escapados;
+- mesma release gera o mesmo conteúdo;
+- removidos e depreciados seguem política explícita.
 
 ## Testes obrigatórios de curadoria
 

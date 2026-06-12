@@ -1,144 +1,92 @@
-# Instruções para IA de Desenvolvimento
+# Instruções para Agentes de Desenvolvimento
 
-Este documento orienta agentes como Codex, Antigravity ou outros assistentes de programação.
+## Objetivo
 
-## Papel da IA
+Implementar uma plataforma de dados para flashcards versionados, releases e
+exportações CSV compatíveis com importação no Anki.
 
-A IA deve atuar como engenheira de software e dados, priorizando:
+## Regras Obrigatórias
 
-- consistência do banco;
-- rastreabilidade;
-- versionamento;
-- clareza do pipeline;
-- código simples;
-- modularidade;
-- testes;
-- documentação.
+1. Manter `card_id` estável.
+2. Manter `public_id` único, imutável e visível ao usuário.
+3. Nunca editar uma `card_version` publicada.
+4. Criar nova versão para alteração pedagógica.
+5. Preservar versões antigas.
+6. Atualizar `current_version_id` apenas com versão do mesmo cartão.
+7. Não exigir questão ou documento de origem.
+8. Usar taxonomia controlada.
+9. Publicar apenas versões aprovadas.
+10. Tornar releases imutáveis.
+11. Gerar CSV a partir de release específica.
+12. Incluir `public_id`, `card_id` e `card_version_id` nas exportações.
+13. Não tratar CSV como fonte de verdade.
+14. Não adicionar PDF, OCR, IA, embeddings ou RAG.
+15. Não acessar diretamente o banco interno do Anki.
+16. Proteger endpoints administrativos com autenticação.
+17. Expor publicamente apenas cartões publicados.
+18. Não inserir versão não publicada em deck.
+19. Não alterar release ou item de release depois da publicação.
+20. Calcular releases comparando identidade e versão, nunca texto.
+21. Não ocultar versão publicada apenas porque existe nova versão em revisão.
+22. Vincular report ao cartão e à versão exata reportada.
+23. Nunca editar a versão reportada para aplicar uma correção.
+24. Registrar responsável, comentário, decisão e data da revisão.
+25. Criar correção aprovada em `needs_review`.
+26. Não atualizar automaticamente `current_version_id` ou decks após report.
+27. Não reintroduzir API key administrativa como autenticação de produção.
+28. Aplicar autorização por papel nos endpoints administrativos.
+29. Derivar autoria e revisão da identidade autenticada quando disponível.
+30. Não executar migrations concorrentemente sem advisory lock.
+31. Manter `/health` independente e `/ready` dependente do PostgreSQL.
+32. Não registrar senhas, tokens, secrets ou URLs com credenciais em logs.
 
-## Regras arquiteturais obrigatórias
+## Prioridades
 
-1. Não misturar questão original com flashcard.
-2. Não editar versão publicada diretamente.
-3. Toda alteração de conteúdo relevante deve criar nova `card_version`.
-4. O `card_id` deve ser estável.
-5. O progresso futuro do usuário deve se vincular ao `card_id`.
-6. Toda fundamentação deve apontar para um `knowledge_chunk`.
-7. Toda etapa de pipeline deve registrar logs.
-8. Não criar taxonomia livre sem consultar `disciplines` e `topics`.
-9. Não publicar cartão sem passar por validações mínimas.
-10. Não apagar histórico de versões.
+### Cartões
 
-## Prioridades de implementação
+- schemas, repositories e services;
+- criação transacional de cartão e versão 1;
+- consulta, filtros e paginação;
+- busca exata por `public_id`;
+- criação de novas versões.
 
-### Fase 1
+### Publicação
 
-Criar estrutura base:
-
-- modelos do banco;
-- migrações;
-- conexão com PostgreSQL;
-- tabelas principais;
-- endpoints básicos.
-
-### Fase 2
-
-Criar ingestão:
-
-- upload de PDF;
-- armazenamento do arquivo;
-- extração de texto;
-- criação de `raw_documents`;
-- criação de `processing_jobs`.
-
-### Fase 3
-
-Criar estruturação de questões:
-
-- segmentação básica;
-- criação de `questions`;
-- criação de `question_alternatives`.
-
-### Fase 4
-
-Criar cartões:
-
-- geração inicial de `cards`;
-- geração de `card_versions`;
-- status `generated` ou `needs_review`.
-
-### Fase 5
-
-Criar base teórica:
-
-- `knowledge_sources`;
-- `knowledge_chunks`;
-- embeddings;
-- busca textual e semântica.
-
-### Fase 6
-
-Criar curadoria:
-
-- aprovar/reprovar cards;
-- editar e criar nova versão;
-- reports;
-- review tasks.
-
-### Fase 7
-
-Criar releases e sincronização:
-
+- aprovação;
 - decks;
-- deck_cards;
-- releases;
-- release_items;
-- endpoint `/sync`.
+- associação de cartões;
+- releases e deltas.
 
-## Convenções
-
-- Usar nomes claros e explícitos.
-- Preferir tabelas normalizadas.
-- Usar UUIDs para entidades principais.
-- Usar timestamps em todas as tabelas importantes.
-- Usar enum ou tabela de domínio para status críticos.
-- Escrever testes para regras de versionamento.
-- Evitar lógica escondida em scripts soltos.
-
-## Testes obrigatórios
-
-Criar testes para garantir que:
-
-- uma nova versão não altera versões antigas;
-- `card_id` permanece o mesmo;
-- `current_version_id` aponta para a versão correta;
-- uma release retorna apenas mudanças desde a release anterior;
-- cartão sem evidência não é publicado;
-- classificação usa disciplina e assunto existentes;
-- reports podem gerar nova versão após aprovação.
-## Regras para extensões futuras do cartão
-
-1. Manter os 4 campos principais do MVP em `card_versions`:
-   - `front_text`
-   - `back_text`
-   - `answer_text`
-   - `explanation_text`
-
-2. Não adicionar URL pública diretamente como campo principal do cartão.
-
-3. Para página web do cartão, usar `card_public_pages`.
-
-4. Para campos pedagógicos extras, usar `card_fields`.
-
-5. Para modelos oficiais de cartão, usar `card_templates` e `card_template_fields`.
-
-6. Alterações em URL, domínio, slug ou layout não devem gerar nova versão pedagógica, salvo se alterarem o conteúdo do cartão.
-
-7. Alterações em campos pedagógicos extras publicados devem gerar nova `card_version`.
-
-8. Preservar sempre a separação:
+Fluxo obrigatório:
 
 ```text
-card_versions = conteúdo pedagógico principal
-card_fields = conteúdo pedagógico extra
-card_public_pages = publicação e exibição web
+needs_review → approved → published
 ```
+
+### CSV
+
+- UTF-8;
+- escape correto;
+- ordenação determinística;
+- hash e contagem de linhas;
+- testes com aspas, delimitadores e quebras de linha.
+
+### Sync
+
+- mudanças desde uma release;
+- ações `added`, `updated`, `removed` e `deprecated`;
+- contrato para futuro add-on do Anki.
+
+### Curadoria
+
+- report público apenas para versão publicada;
+- fila administrativa paginada e filtrável;
+- rejeição e duplicidade sem alteração de conteúdo;
+- conversão em nova versão com conteúdo completo;
+- histórico e decisão imutáveis;
+- publicação da correção pelo fluxo normal.
+
+## Legado
+
+`raw_documents`, `exams`, `questions` e `question_alternatives` existem no
+schema inicial, mas estão fora do escopo ativo. Não criar dependências novas.

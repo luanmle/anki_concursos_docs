@@ -34,9 +34,13 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql+psycopg://anki:anki@db:5432/anki_concursos
       REDIS_URL: redis://redis:6379/0
+      ADMIN_API_KEY: development-admin-key
+      ALLOW_LEGACY_ADMIN_API_KEY: "true"
+      AUTH_SECRET_KEY: development-auth-secret-change-me
+      BOOTSTRAP_ADMIN_EMAIL: admin@example.com
+      BOOTSTRAP_ADMIN_PASSWORD: development-password
     command: >
-      sh -c "alembic upgrade head &&
-      python -m app.seeds.taxonomy &&
+      sh -c "python -m app.operations.predeploy &&
       uvicorn app.main:app --host 0.0.0.0 --port 8000"
     depends_on:
       db:
@@ -45,8 +49,12 @@ services:
         condition: service_healthy
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
   redis_data:
-

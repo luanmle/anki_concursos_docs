@@ -1,12 +1,14 @@
 ---
 name: rag-evidence-engineer
-description: Orienta base teórica, chunks, embeddings, busca híbrida, RAG e vínculo de evidências aos flashcards.
+description: Orienta o cadastro de fontes, chunks e evidências manuais no sistema principal e o limite arquitetural de uma futura integração externa com RAG.
 ---
 # rag-evidence-engineer
 
 ## Propósito
 
-Use esta skill para implementar base teórica, embeddings, busca textual, busca semântica, recuperação de evidências e fundamentação dos flashcards.
+Use esta skill no sistema principal apenas para implementar base teórica, busca
+textual e vínculos manuais de evidência. Embeddings, busca semântica e RAG
+pertencem a um aplicativo futuro separado.
 
 O objetivo é impedir que cartões sejam publicados com explicações sem fonte.
 
@@ -16,12 +18,8 @@ Use esta skill para tarefas como:
 
 - criar `knowledge_sources`;
 - criar `knowledge_chunks`;
-- gerar embeddings;
-- implementar pgvector;
-- criar busca semântica;
 - criar busca textual;
 - vincular evidências ao cartão;
-- gerar explicações com base em fontes;
 - validar fundamentação;
 - atualizar base teórica.
 
@@ -55,7 +53,6 @@ knowledge_chunks
 - paragraph
 - version_date
 - content_hash
-- embedding
 
 card_evidence
 - id
@@ -68,26 +65,22 @@ card_evidence
 ## Regras obrigatórias
 
 1. Não inventar fundamento.
-2. Não gerar explicação jurídica sem base nos chunks recuperados.
+2. Não aceitar explicação jurídica sem base nos chunks associados.
 3. Salvar quais chunks foram usados.
-4. Preferir busca híbrida: textual + vetorial.
+4. Usar busca textual e filtros estruturados no sistema principal.
 5. Filtrar por disciplina, assunto, fonte, vigência e jurisdição quando possível.
 6. Cartão publicado deve ter pelo menos uma evidência válida.
 7. Chunks devem ser citáveis e pequenos o suficiente para auditoria.
 8. Fontes desatualizadas devem ter status ou vigência controlada.
 9. A explicação deve ser consistente com a evidência.
-10. Registrar score de relevância.
+10. Registrar score de relevância quando ele for fornecido e auditável.
 
-## Busca híbrida
+## Limite arquitetural
 
-Usar combinação de:
-
-```text
-full-text search
-similaridade vetorial com pgvector
-filtros estruturados
-reranking opcional
-```
+- Não adicionar `pgvector`, chamadas a LLMs ou RAG ao sistema principal.
+- Não criar `prompt_templates` neste banco.
+- Um produtor externo pode enviar propostas por API autenticada.
+- Toda proposta externa entra em revisão e nunca em estado `published`.
 
 ## Validação de evidência
 
@@ -97,7 +90,7 @@ Antes de associar evidência:
 - verificar vigência;
 - verificar se o chunk tem texto;
 - verificar se há relação com a disciplina/assunto;
-- calcular score de relevância.
+- registrar score de relevância quando aplicável.
 
 ## Regras para explicação
 
@@ -116,5 +109,5 @@ A explicação do cartão deve:
 - A evidência aponta para `knowledge_chunk`?
 - O chunk aponta para `knowledge_source`?
 - A fonte está vigente?
-- A explicação foi gerada com base em evidência?
+- A explicação está sustentada pela evidência?
 - Existe teste impedindo publicação sem evidência?

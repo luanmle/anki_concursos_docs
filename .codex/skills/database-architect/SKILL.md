@@ -21,18 +21,16 @@ Use esta skill para tarefas como:
 - criar índices;
 - adicionar tabelas novas;
 - revisar relações entre entidades;
-- implementar pgvector;
 - criar seeds de disciplinas e assuntos.
 
 ## Princípios do banco
 
 1. O sistema é relacional e auditável.
-2. Questões originais e flashcards são entidades diferentes.
-3. Cartões têm identidade estável.
+2. Cartões têm identidade estável.
 4. Versões são imutáveis depois de publicadas.
 5. Toda fundamentação deve ser rastreável.
 6. Releases representam mudanças incrementais.
-7. Jobs de processamento devem deixar logs.
+7. Exportações devem ser derivadas de releases.
 8. Taxonomia deve ser controlada por tabelas oficiais.
 9. Não usar texto livre para disciplina e assunto quando existir tabela oficial.
 10. Evitar JSON para dados que precisam de integridade relacional.
@@ -40,13 +38,8 @@ Use esta skill para tarefas como:
 ## Tabelas principais esperadas
 
 ```text
-raw_documents
-exams
-questions
-question_alternatives
 disciplines
 topics
-question_classifications
 cards
 card_versions
 knowledge_sources
@@ -59,9 +52,14 @@ review_tasks
 releases
 release_items
 quality_checks
-prompt_templates
 processing_jobs
 ```
+
+`raw_documents`, `exams`, `questions` e `question_alternatives` são legado do
+schema inicial e não devem receber novas dependências.
+
+`prompt_templates`, embeddings e estruturas específicas de IA ficam fora do
+MVP do sistema principal. Um futuro produtor externo deve integrar-se por API.
 
 ## Extensões futuras esperadas
 
@@ -75,6 +73,7 @@ card_public_pages
 ## Regras para chaves
 
 - Preferir UUID para entidades principais.
+- Usar `public_id` único e imutável para identificação pelo usuário.
 - Usar foreign keys explícitas.
 - Usar timestamps em tabelas relevantes.
 - Usar constraints para impedir inconsistência básica.
@@ -123,6 +122,7 @@ Criar índices para:
 
 ```text
 cards.current_version_id
+cards.public_id
 cards.discipline_id
 cards.topic_id
 card_versions.card_id
@@ -137,6 +137,13 @@ card_evidence.card_version_id
 card_reports.card_id
 processing_jobs.entity_type + entity_id
 ```
+
+## Regras para exportação
+
+- Exportar a versão registrada na release.
+- Incluir `public_id`, `card_id` e `card_version_id`.
+- Gerar saída determinística.
+- Não persistir o CSV como fonte de verdade.
 
 ## Checklist antes de finalizar
 

@@ -2,6 +2,7 @@
 .pytest_cache/
 .ruff_cache/
 .testdeps/
+.tools/
 .venv/
 __pycache__/
 *.py[cod]

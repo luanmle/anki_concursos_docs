@@ -1,6 +1,6 @@
 ---
 name: quality-checker
-description: Define validações e quality checks para impedir publicação de cartões incompletos, sem evidência ou inconsistentes.
+description: Define validações e quality checks para publicação e exportação de cartões versionados, com evidência opcional conforme a política do deck.
 ---
 # quality-checker
 
@@ -8,7 +8,7 @@ description: Define validações e quality checks para impedir publicação de c
 
 Use esta skill para implementar validações, quality checks e regras de publicação de flashcards.
 
-O objetivo é impedir que cartões incompletos, sem evidência ou inconsistentes sejam publicados.
+O objetivo é impedir que cartões incompletos ou inconsistentes sejam publicados.
 
 ## Quando usar
 
@@ -17,7 +17,7 @@ Use esta skill para tarefas como:
 - validar cartão;
 - publicar cartão;
 - criar quality checks;
-- revisar pipeline de validação;
+- revisar validação de publicação e exportação;
 - criar testes de qualidade;
 - criar regras de aprovação;
 - impedir publicação automática insegura.
@@ -45,8 +45,8 @@ Um cartão só pode ser publicado se:
 - possui `explanation_text`;
 - possui disciplina válida;
 - possui assunto válido;
-- possui questão de origem ou origem explícita;
-- possui evidência vinculada;
+- possui origem administrativa quando aplicável;
+- possui evidência vinculada quando a política do deck exigir;
 - não é duplicata evidente;
 - está em status permitido;
 - passou por validação mínima.
@@ -61,7 +61,6 @@ back_not_empty
 answer_not_empty
 explanation_not_empty
 is_atomic
-no_excessive_question_copy
 ```
 
 ### Classificação
@@ -104,7 +103,7 @@ release_created
 2. Quality checks devem ser salvos para auditoria.
 3. Falhas devem ter mensagem clara.
 4. Checks automáticos não substituem curadoria humana quando confiança for baixa.
-5. Cartões sem evidência não devem ser publicados.
+5. Cartões sem evidência não devem ser publicados quando a política do deck exigir.
 6. Cartões com classificação inválida não devem ser publicados.
 7. Cartões duplicados devem ser marcados para revisão.
 8. Scores baixos devem gerar `needs_review`.

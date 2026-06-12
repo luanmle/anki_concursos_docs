@@ -12,6 +12,8 @@ Esta skill protege a regra central do projeto:
 
 > O `card_id` é a identidade estável do cartão. O `card_version_id` representa uma versão específica e imutável do conteúdo.
 
+O `public_id` é a representação estável dessa identidade para o usuário.
+
 ## Quando usar
 
 Use esta skill para tarefas como:
@@ -38,13 +40,17 @@ Use esta skill para tarefas como:
 8. Registrar `change_reason` em toda nova versão gerada por edição, report ou sugestão.
 9. Não apagar histórico de versões.
 10. Não confundir `cards.status` com `card_versions.status`.
+11. Nunca alterar ou reutilizar um `public_id`.
+12. Nova versão em revisão não deve ocultar a versão publicada atual.
+13. Atualização de deck para nova versão deve ser explícita.
 
 ## Modelo conceitual
 
 ```text
 cards
 - id
-- origin_question_id
+- public_id
+- origin_question_id opcional e legado
 - discipline_id
 - topic_id
 - current_version_id
@@ -86,6 +92,7 @@ Não criar nova versão apenas por:
 - alteração de metadado administrativo;
 - mudança de logs;
 - alteração interna não visível ao estudante.
+- alteração de delimitador ou layout do CSV.
 
 ## Campos extras futuros
 
@@ -103,7 +110,9 @@ Não adicionar URL pública como quinto campo principal de `card_versions`.
 
 - Existe teste garantindo que versão antiga não foi alterada?
 - Existe teste garantindo que `card_id` permanece igual?
+- Existe teste garantindo que `public_id` permanece igual?
 - Existe teste garantindo que `current_version_id` aponta para a versão nova?
 - Existe `change_reason`?
 - A versão anterior continua consultável?
 - O endpoint ou serviço não edita conteúdo publicado diretamente?
+- A exportação usa a versão registrada na release?

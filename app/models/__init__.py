@@ -1,6 +1,7 @@
 from app.models.base import Base
 from app.models.entities import (
     Card,
+    CardReport,
     CardVersion,
     Deck,
     DeckCard,
@@ -11,12 +12,16 @@ from app.models.entities import (
     RawDocument,
     Release,
     ReleaseItem,
+    ReviewTask,
+    ProcessingJob,
     Topic,
+    User,
 )
 
 __all__ = [
     "Base",
     "Card",
+    "CardReport",
     "CardVersion",
     "Deck",
     "DeckCard",
@@ -27,6 +32,8 @@ __all__ = [
     "RawDocument",
     "Release",
     "ReleaseItem",
+    "ReviewTask",
+    "ProcessingJob",
     "Topic",
+    "User",
 ]
-

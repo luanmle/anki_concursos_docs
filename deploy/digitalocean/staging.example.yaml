@@ -1,0 +1,104 @@
+# Replace every CHANGE_ME value before applying this specification.
+name: anki-concursos-staging
+region: nyc
+
+alerts:
+  - rule: DEPLOYMENT_FAILED
+  - rule: DOMAIN_FAILED
+
+envs:
+  - key: APP_ENV
+    value: production
+    scope: RUN_TIME
+  - key: DATABASE_URL
+    value: ${postgres-db.DATABASE_PRIVATE_URL}
+    scope: RUN_TIME
+  - key: AUTH_SECRET_KEY
+    value: CHANGE_ME_WITH_AT_LEAST_32_RANDOM_CHARACTERS
+    scope: RUN_TIME
+    type: SECRET
+  - key: ALLOW_LEGACY_ADMIN_API_KEY
+    value: "false"
+    scope: RUN_TIME
+  - key: BOOTSTRAP_ADMIN_EMAIL
+    value: CHANGE_ME_ADMIN_EMAIL
+    scope: RUN_TIME
+    type: SECRET
+  - key: BOOTSTRAP_ADMIN_PASSWORD
+    value: CHANGE_ME_STRONG_ADMIN_PASSWORD
+    scope: RUN_TIME
+    type: SECRET
+  - key: DOCS_ENABLED
+    value: "false"
+    scope: RUN_TIME
+  - key: LOG_LEVEL
+    value: INFO
+    scope: RUN_TIME
+  - key: CORS_ORIGINS
+    value: CHANGE_ME_ADMIN_ORIGIN
+    scope: RUN_TIME
+
+services:
+  - name: api
+    github:
+      repo: luanmle/anki_concursos_docs
+      branch: main
+      deploy_on_push: true
+    source_dir: /
+    dockerfile_path: Dockerfile
+    run_command: uvicorn app.main:app --host 0.0.0.0 --port ${PORT}
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    health_check:
+      http_path: /ready
+      initial_delay_seconds: 15
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    liveness_health_check:
+      http_path: /health
+      initial_delay_seconds: 15
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 5
+    alerts:
+      - rule: CPU_UTILIZATION
+        operator: GREATER_THAN
+        value: 80
+        window: FIVE_MINUTES
+      - rule: MEM_UTILIZATION
+        operator: GREATER_THAN
+        value: 80
+        window: FIVE_MINUTES
+      - rule: RESTART_COUNT
+        operator: GREATER_THAN
+        value: 3
+        window: FIVE_MINUTES
+      - rule: REQUEST_DURATION_P95_MS
+        operator: GREATER_THAN
+        value: 2000
+        window: FIVE_MINUTES
+
+jobs:
+  - name: predeploy
+    kind: PRE_DEPLOY
+    github:
+      repo: luanmle/anki_concursos_docs
+      branch: main
+      deploy_on_push: true
+    source_dir: /
+    dockerfile_path: Dockerfile
+    run_command: python -m app.operations.predeploy
+    instance_count: 1
+    instance_size_slug: basic-xxs
+
+databases:
+  - name: postgres-db
+    engine: PG
+    version: "17"
+    production: false
+    db_name: anki_concursos_staging
+    db_user: anki_staging

@@ -1,0 +1,11 @@
+from app.repositories.cards import CardRepository
+from app.repositories.decks import DeckRepository
+from app.repositories.reports import ReportRepository
+from app.repositories.users import UserRepository
+
+__all__ = [
+    "CardRepository",
+    "DeckRepository",
+    "ReportRepository",
+    "UserRepository",
+]

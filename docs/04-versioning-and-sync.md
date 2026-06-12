@@ -13,6 +13,9 @@ A tabela `cards` representa a identidade do cartão.
 
 O `card_id` nunca muda.
 
+O `public_id` também nunca muda e representa essa identidade para o usuário.
+Ele não substitui o UUID interno nas relações do banco.
+
 ## Versão imutável
 
 A tabela `card_versions` representa o conteúdo de uma versão específica.
@@ -20,6 +23,12 @@ A tabela `card_versions` representa o conteúdo de uma versão específica.
 Toda alteração relevante deve gerar nova versão.
 
 Nunca editar uma versão publicada diretamente.
+
+Referências a versões também devem preservar a identidade do cartão:
+
+- `cards.current_version_id` deve pertencer ao próprio cartão;
+- `deck_cards.card_version_id` deve pertencer ao `deck_cards.card_id`;
+- `release_items.card_version_id` deve pertencer ao `release_items.card_id`.
 
 ## Exemplo
 
@@ -82,38 +91,143 @@ Release 12
 - 4 cartões depreciados
 ```
 
-## Endpoint conceitual de sincronização
+No MVP 3, a release é criada como delta:
+
+- `added`: cartão ativo que não existia no estado publicado anterior;
+- `updated`: mesmo `card_id` com novo `card_version_id`;
+- `removed`: cartão retirado do deck;
+- `deprecated`: cartão retirado com indicação explícita de descontinuação.
+
+Releases e `release_items` não podem ser editados ou apagados.
+
+## Exportação CSV
+
+Cada CSV representa uma release específica. Mudanças posteriores não podem
+alterar retroativamente o conteúdo exportável daquela release.
+
+Como `release_items` armazena deltas, o snapshot exportável é reconstruído pela
+aplicação de todas as ações até o `release_number` solicitado. `added` e
+`updated` definem a versão ativa; `removed` e `deprecated` removem a identidade
+do snapshot sem apagar o histórico.
+
+Colunas mínimas:
 
 ```text
+card_id
+public_id
+card_version_id
+front_text
+back_text
+answer_text
+explanation_text
+tags
+```
+
+O `card_id` permite reconhecer a mesma identidade entre versões. O CSV não
+substitui a API incremental e, isoladamente, não preserva o progresso do Anki.
+
+O endpoint implementado é:
+
+```text
+GET /decks/{deck_id}/releases/{release_id}/export.csv
+```
+
+O conteúdo é ordenado por `public_id` e acompanhado de hash SHA-256 para
+verificação de reprodutibilidade.
+
+Busca pública conceitual:
+
+```text
+GET /cards/public/{public_id}
+```
+
+## Sincronização incremental
+
+```text
+GET /decks/{deck_id}/releases?page=1&page_size=20
 GET /decks/{deck_id}/sync?since_release=12
 ```
 
-Resposta conceitual:
+A listagem de releases é ordenada da mais recente para a mais antiga e inclui
+contagens de `added`, `updated`, `removed` e `deprecated`.
+
+No endpoint de sync:
+
+- `since_release=0` representa um cliente sem estado local;
+- um número positivo deve identificar uma release existente no deck;
+- `to_release` informa a release mais recente disponível;
+- `has_changes=false` indica que o cliente já está atualizado;
+- mudanças são retornadas em ordem crescente de release;
+- todas as mudanças posteriores são preservadas, sem condensação;
+- o cliente deve aplicar os deltas sequencialmente.
+
+Resposta implementada:
 
 ```json
 {
   "deck_id": "deck_constitucional",
   "from_release": 12,
-  "to_release": 13,
+  "to_release": 14,
+  "has_changes": true,
   "changes": [
     {
+      "release_id": "release_13",
+      "release_number": 13,
+      "published_at": "2026-06-12T19:00:00Z",
       "action": "updated",
       "card_id": "CARD-000123",
-      "old_version_id": "v1",
-      "new_version_id": "v2"
+      "public_id": "AC-550E8400E29B41D4A716446655440000",
+      "old_card_version_id": "v1",
+      "new_card_version_id": "v2"
     },
     {
+      "release_id": "release_14",
+      "release_number": 14,
+      "published_at": "2026-06-12T20:00:00Z",
       "action": "added",
       "card_id": "CARD-000456",
-      "new_version_id": "v1"
+      "public_id": "AC-550E8400E29B41D4A716446655440001",
+      "old_card_version_id": null,
+      "new_card_version_id": "v1"
     },
     {
+      "release_id": "release_14",
+      "release_number": 14,
+      "published_at": "2026-06-12T20:00:00Z",
       "action": "deprecated",
-      "card_id": "CARD-000789"
+      "card_id": "CARD-000789",
+      "public_id": "AC-550E8400E29B41D4A716446655440002",
+      "old_card_version_id": "v3",
+      "new_card_version_id": null
     }
   ]
 }
 ```
+
+`old_card_version_id` é reconstruído pela reprodução das releases anteriores.
+Isso permite confirmar qual versão local está sendo substituída ou removida.
+
+O contrato atual retorna identidades e versões, não o conteúdo completo da
+versão. Um futuro add-on poderá usar esses IDs em endpoints de distribuição
+específicos sem alterar o modelo de releases.
+
+## Curadoria e versionamento
+
+Um report é vinculado ao `card_id` e à `card_version_id` publicada que motivou
+a denúncia. A versão reportada nunca é editada.
+
+Quando a decisão é `converted_to_new_version`:
+
+- uma nova `card_version` é criada;
+- `version_number` é incrementado;
+- `change_reason` é obrigatório;
+- o conteúdo inicia em `needs_review`;
+- `current_version_id` não muda;
+- o cartão continua público com a versão anterior;
+- decks e releases existentes permanecem inalterados.
+
+A nova versão só substitui a publicada após aprovação, publicação e atualização
+explícita do vínculo do deck.
 
 ## Regra crítica
 

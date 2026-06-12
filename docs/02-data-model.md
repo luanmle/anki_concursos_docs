@@ -2,83 +2,49 @@
 
 ## Princípios
 
-1. A questão original e o flashcard são entidades diferentes.
-2. O cartão possui identidade estável.
-3. Cada alteração gera uma nova versão.
-4. Evidências devem ser vinculadas ao cartão.
-5. O histórico nunca deve ser apagado.
-6. O progresso do usuário deve se vincular ao `card_id`, não ao `card_version_id`.
+1. `cards` representa identidade estável.
+2. `card_versions` representa conteúdo imutável.
+3. Alterações pedagógicas criam novas versões.
+4. Releases são publicações imutáveis.
+5. CSV é uma projeção de uma release.
+6. Histórico publicado nunca é apagado.
 
-## Entidades principais
+## Acesso administrativo
 
-### raw_documents
-
-Armazena documentos originais.
-
-Campos sugeridos:
+### users
 
 ```text
 id
-file_name
-file_path
-source_type
-original_file_hash
-raw_text
-metadata
-extraction_status
-uploaded_at
-created_at
-updated_at
-```
-
-### exams
-
-Representa uma prova.
-
-```text
-id
-raw_document_id
-exam_name
-institution
-board
-year
+email
+display_name
+password_hash
 role
-level
-metadata
+is_active
+last_login_at
 created_at
 updated_at
 ```
 
-### questions
-
-Representa uma questão extraída da prova.
+Papéis:
 
 ```text
-id
-raw_document_id
-exam_id
-question_number
-statement_text
-full_raw_text
-detected_answer
-official_answer
-extraction_confidence
-status
-created_at
-updated_at
+admin
+curator
+reviewer
 ```
 
-### question_alternatives
+Regras:
 
-```text
-id
-question_id
-label
-text
-is_correct
-created_at
-updated_at
-```
+- `email` é único e normalizado para minúsculas pela API;
+- senha nunca é armazenada em texto puro;
+- `password_hash` usa PBKDF2-HMAC-SHA256 com salt individual;
+- usuário inativo não pode autenticar nem continuar usando tokens;
+- a autorização consulta o papel atual no banco, não apenas o papel no token;
+- `admin` gerencia usuários e possui todas as permissões;
+- `curator` cadastra, consulta e cria versões e decks;
+- `reviewer` aprova, publica, cria releases e revisa reports.
+
+## Núcleo
 
 ### disciplines
 
@@ -101,26 +67,11 @@ created_at
 updated_at
 ```
 
-### question_classifications
-
-```text
-id
-question_id
-discipline_id
-topic_id
-confidence_score
-classification_method
-reviewed_by_admin
-created_at
-updated_at
-```
-
 ### cards
 
-Identidade estável do flashcard.
-
 ```text
 id
+public_id
 origin_question_id
 canonical_key
 discipline_id
@@ -131,9 +82,13 @@ created_at
 updated_at
 ```
 
-### card_versions
+`origin_question_id` é legado e opcional. A identidade do cartão não depende
+de documento ou questão.
 
-Versões imutáveis do cartão.
+`public_id` usa o formato `AC-` seguido de 32 caracteres hexadecimais
+maiúsculos. Ele é único, imutável, pesquisável e preservado entre versões.
+
+### card_versions
 
 ```text
 id
@@ -151,54 +106,12 @@ created_at
 updated_at
 ```
 
-### knowledge_sources
+Regras:
 
-Fontes teóricas.
-
-```text
-id
-title
-source_type
-jurisdiction
-publication_date
-valid_from
-valid_until
-status
-created_at
-updated_at
-```
-
-### knowledge_chunks
-
-Trechos citáveis da base teórica.
-
-```text
-id
-source_id
-chunk_text
-section_title
-article_number
-paragraph
-version_date
-content_hash
-embedding
-created_at
-updated_at
-```
-
-### card_evidence
-
-Vínculo entre cartão e fundamentação.
-
-```text
-id
-card_version_id
-knowledge_chunk_id
-relevance_score
-citation_text
-created_at
-updated_at
-```
+- `UNIQUE(card_id, version_number)`;
+- versão publicada é imutável;
+- `cards.current_version_id` deve pertencer ao mesmo cartão;
+- conteúdo exportado deve vir da versão registrada na release.
 
 ### decks
 
@@ -218,40 +131,18 @@ updated_at
 id
 deck_id
 card_id
+public_id
 card_version_id
 added_at
 removed_at
+removal_action
 ```
 
-### card_reports
+`card_version_id` deve pertencer ao mesmo `card_id`.
 
-Sugestões e problemas enviados por usuários.
-
-```text
-id
-card_id
-card_version_id
-user_id
-report_type
-message
-status
-created_at
-updated_at
-```
-
-### review_tasks
-
-```text
-id
-report_id
-assigned_to
-decision
-admin_comment
-resulting_card_version_id
-reviewed_at
-created_at
-updated_at
-```
+Quando `removed_at` estiver preenchido, `removal_action` deve ser `removed` ou
+`deprecated`. A depreciação registrada aqui é específica da distribuição no
+deck.
 
 ### releases
 
@@ -277,7 +168,7 @@ created_at
 updated_at
 ```
 
-Ações possíveis:
+Ações:
 
 ```text
 added
@@ -286,31 +177,110 @@ removed
 deprecated
 ```
 
-### quality_checks
+`card_version_id`, quando informado, deve pertencer ao mesmo `card_id`.
+
+Releases e seus itens são imutáveis após a criação.
+
+## Curadoria
+
+### card_reports
 
 ```text
 id
+card_id
 card_version_id
-check_type
-result
-score
+user_id
+report_type
 message
-created_at
-```
-
-### prompt_templates
-
-```text
-id
-name
-version
-task_type
-prompt_text
+status
 created_at
 updated_at
 ```
 
-### processing_jobs
+Tipos:
+
+```text
+typo
+wrong_answer
+outdated_law
+bad_explanation
+classification_error
+duplicate_card
+suggestion
+```
+
+Status:
+
+```text
+open
+in_review
+approved
+rejected
+resolved
+duplicate
+```
+
+Regras:
+
+- report sempre aponta para `card_id` e `card_version_id`;
+- a versão deve pertencer ao mesmo cartão;
+- cartão, versão, autor, tipo e mensagem do report são imutáveis;
+- status terminal não pode ser reaberto;
+- reports não podem ser apagados;
+- o envio público aceita somente uma versão publicada.
+
+### review_tasks
+
+```text
+id
+report_id
+status
+assigned_to
+decision
+admin_comment
+evidence_reviewed
+resulting_card_version_id
+reviewed_at
+created_at
+updated_at
+```
+
+Existe uma tarefa por report.
+
+Decisões terminais do MVP 6:
+
+```text
+rejected
+duplicate
+converted_to_new_version
+```
+
+Regras:
+
+- decisão concluída exige responsável, comentário e data;
+- `outdated_law` convertido exige `evidence_reviewed = true`;
+- `converted_to_new_version` exige `resulting_card_version_id`;
+- a versão resultante deve pertencer ao cartão reportado;
+- rejeição e duplicidade não podem gerar versão;
+- tarefas concluídas são imutáveis;
+- tarefas de revisão não podem ser apagadas.
+
+`quality_checks` permanece como extensão futura.
+
+## Evidências Futuras
+
+```text
+knowledge_sources
+knowledge_chunks
+card_evidence
+```
+
+Evidências pertencem a uma `card_version`, pois a fundamentação pode mudar
+entre versões.
+
+## Jobs
+
+`processing_jobs` pode registrar publicação ou exportação:
 
 ```text
 id
@@ -326,140 +296,55 @@ output_snapshot
 created_at
 updated_at
 ```
-## Extensões futuras do modelo de cartão
 
-O modelo inicial do cartão deve manter 4 campos principais em `card_versions`:
+Filas assíncronas não são obrigatórias no primeiro MVP.
+
+## Exportações CSV
+
+O CSV deve ser derivado de uma release e incluir:
 
 ```text
+card_id
+card_version_id
+deck_id
 front_text
 back_text
 answer_text
 explanation_text
+tags
 ```
 
-Esses campos são o núcleo pedagógico do cartão e devem continuar estáveis no MVP.
-
-### Campos extras de conteúdo
-
-Para adicionar campos pedagógicos extras no futuro, não criar colunas novas em `card_versions` sem necessidade.
-
-Usar uma tabela flexível:
+Uma futura tabela de auditoria pode registrar:
 
 ```text
-card_fields
+release_exports
 - id
-- card_version_id
-- field_name
-- field_label
-- field_type
-- field_value
-- display_order
-- is_required
+- release_id
+- format
+- delimiter
+- content_hash
+- row_count
+- created_by
 - created_at
-- updated_at
 ```
 
-Exemplos de campos extras:
+O conteúdo do CSV não deve ser duplicado no banco como fonte primária.
+
+## Entidades Legadas
+
+As tabelas abaixo existem na migration inicial, mas estão fora do escopo ativo:
 
 ```text
-legal_basis
-source_quote
-mnemonic
-common_trap
-teacher_comment
-jurisprudence
-example
-related_article
+raw_documents
+exams
+questions
+question_alternatives
 ```
 
-Regra:
+Não criar novas dependências com elas. Sua remoção exige migration própria e
+decisão explícita sobre compatibilidade.
 
-- `card_fields` deve ser usado para conteúdo complementar do cartão.
-- Campos extras devem estar vinculados a uma versão específica do cartão.
-- Se um campo extra alterar o conteúdo pedagógico publicado, uma nova `card_version` deve ser criada.
+## Extensões
 
-### Templates de cartão
-
-Para controlar diferentes modelos de cartão no futuro, usar:
-
-```text
-card_templates
-- id
-- name
-- description
-- status
-- created_at
-- updated_at
-```
-
-```text
-card_template_fields
-- id
-- card_template_id
-- field_name
-- field_label
-- field_type
-- display_order
-- is_required
-- created_at
-- updated_at
-```
-
-Exemplos de templates:
-
-```text
-Cartão básico
-Cartão jurídico
-Cartão de lei seca
-Cartão de jurisprudência
-Cartão de questão comentada
-Cartão de português
-Cartão de informática
-```
-
-### Página web do cartão
-
-Links públicos ou privados para uma página web do cartão não devem ser tratados como campos principais do conteúdo pedagógico.
-
-Usar tabela própria:
-
-```text
-card_public_pages
-- id
-- card_id
-- card_version_id
-- slug
-- canonical_path
-- visibility
-- status
-- created_at
-- updated_at
-```
-
-Recomendação:
-
-- salvar preferencialmente `slug` e `canonical_path`, não a URL absoluta;
-- montar a URL final dinamicamente a partir do domínio/base URL da aplicação;
-- não criar nova versão do cartão apenas porque o domínio mudou;
-- criar nova versão apenas se o conteúdo pedagógico da página/cartão mudar.
-
-Exemplo:
-
-```text
-card_id: CARD-000123
-card_version_id: VERSION-000456
-slug: habeas-corpus-liberdade-locomocao
-canonical_path: /cards/habeas-corpus-liberdade-locomocao
-visibility: public
-status: published
-```
-
-## Separação conceitual
-
-```text
-card_versions = conteúdo pedagógico versionado
-card_fields = campos pedagógicos extras versionados
-card_public_pages = metadados de publicação/exibição web
-```
-
-Essa separação evita que mudanças de interface, URL ou domínio contaminem o histórico pedagógico do cartão.
+Campos adicionais e templates devem seguir
+`docs/09-future-card-extensions.md`.

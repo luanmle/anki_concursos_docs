@@ -1,184 +1,91 @@
-# Stack Técnica Recomendada
+# Stack Técnica
 
-## Objetivo da stack
+## Objetivo
 
-Criar um sistema confiável para:
+Manter um núcleo relacional, auditável e simples para versionamento e
+distribuição de flashcards.
 
-- armazenar dados estruturados;
-- processar documentos;
-- gerar flashcards;
-- versionar conteúdo;
-- executar pipelines;
-- publicar releases;
-- expor APIs de sincronização.
+## Stack principal
 
-## Stack implementada nos MVPs 0 e 1
-
+- PostgreSQL 17;
 - Python 3.12;
 - FastAPI;
 - SQLAlchemy 2;
 - Alembic;
-- PostgreSQL 17;
-- Redis 7;
 - pytest;
 - Docker e Docker Compose.
 
-`pgvector`, RQ, Prefect, ferramentas de extracao, IA, storage e
-observabilidade permanecem planejados para os MVPs que efetivamente usam essas
-capacidades.
+## Banco de dados
 
-## Stack MVP recomendada
+PostgreSQL é a fonte de verdade para:
 
-### Banco de dados
-
-- PostgreSQL
-- pgvector
-
-Uso:
-
-- entidades relacionais;
-- versionamento;
+- identidade dos cartões;
+- histórico de versões;
 - taxonomia;
-- busca textual;
-- embeddings;
-- evidências.
+- decks;
+- releases;
+- itens de release;
+- auditoria e curadoria.
 
-### Backend
+## Backend
 
-- Python
-- FastAPI
+FastAPI deve expor APIs administrativas e de distribuição usando:
 
-Uso:
+```text
+Route → Service → Repository → Model
+```
 
-- APIs REST;
-- upload de documentos;
-- endpoints administrativos;
-- endpoints de sincronização;
-- integração com workers e pipelines.
+Endpoints administrativos usam Bearer tokens HMAC-SHA256 com expiração.
+Usuários e papéis são persistidos em `users`. Senhas usam
+PBKDF2-HMAC-SHA256 com salt individual e não dependem de serviço externo.
 
-### ORM e migrações
+Papéis iniciais:
 
-- SQLAlchemy
-- Alembic
+```text
+admin
+curator
+reviewer
+```
 
-Uso:
+`X-Admin-API-Key` é compatibilidade temporária para desenvolvimento e testes.
+`ALLOW_LEGACY_ADMIN_API_KEY` deve ser `false` em produção.
 
-- modelagem do banco;
-- migrações versionadas;
-- controle de schema.
+## Operação
 
-### Storage
+- logs estruturados em JSON para stdout;
+- `X-Request-ID` propagado em cada resposta;
+- `/health` para liveness;
+- `/ready` para readiness com consulta ao PostgreSQL;
+- CORS explícito por `CORS_ORIGINS`;
+- Swagger e OpenAPI desabilitados por padrão em produção;
+- migrations executadas por `python -m app.operations.predeploy`;
+- advisory lock PostgreSQL serializa execuções concorrentes de migration;
+- backup e restore seguem `docs/11-production-operations.md`.
 
-MVP:
+## Exportação CSV
 
-- Supabase Storage
+Usar inicialmente a biblioteca padrão `csv` do Python. Não adicionar bibliotecas
+de processamento tabular sem necessidade real.
 
-Futuro:
+O MVP 4 gera arquivos sob demanda em `app/exporters`, usando `csv`,
+`io.StringIO` e `hashlib` da biblioteca padrão. O resultado é retornado
+diretamente enquanto o volume esperado for pequeno.
 
-- S3;
-- Cloudflare R2;
-- MinIO.
+Streaming, jobs e storage externo só devem ser introduzidos quando houver
+necessidade comprovada de arquivos grandes, retenção ou distribuição.
 
-Uso:
+## Redis
 
-- armazenar PDFs originais;
-- guardar exportações;
-- guardar pacotes de release.
+Redis existe no ambiente atual, mas não é dependência funcional do MVP.
+RQ ou outro worker só deve ser adicionado quando métricas demonstrarem que
+publicação ou exportação não podem ocorrer de forma síncrona.
 
-### Filas
+## Fora da stack
 
-- Redis
-- RQ
-
-Uso:
-
-- processar documentos;
-- gerar embeddings;
-- chamar IA;
-- criar releases;
-- reprocessar cartões.
-
-### Orquestração
-
-- Prefect
-
-Uso:
-
-- controlar pipeline;
-- reexecutar etapas;
-- monitorar falhas;
-- criar fluxos de processamento.
-
-### Extração de PDF
-
-- PyMuPDF
-- pdfplumber
-- Tesseract OCR
-
-Uso:
-
-- extrair texto;
-- ler tabelas simples;
-- processar PDFs escaneados.
-
-### IA
-
-- OpenAI API ou outro LLM equivalente
-
-Uso:
-
-- classificar questões;
-- gerar flashcards;
-- resumir fundamentação;
-- validar consistência;
-- detectar duplicatas semanticamente.
-
-### Painel administrativo
-
-- Appsmith;
-- Retool;
-- ou painel próprio simples.
-
-Uso:
-
-- revisar questões;
-- revisar flashcards;
-- aprovar versões;
-- ver reports;
-- publicar releases.
-
-### Observabilidade
-
-- Sentry
-- logs no banco
-
-Uso:
-
-- capturar erros;
-- rastrear jobs;
-- entender falhas do pipeline.
-
-### DevOps
-
-- Docker
-- Docker Compose
-- GitHub
-- GitHub Actions
-
-Uso:
-
-- ambiente local;
-- deploy;
-- CI/CD;
-- testes automatizados.
-
-## Stack que deve ser evitada no começo
-
+- ferramentas de PDF e OCR;
+- `pgvector`;
+- LLMs, embeddings e RAG;
+- Prefect ou Airflow;
 - Kubernetes;
-- Airflow;
 - microserviços;
-- app mobile;
-- interface complexa para usuário final;
-- modelo local de IA;
-- sistema de pagamento;
-- real-time complexo.
+- integração direta com arquivos internos do Anki.

@@ -22,6 +22,7 @@ Use esta skill para tarefas como:
 - calcular mudanças desde release;
 - remover ou depreciar cartões;
 - exportar pacotes de atualização.
+- exportar releases em CSV para o Anki.
 
 ## Princípio central
 
@@ -29,6 +30,7 @@ A sincronização deve ser baseada em:
 
 ```text
 card_id = identidade estável
+public_id = identidade estável visível ao usuário
 card_version_id = conteúdo específico
 release_id/release_number = marco de publicação
 ```
@@ -85,6 +87,13 @@ POST /decks/{deck_id}/publish-release
 GET /decks/{deck_id}/sync?since_release=12
 ```
 
+Operações administrativas de composição:
+
+```text
+POST /decks/{deck_id}/cards
+POST /decks/{deck_id}/cards/{card_id}/remove
+```
+
 ## Resposta conceitual de sync
 
 ```json
@@ -117,13 +126,36 @@ GET /decks/{deck_id}/sync?since_release=12
 1. Não implementar sync como download completo obrigatório.
 2. Não usar texto do cartão como identificador.
 3. Sempre retornar `card_id`.
-4. Para updates, retornar o novo `card_version_id`.
-5. Não quebrar progresso do usuário.
-6. Releases devem ser imutáveis depois de publicadas.
-7. Release deve representar snapshot ou delta rastreável.
-8. Cartão removido/depreciado deve ser comunicado explicitamente.
-9. Não apagar card antigo para representar remoção.
-10. Sync deve respeitar status publicado.
+4. Sempre retornar `public_id` nas respostas destinadas ao usuário.
+5. Para updates, retornar o novo `card_version_id`.
+6. Não quebrar progresso do usuário.
+7. Releases devem ser imutáveis depois de publicadas.
+8. Release deve representar snapshot ou delta rastreável.
+9. Cartão removido/depreciado deve ser comunicado explicitamente.
+10. Não apagar card antigo para representar remoção.
+11. Sync deve respeitar status publicado.
+12. CSV deve ser gerado a partir de uma release específica.
+13. CSV deve incluir `public_id`, `card_id` e `card_version_id`.
+14. CSV não substitui o contrato incremental de sync.
+15. Deck deve apontar apenas para versão publicada.
+16. Release e itens devem ser imutáveis.
+
+## Exportação CSV
+
+Colunas mínimas:
+
+```text
+public_id
+card_id
+card_version_id
+front_text
+back_text
+answer_text
+explanation_text
+tags
+```
+
+Usar UTF-8, escape compatível com CSV e ordenação determinística.
 
 ## Checklist antes de finalizar
 
@@ -133,3 +165,4 @@ GET /decks/{deck_id}/sync?since_release=12
 - O `card_version_id` está presente quando necessário?
 - A release publicada é imutável?
 - Existem testes de added/updated/removed/deprecated?
+- A exportação é reproduzível para a mesma release?

@@ -1,166 +1,190 @@
-# Pipeline de Processamento
+# Fluxo de Cartões e Exportação
 
 ## Objetivo
 
-Transformar documentos brutos de provas em flashcards versionados, fundamentados e prontos para revisão/publicação.
+Transformar conteúdo cadastrado ou importado em releases versionadas e arquivos
+CSV reproduzíveis para o Anki.
 
-## Pipeline principal
+## Fluxo principal
 
 ```text
-1. Upload do documento
-2. Extração de texto
-3. Segmentação em questões
-4. Extração de alternativas e gabarito
-5. Classificação por disciplina e assunto
-6. Geração de flashcard
-7. Busca de fundamentação
-8. Validação automática
-9. Revisão administrativa
-10. Publicação em baralho
-11. Geração de release
+1. Cadastrar ou importar cartão
+2. Validar taxonomia e conteúdo
+3. Criar card e card_version
+4. Revisar e aprovar
+5. Publicar versão
+6. Associar cartão ao deck
+7. Criar release
+8. Gerar CSV da release
 ```
 
-## Etapas detalhadas
+## Fluxo pela interface administrativa
 
-### 1. Upload do documento
+A interface planejada deve representar o fluxo existente da API, sem criar um
+segundo conjunto de regras de negócio:
 
-Entrada:
+```text
+Cadastrar cartão
+→ revisar conteúdo
+→ aprovar e publicar versão
+→ adicionar ao deck
+→ publicar release
+→ baixar CSV
+```
 
-- PDF da prova;
-- metadados opcionais;
-- banca;
-- ano;
-- cargo;
-- órgão;
-- tipo de prova.
+Ao modificar um cartão, a interface deve chamar a operação de criação de nova
+versão. Não deve apresentar uma ação que sobrescreva uma versão publicada.
 
-Saída:
+```text
+Abrir cartão
+→ consultar versão atual e histórico
+→ informar novo conteúdo e change_reason
+→ criar nova card_version em needs_review
+→ aprovar e publicar
+→ atualizar explicitamente o vínculo no deck
+→ publicar nova release
+→ baixar novo CSV
+```
 
-- registro em `raw_documents`;
-- arquivo salvo em storage;
-- hash do arquivo salvo.
+O download deve usar o endpoint de exportação de uma release específica. A
+interface não deve montar o CSV no navegador.
 
-### 2. Extração de texto
+## Cadastro
 
-Ferramentas sugeridas:
+A criação inicial deve ocorrer em uma única transação:
 
-- PyMuPDF;
-- pdfplumber;
-- Tesseract OCR para PDF escaneado.
+- criar `cards`;
+- criar `card_versions` com `version_number = 1`;
+- gerar `public_id` único;
+- definir `cards.current_version_id`;
+- registrar `change_reason`;
+- iniciar em estado não publicado.
 
-Saída:
+No MVP 2, cartão e versão inicial usam `needs_review`. A versão 1 é definida
+como versão atual para permitir consulta administrativa.
 
-- `raw_text`;
-- status de extração;
-- logs em `processing_jobs`.
+## Nova versão
 
-### 3. Segmentação de questões
+Uma alteração pedagógica deve:
 
-O sistema deve identificar:
+- preservar o `card_id`;
+- criar nova `card_version`;
+- incrementar `version_number`;
+- preservar a versão anterior;
+- atualizar `current_version_id` somente quando a nova versão for aprovada ou
+  publicada.
 
-- número da questão;
-- enunciado;
-- alternativas;
-- gabarito quando disponível.
+No MVP 2, novas versões nascem em `needs_review` e não substituem a versão
+atual.
 
-Saída:
+Se a versão atual estiver publicada, criar uma nova versão em revisão não
+altera o status público nem remove a versão atual de circulação.
 
-- registros em `questions`;
-- registros em `question_alternatives`.
+## Aprovação e publicação
 
-### 4. Classificação
+- aprovação seleciona a versão revisada como atual e marca cartão e versão como
+  `approved`;
+- publicação exige versão `approved`;
+- publicação marca cartão e versão como `published`;
+- versões publicadas anteriores permanecem preservadas;
+- decks não mudam automaticamente de versão: a atualização deve ser aplicada
+  explicitamente ao vínculo do deck.
 
-A questão deve ser classificada por disciplina e assunto.
+## Release
 
-Classificações devem usar a taxonomia oficial.
+A publicação de uma release deve:
 
-Saída:
+- ser transacional;
+- registrar apenas versões publicadas;
+- comparar o estado atual do deck com a release anterior;
+- gerar `release_items` com ações explícitas;
+- tornar a release imutável após a publicação.
 
-- registro em `question_classifications`;
-- score de confiança.
+O delta é calculado comparando o estado ativo do deck com o estado reconstruído
+pelas releases anteriores.
 
-### 5. Geração do flashcard
+## Exportação CSV
 
-A questão é transformada em cartão atômico.
+O CSV deve ser gerado a partir de uma release específica, com ordenação e
+codificação determinísticas.
+
+Regras mínimas:
+
+- UTF-8;
+- cabeçalho explícito;
+- escape correto de delimitadores, aspas e quebras de linha;
+- uma linha por cartão ativo no snapshot da release;
+- inclusão obrigatória de `card_id` e `card_version_id`;
+- inclusão obrigatória de `public_id` para identificação pelo usuário;
+- conteúdo obtido da versão registrada na release;
+- mesma release e mesma configuração produzem o mesmo arquivo.
+
+O snapshot é reconstruído reproduzindo os deltas desde a primeira release até
+a release solicitada. Ações `removed` e `deprecated` retiram o cartão do
+snapshot exportado, mas permanecem preservadas no histórico.
+
+Contrato implementado:
+
+```text
+GET /decks/{deck_id}/releases/{release_id}/export.csv
+```
+
+Configurações controladas:
+
+```text
+delimiter=comma|semicolon|tab
+include_tags=true|false
+```
+
+As tags padrão usam IDs estáveis:
+
+```text
+deck::<deck_id> card::<public_id>
+```
+
+O arquivo é ordenado por `public_id`. A resposta inclui
+`X-Content-SHA256`, `X-Row-Count` e `X-Release-Number`.
+
+Tags por disciplina ou assunto só devem ser adicionadas quando a classificação
+também for versionada ou registrada no snapshot da release. Isso evita alterar
+retroativamente o hash de uma exportação histórica.
+
+Para importação inicial, o CSV pode representar o snapshot completo do deck.
+Para integrações futuras, a API de sync continua sendo o mecanismo correto para
+consultar deltas entre releases.
+
+## Curadoria por report
+
+```text
+Usuário reporta versão publicada
+→ cria card_report
+→ cria review_task pendente
+→ administrador revisa
+→ rejeita, marca duplicidade ou converte em nova versão
+```
 
 Regras:
 
-- frente objetiva;
-- verso autoexplicativo;
-- resposta clara;
-- não copiar desnecessariamente a questão inteira;
-- preservar vínculo com a questão original;
-- marcar como `generated` ou `needs_review`.
+- report aponta para a versão exata analisada pelo usuário;
+- rejeição e duplicidade não alteram cartões ou versões;
+- conversão exige os quatro campos completos e `change_reason`;
+- report `outdated_law` exige atestação de revisão de evidência;
+- a nova versão nasce em `needs_review`;
+- a versão publicada reportada permanece imutável e consultável;
+- `cards.current_version_id` permanece apontando para a versão publicada;
+- aprovação e publicação da correção usam o fluxo normal já existente;
+- atualização do deck continua sendo explícita.
 
-Saída:
+Endpoints:
 
-- registro em `cards`;
-- registro em `card_versions`.
+```text
+POST /reports
+GET /admin/reports
+GET /admin/reports/{report_id}
+POST /admin/reports/{report_id}/review
+```
 
-### 6. Busca de fundamentação
+## Jobs
 
-O sistema deve buscar trechos na base teórica.
-
-Usar busca híbrida:
-
-- busca textual;
-- busca semântica por embeddings;
-- filtros por disciplina, assunto, vigência e fonte.
-
-Saída:
-
-- registros em `card_evidence`.
-
-### 7. Validação automática
-
-Executar checks:
-
-- a questão tem enunciado?
-- existe resposta?
-- existe fundamentação?
-- há duplicidade?
-- disciplina está válida?
-- assunto está válido?
-- frente é atômica?
-- verso possui explicação?
-- evidência sustenta resposta?
-
-Saída:
-
-- registros em `quality_checks`.
-
-### 8. Revisão administrativa
-
-O admin pode:
-
-- aprovar;
-- reprovar;
-- editar e gerar nova versão;
-- solicitar reprocessamento;
-- alterar classificação;
-- alterar fundamentação.
-
-### 9. Publicação
-
-Após aprovação, o cartão pode entrar em um baralho.
-
-Saída:
-
-- `deck_cards`;
-- status `published`.
-
-### 10. Release
-
-Mudanças são agrupadas em releases.
-
-A release informa:
-
-- cartões adicionados;
-- cartões atualizados;
-- cartões removidos;
-- cartões depreciados.
-
-Saída:
-
-- `releases`;
-- `release_items`.
+`processing_jobs` pode registrar exportações grandes ou operações de publicação,
+mas filas assíncronas não são obrigatórias no primeiro incremento.

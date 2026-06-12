@@ -40,8 +40,7 @@ app/
   services/
   api/
     routes/
-  workers/
-  pipelines/
+  exporters/
   integrations/
   tests/
 ```
@@ -79,16 +78,10 @@ POST /cards/{card_id}/versions
 ```text
 GET /health
 
-POST /documents/upload
-GET /documents/{document_id}
-POST /documents/{document_id}/process
-
-GET /questions
-GET /questions/{question_id}
-
-POST /cards/from-question/{question_id}
+POST /cards
 GET /cards
 GET /cards/{card_id}
+GET /cards/public/{public_id}
 POST /cards/{card_id}/versions
 POST /cards/{card_id}/approve
 
@@ -96,6 +89,7 @@ POST /decks
 GET /decks
 POST /decks/{deck_id}/publish-release
 GET /decks/{deck_id}/sync
+GET /decks/{deck_id}/releases/{release_id}/export.csv
 
 POST /reports
 GET /admin/reports
@@ -105,6 +99,7 @@ POST /admin/reports/{report_id}/review
 ## Regras de resposta
 
 - Retornar IDs explícitos.
+- Retornar `public_id` nos payloads de cartão.
 - Retornar status claro.
 - Evitar payloads gigantes em listagens.
 - Usar paginação.

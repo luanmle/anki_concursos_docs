@@ -1,0 +1,115 @@
+import uuid
+from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, Field, field_validator
+
+from app.models.enums import DeckStatus, ReleaseAction
+
+
+class DeckCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    discipline_id: uuid.UUID | None = None
+    description: str | None = None
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def strip_name(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
+class DeckCardAddRequest(BaseModel):
+    card_id: uuid.UUID
+
+
+class DeckCardRemoveRequest(BaseModel):
+    action: Literal["removed", "deprecated"] = "removed"
+
+
+class DeckCardResponse(BaseModel):
+    card_id: uuid.UUID
+    public_id: str
+    card_version_id: uuid.UUID
+    version_number: int
+    added_at: datetime
+
+
+class DeckResponse(BaseModel):
+    deck_id: uuid.UUID
+    name: str
+    discipline_id: uuid.UUID | None
+    description: str | None
+    status: DeckStatus
+    cards: list[DeckCardResponse]
+    created_at: datetime
+    updated_at: datetime
+
+
+class DeckListResponse(BaseModel):
+    items: list[DeckResponse]
+    total: int
+
+
+class ReleasePublishRequest(BaseModel):
+    description: str | None = None
+
+
+class ReleaseItemResponse(BaseModel):
+    action: ReleaseAction
+    card_id: uuid.UUID
+    public_id: str
+    card_version_id: uuid.UUID | None
+
+
+class ReleaseResponse(BaseModel):
+    release_id: uuid.UUID
+    deck_id: uuid.UUID
+    release_number: int
+    published_at: datetime
+    description: str | None
+    items: list[ReleaseItemResponse]
+
+
+class ReleaseActionCounts(BaseModel):
+    added: int
+    updated: int
+    removed: int
+    deprecated: int
+
+
+class ReleaseSummaryResponse(BaseModel):
+    release_id: uuid.UUID
+    deck_id: uuid.UUID
+    release_number: int
+    published_at: datetime
+    description: str | None
+    item_count: int
+    actions: ReleaseActionCounts
+
+
+class ReleaseListResponse(BaseModel):
+    items: list[ReleaseSummaryResponse]
+    page: int
+    page_size: int
+    total: int
+    pages: int
+    latest_release: int
+
+
+class SyncChangeResponse(BaseModel):
+    release_id: uuid.UUID
+    release_number: int
+    published_at: datetime
+    action: ReleaseAction
+    card_id: uuid.UUID
+    public_id: str
+    old_card_version_id: uuid.UUID | None
+    new_card_version_id: uuid.UUID | None
+
+
+class DeckSyncResponse(BaseModel):
+    deck_id: uuid.UUID
+    from_release: int
+    to_release: int
+    has_changes: bool
+    changes: list[SyncChangeResponse]

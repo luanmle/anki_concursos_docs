@@ -46,3 +46,49 @@ class ReleaseAction(StrEnum):
     REMOVED = "removed"
     DEPRECATED = "deprecated"
 
+
+class ProcessingJobStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    RETRYING = "retrying"
+
+
+class ReportType(StrEnum):
+    TYPO = "typo"
+    WRONG_ANSWER = "wrong_answer"
+    OUTDATED_LAW = "outdated_law"
+    BAD_EXPLANATION = "bad_explanation"
+    CLASSIFICATION_ERROR = "classification_error"
+    DUPLICATE_CARD = "duplicate_card"
+    SUGGESTION = "suggestion"
+
+
+class CardReportStatus(StrEnum):
+    OPEN = "open"
+    IN_REVIEW = "in_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    RESOLVED = "resolved"
+    DUPLICATE = "duplicate"
+
+
+class ReviewTaskStatus(StrEnum):
+    PENDING = "pending"
+    ASSIGNED = "assigned"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+
+class ReviewDecision(StrEnum):
+    REJECTED = "rejected"
+    DUPLICATE = "duplicate"
+    CONVERTED_TO_NEW_VERSION = "converted_to_new_version"
+
+
+class UserRole(StrEnum):
+    ADMIN = "admin"
+    CURATOR = "curator"
+    REVIEWER = "reviewer"
