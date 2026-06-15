@@ -86,6 +86,8 @@ Nunca registrar tokens, senhas ou URLs com credenciais.
 
 ## Deploy
 
+### Backend
+
 Para usar o buildpack Python no stack Heroku-24, manter o stack padrão e fazer
 o deploy normalmente:
 
@@ -109,6 +111,58 @@ o `Dockerfile`, conferir o stack com:
 
 ```bash
 heroku stack -a <app>
+```
+
+O app de backend deve acompanhar a branch `main`.
+
+### Frontend administrativo
+
+O frontend permanece em `admin/`, mas é publicado como outro app Heroku. A
+branch de distribuição `admin-deploy` contém somente o conteúdo dessa pasta,
+promovido para a raiz por `git subtree split`.
+
+```text
+main         -> app Heroku do backend
+admin-deploy -> app Heroku do frontend
+```
+
+O workflow `.github/workflows/publish-admin-deploy.yml`:
+
+1. executa `npm ci`, lint, testes e build;
+2. gera `admin-deploy` a partir de `admin/`;
+3. publica a branch com `--force`.
+
+`admin-deploy` é um artefato de distribuição. Nunca editar ou fazer merge
+manual nessa branch.
+
+Configuração do app frontend:
+
+```bash
+heroku stack:set container -a <frontend-app>
+heroku config:set \
+  API_URL=https://<backend-app>.herokuapp.com \
+  APP_ENV=STAGING \
+  -a <frontend-app>
+```
+
+No painel Heroku, conectar o mesmo repositório e selecionar a branch
+`admin-deploy` para deploy automático. Essa branch possui `Dockerfile` e
+`heroku.yml` próprios na raiz e não executa migrations.
+
+Depois que o frontend receber uma URL pública, atualizar o backend:
+
+```bash
+heroku config:set \
+  CORS_ORIGINS=https://<frontend-app>.herokuapp.com \
+  -a <backend-app>
+```
+
+Se existirem múltiplas origens autorizadas, separá-las por vírgulas.
+
+Para gerar a branch manualmente em uma estação Windows:
+
+```powershell
+.\deploy\publish-admin-branch.ps1 -Push
 ```
 
 Verificar a release:

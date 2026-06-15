@@ -1,0 +1,92 @@
+export type UserRole = 'admin' | 'curator' | 'reviewer'
+
+export interface User {
+  user_id: string
+  email: string
+  display_name: string
+  role: UserRole
+  is_active: boolean
+  last_login_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface TokenResponse {
+  access_token: string
+  token_type: 'bearer'
+  expires_in: number
+  user: User
+}
+
+export interface Paginated<T> {
+  items: T[]
+  page: number
+  page_size: number
+  total: number
+  pages: number
+}
+
+export interface CardVersion {
+  card_version_id: string
+  version_number: number
+  front_text: string
+  back_text: string
+  answer_text: string
+  explanation_text: string
+  change_reason: string
+  created_by: string
+  status: string
+  content_hash: string
+  created_at: string
+}
+
+export interface CardSummary {
+  card_id: string
+  public_id: string
+  canonical_key: string
+  discipline_id: string
+  topic_id: string
+  status: string
+  current_version: CardVersion | null
+  created_at: string
+  updated_at: string
+}
+
+export interface DeckSummary {
+  deck_id: string
+  name: string
+  discipline_id: string | null
+  description: string | null
+  status: string
+  active_card_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ReviewTask {
+  review_task_id: string
+  status: string
+  assigned_to: string | null
+  decision: string | null
+}
+
+export interface Report {
+  report_id: string
+  card_id: string
+  public_id: string
+  card_version_id: string
+  version_number: number
+  reporter_reference: string | null
+  report_type: string
+  message: string
+  status: string
+  review_task: ReviewTask
+  created_at: string
+  updated_at: string
+}
+
+export interface OperationStatus {
+  service: 'online' | 'offline'
+  database: 'online' | 'offline' | 'checking'
+  checkedAt: Date
+}

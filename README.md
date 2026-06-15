@@ -68,6 +68,7 @@ Cadastrar ou importar flashcard
 - Alembic
 - pytest
 - Docker e Docker Compose
+- React, TypeScript e Vite no console administrativo
 
 Redis permanece disponível no ambiente atual, mas não é requisito para o
 fluxo principal enquanto exportações forem processadas de forma síncrona.
@@ -106,6 +107,9 @@ fluxo principal enquanto exportações forem processadas de forma síncrona.
 - limite global de payload e rate limit com memória limitada;
 - configuração de pool, TLS e release phase para Heroku;
 - CI com PostgreSQL 17, lint, complexidade e cobertura.
+- console administrativo em `admin/`, isolado do backend e do banco;
+- login, sessão, permissões, navegação e listagens administrativas iniciais;
+- imagem Nginx própria para deploy separado do frontend.
 
 O schema inicial também contém tabelas de documentos e questões. Elas não
 fazem parte do escopo ativo e devem ser tratadas como candidatas a remoção em
@@ -126,6 +130,29 @@ Testes:
 ```bash
 pytest
 ```
+
+Console administrativo:
+
+```bash
+cd admin
+npm install
+npm run dev
+```
+
+O frontend usa `VITE_API_URL` e não acessa o banco. Backend e frontend podem
+permanecer neste repositório, mas devem ser publicados como aplicações
+separadas.
+
+Branches de deploy:
+
+```text
+main         -> backend FastAPI
+admin-deploy -> frontend estático, gerado automaticamente de admin/
+```
+
+Não editar `admin-deploy` manualmente. O workflow
+`.github/workflows/publish-admin-deploy.yml` valida o frontend, executa
+`git subtree split` e substitui essa branch quando `admin/**` muda.
 
 ## API de cartões
 
@@ -198,6 +225,9 @@ um usuário com papel `reviewer` ou `admin`.
 
 Operação no Heroku, PostgreSQL real, backup e restore estão descritos em
 `docs/11-production-operations.md`.
+
+A especificação para design no Google Stitch e implementação da interface
+administrativa está em `docs/14-admin-ui-frontend-specification.md`.
 
 ## Heroku
 

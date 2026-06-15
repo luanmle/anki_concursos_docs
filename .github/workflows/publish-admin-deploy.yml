@@ -1,0 +1,48 @@
+name: Publish admin deploy branch
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "admin/**"
+      - ".github/workflows/publish-admin-deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: admin-deploy-branch
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Validate frontend
+        working-directory: admin
+        run: |
+          npm ci
+          npm run lint
+          npm test
+          npm run build
+
+      - name: Generate distribution branch
+        run: |
+          git branch -D admin-deploy 2>/dev/null || true
+          git subtree split --prefix=admin --branch admin-deploy
+
+      - name: Publish distribution branch
+        run: git push origin admin-deploy --force
