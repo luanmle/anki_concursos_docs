@@ -8,6 +8,16 @@ from app.core.database import get_db
 router = APIRouter(tags=["health"])
 
 
+@router.get("/")
+def root() -> dict[str, str]:
+    return {
+        "service": "Anki Concursos API",
+        "status": "ok",
+        "health": "/health",
+        "readiness": "/ready",
+    }
+
+
 @router.get("/health")
 def health_check() -> dict[str, str]:
     return {"status": "ok"}

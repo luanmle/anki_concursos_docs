@@ -117,9 +117,9 @@ uma migration futura, após decisão explícita sobre compatibilidade.
 docker compose up --build
 ```
 
-A API fica em `http://localhost:8000` e o health check em
-`http://localhost:8000/health`. O readiness check com acesso ao banco fica em
-`http://localhost:8000/ready`.
+A raiz `http://localhost:8000/` identifica a API e informa os endpoints de
+operação. O health check fica em `http://localhost:8000/health`. O readiness
+check com acesso ao banco fica em `http://localhost:8000/ready`.
 
 Testes:
 

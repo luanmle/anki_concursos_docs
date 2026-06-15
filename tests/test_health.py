@@ -5,6 +5,18 @@ from app.core.database import get_db
 from app.main import app
 
 
+def test_root_identifies_api_and_health_endpoints() -> None:
+    response = TestClient(app).get("/")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "service": "Anki Concursos API",
+        "status": "ok",
+        "health": "/health",
+        "readiness": "/ready",
+    }
+
+
 def test_health_check() -> None:
     response = TestClient(app).get("/health")
 
