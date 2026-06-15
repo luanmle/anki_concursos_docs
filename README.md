@@ -71,8 +71,19 @@ Foram incorporados:
 - tabelas densas, filtros e paginação;
 - estados editoriais semânticos;
 - detalhe do cartão com conteúdo, metadados e histórico;
+- criação de cartão e de novas versões com preview;
+- criação e composição operacional de decks;
+- publicação de releases imutáveis e exportação CSV;
+- revisão de reports com conversão opcional em nova versão;
 - ações de aprovação e publicação condicionadas ao papel do usuário;
 - layout responsivo com navegação móvel.
 
 Elementos demonstrativos do protótipo, como métricas globais sem endpoint,
 foram deliberadamente removidos. O frontend continua usando apenas a API HTTP.
+
+Telas adicionais criadas no mesmo projeto Stitch:
+
+- `projects/13880116207067144925/screens/4c26571b3e284f3f9af5b6be59373c55`
+  para detalhes do deck;
+- `projects/13880116207067144925/screens/20e516bdb5f94b5d85b0c705f669c8d2`
+  para revisão de report.

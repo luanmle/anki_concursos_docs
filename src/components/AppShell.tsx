@@ -20,7 +20,6 @@ const baseNav = [
   { to: '/', label: 'Visão geral', icon: LayoutDashboard },
   { to: '/cards', label: 'Cartões', icon: Library },
   { to: '/decks', label: 'Decks', icon: BookOpenCheck },
-  { to: '/reports', label: 'Reports', icon: FileWarning },
   { to: '/operation', label: 'Operação', icon: Activity },
 ]
 
@@ -32,9 +31,16 @@ export function AppShell() {
     import.meta.env.VITE_APP_ENV ||
     'STAGING'
   ).toUpperCase()
-  const nav = hasRole('admin')
-    ? [...baseNav.slice(0, 4), { to: '/users', label: 'Usuários', icon: Users }, baseNav[4]]
-    : baseNav
+  const nav = [
+    ...baseNav.slice(0, 3),
+    ...(hasRole('admin', 'reviewer')
+      ? [{ to: '/reports', label: 'Reports', icon: FileWarning }]
+      : []),
+    ...(hasRole('admin')
+      ? [{ to: '/users', label: 'Usuários', icon: Users }]
+      : []),
+    baseNav[3],
+  ]
 
   return (
     <div className="app-shell">

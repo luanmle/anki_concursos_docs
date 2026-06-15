@@ -73,3 +73,32 @@ export async function apiRequest<T>(
   if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
 }
+
+export async function apiDownload(
+  path: string,
+  token?: string | null,
+): Promise<{ blob: Blob; filename: string }> {
+  const headers = new Headers()
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+
+  let response: Response
+  try {
+    response = await fetch(`${API_URL}${path}`, { headers })
+  } catch {
+    throw new ApiError('Não foi possível conectar à API.', 0, null)
+  }
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    throw new ApiError(
+      normalizeDetail(payload?.detail),
+      response.status,
+      response.headers.get('X-Request-ID'),
+    )
+  }
+
+  const disposition = response.headers.get('Content-Disposition') || ''
+  const filename =
+    disposition.match(/filename="?([^"]+)"?/)?.[1] || 'export.csv'
+  return { blob: await response.blob(), filename }
+}
