@@ -78,6 +78,7 @@ def test_postgresql_enforces_immutability_and_release_uniqueness(
     discipline_id = uuid.uuid4()
     topic_id = uuid.uuid4()
     card_id = uuid.uuid4()
+    public_id = f"AC-{card_id.hex.upper()}"
     version_id = uuid.uuid4()
     deck_id = uuid.uuid4()
     try:
@@ -103,12 +104,13 @@ def test_postgresql_enforces_immutability_and_release_uniqueness(
             connection.execute(
                 text(
                     "INSERT INTO cards "
-                    "(id, canonical_key, discipline_id, topic_id, status) "
-                    "VALUES (:id, :key, :discipline_id, :topic_id, "
-                    "'published')"
+                    "(id, public_id, canonical_key, discipline_id, topic_id, "
+                    "status) VALUES (:id, :public_id, :key, :discipline_id, "
+                    ":topic_id, 'published')"
                 ),
                 {
                     "id": card_id,
+                    "public_id": public_id,
                     "key": f"postgres-{card_id}",
                     "discipline_id": discipline_id,
                     "topic_id": topic_id,
