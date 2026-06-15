@@ -87,3 +87,5 @@ Telas adicionais criadas no mesmo projeto Stitch:
   para detalhes do deck;
 - `projects/13880116207067144925/screens/20e516bdb5f94b5d85b0c705f669c8d2`
   para revisão de report.
+- `projects/13880116207067144925/screens/edf45647aa6a48deae9e5c881c97d301`
+  para gestão de usuário.

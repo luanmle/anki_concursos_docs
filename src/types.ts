@@ -131,6 +131,25 @@ export interface ReleaseList extends Paginated<ReleaseSummary> {
   latest_release: number
 }
 
+export interface SyncChange {
+  release_id: string
+  release_number: number
+  published_at: string
+  action: string
+  card_id: string
+  public_id: string
+  old_card_version_id: string | null
+  new_card_version_id: string | null
+}
+
+export interface DeckSync {
+  deck_id: string
+  from_release: number
+  to_release: number
+  has_changes: boolean
+  changes: SyncChange[]
+}
+
 export interface ReviewTask {
   review_task_id: string
   status: string

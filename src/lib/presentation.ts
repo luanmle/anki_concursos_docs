@@ -21,6 +21,18 @@ const labels: Record<string, string> = {
   cancelled: 'Cancelado',
   active: 'Ativo',
   inactive: 'Inativo',
+  added: 'Adicionado',
+  updated: 'Atualizado',
+  removed: 'Removido',
+  duplicate: 'Duplicado',
+  converted_to_new_version: 'Convertido em nova versão',
+  wrong_answer: 'Resposta incorreta',
+  bad_explanation: 'Explicação inadequada',
+  outdated_law: 'Legislação desatualizada',
+  classification_error: 'Erro de classificação',
+  duplicate_card: 'Cartão duplicado',
+  typo: 'Erro de digitação',
+  suggestion: 'Sugestão',
 }
 
 export function translateStatus(value: string) {

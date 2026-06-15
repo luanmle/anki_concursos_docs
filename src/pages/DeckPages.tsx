@@ -2,6 +2,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   Download,
   PackagePlus,
   Plus,
@@ -29,6 +31,7 @@ import { formatDate } from '../lib/presentation'
 import type {
   CardSummary,
   DeckDetail,
+  DeckSync,
   DisciplineList,
   Paginated,
   ReleaseList,
@@ -154,16 +157,27 @@ export function DeckDetailPage() {
   const queryClient = useQueryClient()
   const [cardReference, setCardReference] = useState('')
   const [releaseDescription, setReleaseDescription] = useState('')
+  const [releasePage, setReleasePage] = useState(1)
+  const [sinceRelease, setSinceRelease] = useState(0)
   const [downloadError, setDownloadError] = useState<Error | null>(null)
   const deck = useQuery({
     queryKey: ['deck', deckId],
     queryFn: () => apiRequest<DeckDetail>(`/decks/${deckId}`, {}, token),
   })
   const releases = useQuery({
-    queryKey: ['deck-releases', deckId],
+    queryKey: ['deck-releases', deckId, releasePage],
     queryFn: () =>
       apiRequest<ReleaseList>(
-        `/decks/${deckId}/releases?page=1&page_size=20`,
+        `/decks/${deckId}/releases?page=${releasePage}&page_size=20`,
+        {},
+        token,
+      ),
+  })
+  const sync = useQuery({
+    queryKey: ['deck-sync', deckId, sinceRelease],
+    queryFn: () =>
+      apiRequest<DeckSync>(
+        `/decks/${deckId}/sync?since_release=${sinceRelease}`,
         {},
         token,
       ),
@@ -227,6 +241,7 @@ export function DeckDetailPage() {
       setReleaseDescription('')
       refreshDeck()
       queryClient.invalidateQueries({ queryKey: ['deck-releases', deckId] })
+      queryClient.invalidateQueries({ queryKey: ['deck-sync', deckId] })
     },
   })
 
@@ -243,6 +258,7 @@ export function DeckDetailPage() {
 
   const canCurate = hasRole('admin', 'curator')
   const canPublish = hasRole('admin', 'reviewer')
+  const releaseData = releases.data
   const operationError =
     addCard.error || removeCard.error || publishRelease.error || downloadError
 
@@ -403,7 +419,7 @@ export function DeckDetailPage() {
         </div>
         {releases.isLoading ? (
           <LoadingState />
-        ) : releases.data?.items.length ? (
+        ) : releaseData?.items.length ? (
           <div className="table-card">
             <table>
               <thead>
@@ -417,7 +433,7 @@ export function DeckDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {releases.data.items.map((release) => (
+                {releaseData.items.map((release) => (
                   <tr key={release.release_id}>
                     <td><strong>#{release.release_number}</strong></td>
                     <td>{formatDate(release.published_at)}</td>
@@ -442,6 +458,11 @@ export function DeckDetailPage() {
                 ))}
               </tbody>
             </table>
+            <ReleasePagination
+              data={releaseData}
+              page={releasePage}
+              onPageChange={setReleasePage}
+            />
           </div>
         ) : (
           <EmptyState
@@ -450,7 +471,98 @@ export function DeckDetailPage() {
           />
         )}
       </section>
+
+      <section className="deck-section">
+        <div className="section-heading sync-heading">
+          <div>
+            <p className="eyebrow">Sincronização incremental</p>
+            <h2>Alterações desde uma release</h2>
+          </div>
+          <label className="since-release-field">
+            <span>Desde a release</span>
+            <input
+              type="number"
+              min={0}
+              value={sinceRelease}
+              onChange={(event) =>
+                setSinceRelease(Math.max(0, Number(event.target.value)))
+              }
+            />
+          </label>
+        </div>
+        {sync.isLoading ? (
+          <LoadingState />
+        ) : sync.error ? (
+          <InlineError error={sync.error} />
+        ) : sync.data?.has_changes ? (
+          <div className="sync-list">
+            {sync.data.changes.map((change, index) => (
+              <article
+                key={`${change.release_id}-${change.card_id}-${change.action}-${index}`}
+              >
+                <StatusBadge value={change.action} />
+                <div>
+                  <Link className="table-link" to={`/cards/${change.card_id}`}>
+                    {change.public_id}
+                  </Link>
+                  <small>
+                    Release #{change.release_number} ·{' '}
+                    {formatDate(change.published_at)}
+                  </small>
+                </div>
+                <code>
+                  {change.old_card_version_id || '∅'} →{' '}
+                  {change.new_card_version_id || '∅'}
+                </code>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="Nenhuma alteração incremental"
+            description={`O deck não possui mudanças depois da release ${sinceRelease}.`}
+          />
+        )}
+      </section>
     </div>
+  )
+}
+
+function ReleasePagination({
+  data,
+  page,
+  onPageChange,
+}: {
+  data: ReleaseList
+  page: number
+  onPageChange: (page: number) => void
+}) {
+  const pages = Math.max(data.pages, 1)
+  return (
+    <footer className="table-summary">
+      <span>
+        Página {data.page} de {pages} · release mais recente #{data.latest_release}
+      </span>
+      <div className="pagination-actions">
+        <button
+          type="button"
+          aria-label="Página anterior"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <strong>{page}</strong>
+        <button
+          type="button"
+          aria-label="Próxima página"
+          disabled={page >= pages}
+          onClick={() => onPageChange(page + 1)}
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    </footer>
   )
 }
 
