@@ -1,11 +1,13 @@
 import {
   Activity,
   BookOpenCheck,
+  ChevronDown,
   FileWarning,
   Library,
   LayoutDashboard,
   LogOut,
   Menu,
+  ShieldCheck,
   Users,
   X,
 } from 'lucide-react'
@@ -25,6 +27,11 @@ const baseNav = [
 export function AppShell() {
   const { user, logout, hasRole } = useAuth()
   const [open, setOpen] = useState(false)
+  const environment = (
+    window.__APP_CONFIG__?.APP_ENV ||
+    import.meta.env.VITE_APP_ENV ||
+    'STAGING'
+  ).toUpperCase()
   const nav = hasRole('admin')
     ? [...baseNav.slice(0, 4), { to: '/users', label: 'Usuários', icon: Users }, baseNav[4]]
     : baseNav
@@ -49,10 +56,12 @@ export function AppShell() {
       )}
       <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
         <div className="brand">
-          <div className="brand-mark">AC</div>
+          <div className="brand-mark">
+            <ShieldCheck size={19} />
+          </div>
           <div>
             <strong>Anki Concursos</strong>
-            <span>Console administrativo</span>
+            <span>Admin Console</span>
           </div>
           <button
             className="sidebar-close"
@@ -63,11 +72,6 @@ export function AppShell() {
             <X size={20} />
           </button>
         </div>
-        <span className="environment-badge">
-          {window.__APP_CONFIG__?.APP_ENV ||
-            import.meta.env.VITE_APP_ENV ||
-            'STAGING'}
-        </span>
         <nav className="sidebar-nav" aria-label="Navegação principal">
           {nav.map(({ to, label, icon: Icon }) => (
             <NavLink
@@ -92,9 +96,30 @@ export function AppShell() {
           </button>
         </div>
       </aside>
-      <main className="main-content">
-        <Outlet />
-      </main>
+      <div className="content-frame">
+        <header className="topbar">
+          <div className="topbar-context">
+            <span className={`environment-badge environment-${environment.toLowerCase()}`}>
+              {environment}
+            </span>
+            <span className="connection-indicator">
+              <i />
+              API conectada
+            </span>
+          </div>
+          <div className="topbar-user">
+            <div>
+              <strong>{user?.display_name}</strong>
+              <span>{user && translateStatus(user.role)}</span>
+            </div>
+            <div className="avatar">{user?.display_name.slice(0, 2).toUpperCase()}</div>
+            <ChevronDown size={15} aria-hidden="true" />
+          </div>
+        </header>
+        <main className="main-content">
+          <Outlet />
+        </main>
+      </div>
     </div>
   )
 }

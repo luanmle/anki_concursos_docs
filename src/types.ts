@@ -52,6 +52,10 @@ export interface CardSummary {
   updated_at: string
 }
 
+export interface CardDetail extends CardSummary {
+  versions: CardVersion[]
+}
+
 export interface DeckSummary {
   deck_id: string
   name: string
