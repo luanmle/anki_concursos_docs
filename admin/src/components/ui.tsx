@@ -13,15 +13,17 @@ export function PageHeader({
   title,
   description,
   action,
+  eyebrow = 'Administração',
 }: {
   title: string
   description: string
   action?: ReactNode
+  eyebrow?: string
 }) {
   return (
     <header className="page-header">
       <div>
-        <p className="eyebrow">Administração</p>
+        <p className="eyebrow">{eyebrow}</p>
         <h1>{title}</h1>
         <p className="page-description">{description}</p>
       </div>

@@ -58,3 +58,21 @@ app do frontend não recebe Postgres, não possui release phase e usa
 
 Depois do deploy, adicionar a origem pública do console em `CORS_ORIGINS` no
 backend.
+
+## Design Stitch
+
+A interface implementa o projeto Google Stitch `App Specification Interface`
+(`projects/13880116207067144925`) e seu design system Obsidian.
+
+Foram incorporados:
+
+- tema escuro de alto contraste com tokens centralizados;
+- navegação lateral compacta e cabeçalho de ambiente;
+- tabelas densas, filtros e paginação;
+- estados editoriais semânticos;
+- detalhe do cartão com conteúdo, metadados e histórico;
+- ações de aprovação e publicação condicionadas ao papel do usuário;
+- layout responsivo com navegação móvel.
+
+Elementos demonstrativos do protótipo, como métricas globais sem endpoint,
+foram deliberadamente removidos. O frontend continua usando apenas a API HTTP.

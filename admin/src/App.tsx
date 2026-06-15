@@ -12,6 +12,7 @@ import {
   UsersPage,
 } from './pages/ListPages'
 import { LoginPage } from './pages/LoginPage'
+import { CardDetailPage } from './pages/CardDetailPage'
 import { OperationPage } from './pages/OperationPage'
 import type { UserRole } from './types'
 
@@ -69,7 +70,11 @@ function AppRoutes() {
         <Route index element={<DashboardPage />} />
         <Route path="cards" element={<CardsPage />} />
         <Route path="cards/new" element={<PlaceholderPage title="Novo cartão" />} />
-        <Route path="cards/:cardId" element={<PlaceholderPage title="Detalhe do cartão" />} />
+        <Route path="cards/:cardId" element={<CardDetailPage />} />
+        <Route
+          path="cards/:cardId/versions/new"
+          element={<PlaceholderPage title="Nova versão" />}
+        />
         <Route path="decks" element={<DecksPage />} />
         <Route path="decks/new" element={<PlaceholderPage title="Novo deck" />} />
         <Route path="decks/:deckId" element={<PlaceholderPage title="Detalhe do deck" />} />

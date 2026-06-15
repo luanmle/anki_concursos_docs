@@ -2,6 +2,7 @@ import {
   Activity,
   ArrowRight,
   BookOpenCheck,
+  CircleCheck,
   FileWarning,
   GitBranch,
   Library,
@@ -15,25 +16,10 @@ export function DashboardPage() {
   return (
     <>
       <PageHeader
-        title={`Olá, ${user?.display_name.split(' ')[0]}`}
-        description="Acompanhe o fluxo editorial e acesse as áreas disponíveis para o seu papel."
+        eyebrow="Console administrativo"
+        title="Visão geral"
+        description={`Olá, ${user?.display_name.split(' ')[0]}. Acesse o fluxo editorial e as áreas disponíveis para o seu papel.`}
       />
-      <section className="workflow-banner">
-        <div>
-          <p className="eyebrow">Fluxo editorial</p>
-          <h2>Do cadastro à distribuição, sem sobrescrever o histórico.</h2>
-        </div>
-        <div className="workflow-steps">
-          {['Cadastrar', 'Revisar', 'Aprovar', 'Publicar', 'Distribuir'].map(
-            (step, index) => (
-              <span key={step}>
-                <b>{index + 1}</b>
-                {step}
-              </span>
-            ),
-          )}
-        </div>
-      </section>
       <section className="quick-grid">
         <QuickLink
           to="/cards"
@@ -60,15 +46,44 @@ export function DashboardPage() {
           description="Verifique a disponibilidade da API e do banco."
         />
       </section>
-      <section className="principle-card">
-        <GitBranch size={24} />
-        <div>
-          <strong>Regra central de versionamento</strong>
-          <p>
-            Toda mudança pedagógica cria uma nova versão. Publicações anteriores
-            permanecem disponíveis para auditoria.
-          </p>
-        </div>
+      <section className="dashboard-lower-grid">
+        <article className="workflow-panel">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Processo controlado</p>
+              <h2>Fluxo editorial padrão</h2>
+            </div>
+            <GitBranch size={21} />
+          </div>
+          <div className="workflow-steps">
+            {[
+              ['Cadastrar', 'Criar o cartão e sua versão inicial.'],
+              ['Revisar', 'Conferir conteúdo, referência e explicação.'],
+              ['Aprovar', 'Registrar a decisão editorial.'],
+              ['Publicar', 'Promover uma versão aprovada.'],
+              ['Distribuir', 'Adicionar ao deck e publicar uma release.'],
+            ].map(([step, description], index) => (
+              <div key={step}>
+                <b>{index + 1}</b>
+                <span>
+                  <strong>{step}</strong>
+                  <small>{description}</small>
+                </span>
+              </div>
+            ))}
+          </div>
+        </article>
+        <article className="principle-card">
+          <CircleCheck size={22} />
+          <div>
+            <p className="eyebrow">Integridade garantida</p>
+            <strong>Versões publicadas são imutáveis</strong>
+            <p>
+              Toda mudança pedagógica cria uma nova versão. O histórico anterior
+              permanece disponível para auditoria e sincronização.
+            </p>
+          </div>
+        </article>
       </section>
     </>
   )
