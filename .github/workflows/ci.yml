@@ -35,7 +35,10 @@ jobs:
       - run: python -m pip install -c constraints.txt ".[dev]"
       - run: ruff check app tests migrations
       - run: python -m compileall -q app tests migrations
-      - run: pytest --cov=app --cov-report=term-missing --cov-fail-under=80
+      - name: Run backend tests with coverage
+        run: pytest -m "not postgres" --cov=app --cov-report=term-missing --cov-fail-under=80
+      - name: Run PostgreSQL integration tests
+        run: pytest -m postgres
       - run: alembic upgrade head --sql > /dev/null
 
   frontend:
