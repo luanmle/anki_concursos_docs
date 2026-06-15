@@ -16,6 +16,7 @@ import { CardDetailPage } from './pages/CardDetailPage'
 import { NewCardPage, NewCardVersionPage } from './pages/CardFormPage'
 import { DeckDetailPage, NewDeckPage } from './pages/DeckPages'
 import { ReportDetailPage } from './pages/ReportDetailPage'
+import { EditUserPage, NewUserPage } from './pages/UserPages'
 import { OperationPage } from './pages/OperationPage'
 import type { UserRole } from './types'
 
@@ -127,7 +128,15 @@ function AppRoutes() {
           path="users/new"
           element={
             <ProtectedRoute roles={['admin']}>
-              <PlaceholderPage title="Novo usuário" />
+              <NewUserPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="users/:userId"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <EditUserPage />
             </ProtectedRoute>
           }
         />
