@@ -14,7 +14,13 @@ Staging deve executar a mesma imagem e a mesma release phase de produção.
 
 ## Processos
 
-O deploy por container é definido em `heroku.yml`:
+O repositório suporta dois modos de deploy:
+
+- buildpack Python no stack Heroku-24, usando `requirements.txt`,
+  `.python-version` e `Procfile`;
+- container, usando `Dockerfile` e `heroku.yml`.
+
+Nos dois modos os processos são:
 
 ```text
 release  python -m app.operations.predeploy
@@ -73,11 +79,29 @@ Nunca registrar tokens, senhas ou URLs com credenciais.
 
 ## Deploy
 
-Configurar o stack de container:
+Para usar o buildpack Python no stack Heroku-24, manter o stack padrão e fazer
+o deploy normalmente:
+
+```bash
+git push heroku main
+```
+
+O `requirements.txt` instala o projeto definido em `pyproject.toml` com as
+versões de `constraints.txt`. O `.python-version` seleciona Python 3.12.
+
+Para usar container, configurar explicitamente o stack antes do deploy:
 
 ```bash
 heroku stack:set container -a <app>
 git push heroku main
+```
+
+Se o log mostrar `Building on the Heroku-24 stack`, o deploy está usando o
+buildpack Python e o `heroku.yml` não controla o build. Se a intenção for usar
+o `Dockerfile`, conferir o stack com:
+
+```bash
+heroku stack -a <app>
 ```
 
 Verificar a release:

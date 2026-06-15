@@ -201,7 +201,8 @@ Operação no Heroku, PostgreSQL real, backup e restore estão descritos em
 
 ## Heroku
 
-O deploy por container usa `heroku.yml`:
+O deploy por buildpack Python usa `requirements.txt`, `.python-version` e
+`Procfile`. O deploy por container usa `heroku.yml`:
 
 ```text
 release -> python -m app.operations.predeploy
@@ -216,4 +217,6 @@ TRUST_PROXY_HEADERS=true
 ALLOW_LEGACY_ADMIN_API_KEY=false
 ```
 
-As versões testadas das dependências estão em `constraints.txt`.
+As versões testadas das dependências estão em `constraints.txt`. O
+`requirements.txt` instala o pacote definido em `pyproject.toml` respeitando
+essas constraints.
