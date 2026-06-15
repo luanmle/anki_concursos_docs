@@ -35,7 +35,9 @@ def create_card(
     principal: AuthPrincipal = Depends(require_curator),
     service: CardService = Depends(get_card_service),
 ) -> CardDetailResponse:
-    return service.create_card(payload.model_copy(update={"created_by": principal.email}))
+    return service.create_card(
+        payload.model_copy(update={"created_by": principal.email})
+    )
 
 
 @router.get("", response_model=CardListResponse)

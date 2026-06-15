@@ -14,6 +14,9 @@ distribuição de flashcards.
 - Alembic;
 - pytest;
 - Docker e Docker Compose.
+- Heroku Container Runtime e Heroku Postgres;
+- GitHub Actions;
+- Ruff e pytest-cov.
 
 ## Banco de dados
 
@@ -60,7 +63,28 @@ reviewer
 - Swagger e OpenAPI desabilitados por padrão em produção;
 - migrations executadas por `python -m app.operations.predeploy`;
 - advisory lock PostgreSQL serializa execuções concorrentes de migration;
+- o Alembic reutiliza a mesma conexão que mantém o advisory lock;
+- release phase do Heroku executa migrations, seed e bootstrap;
+- processo web escuta exclusivamente na porta `$PORT`;
+- pool SQLAlchemy é configurável por ambiente;
+- produção exige TLS PostgreSQL por `DATABASE_SSLMODE`;
+- requests possuem limite global de corpo;
+- rate limit em memória possui limite de chaves e confiança explícita no proxy;
 - backup e restore seguem `docs/11-production-operations.md`.
+
+## Qualidade automatizada
+
+O CI executa:
+
+```text
+Ruff com C901 e limite de complexidade 12
+compileall
+pytest com cobertura mínima de 80%
+PostgreSQL 17 para migrations, constraints e triggers
+Alembic offline SQL
+```
+
+As versões diretas validadas são fixadas em `constraints.txt`.
 
 ## Exportação CSV
 

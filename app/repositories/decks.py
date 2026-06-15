@@ -47,16 +47,32 @@ class DeckRepository:
             statement = statement.with_for_update(of=Deck)
         return self.session.scalar(statement)
 
-    def list_all(self) -> list[Deck]:
-        statement = (
-            select(Deck)
-            .options(
-                selectinload(Deck.cards).joinedload(DeckCard.card),
-                selectinload(Deck.cards).joinedload(DeckCard.card_version),
+    def list_decks(
+        self,
+        *,
+        page: int,
+        page_size: int,
+    ) -> tuple[list[tuple[Deck, int]], int]:
+        total = self.session.scalar(select(func.count()).select_from(Deck)) or 0
+        active_card_count = (
+            select(func.count(DeckCard.id))
+            .where(
+                DeckCard.deck_id == Deck.id,
+                DeckCard.removed_at.is_(None),
             )
-            .order_by(Deck.name, Deck.id)
+            .correlate(Deck)
+            .scalar_subquery()
         )
-        return list(self.session.scalars(statement))
+        statement = (
+            select(Deck, active_card_count)
+            .order_by(Deck.name, Deck.id)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        return [
+            (deck, int(card_count))
+            for deck, card_count in self.session.execute(statement)
+        ], total
 
     def get_card(self, card_id: uuid.UUID) -> Card | None:
         return self.session.scalar(

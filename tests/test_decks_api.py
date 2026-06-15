@@ -3,7 +3,6 @@ import hashlib
 import io
 import uuid
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -793,3 +792,22 @@ def test_sync_rejects_unknown_release_number(
 def test_deck_endpoints_require_admin_api_key() -> None:
     unauthorized = TestClient(app).get(f"/decks/{uuid.uuid4()}")
     assert unauthorized.status_code == 401
+
+
+def test_deck_list_is_paginated_and_returns_summaries(
+    session: Session,
+    client: TestClient,
+) -> None:
+    discipline, _topic = create_taxonomy(session, "Lista Decks")
+    create_deck(client, discipline, "Deck B")
+    create_deck(client, discipline, "Deck A")
+
+    response = client.get("/decks", params={"page": 1, "page_size": 1})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 2
+    assert body["pages"] == 2
+    assert body["items"][0]["name"] == "Deck A"
+    assert body["items"][0]["active_card_count"] == 0
+    assert "cards" not in body["items"][0]

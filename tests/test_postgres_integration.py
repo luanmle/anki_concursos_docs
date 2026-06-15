@@ -1,9 +1,11 @@
 import os
+import uuid
 
 import pytest
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.exc import DBAPIError, IntegrityError
 
 from app.core.config import get_settings
 
@@ -43,13 +45,134 @@ def test_migrations_apply_to_postgresql(monkeypatch: pytest.MonkeyPatch) -> None
                     )
                 ).scalars()
             )
-        assert revision == "20260612_0006"
+        assert revision == "20260615_0007"
         assert {
             "trg_card_versions_immutable",
             "trg_cards_current_version_ownership",
             "trg_releases_immutable",
             "trg_card_reports_audit_immutable",
         } <= triggers
+        user_columns = {
+            column["name"] for column in inspect(engine).get_columns("users")
+        }
+        report_columns = {
+            column["name"]
+            for column in inspect(engine).get_columns("card_reports")
+        }
+        assert "credential_version" in user_columns
+        assert "reporter_reference" in report_columns
+        assert "user_id" not in report_columns
+    finally:
+        engine.dispose()
+        get_settings.cache_clear()
+
+
+def test_postgresql_enforces_immutability_and_release_uniqueness(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url = postgres_url()
+    monkeypatch.setenv("DATABASE_URL", url)
+    get_settings.cache_clear()
+    command.upgrade(Config("alembic.ini"), "head")
+    engine = create_engine(url)
+    discipline_id = uuid.uuid4()
+    topic_id = uuid.uuid4()
+    card_id = uuid.uuid4()
+    version_id = uuid.uuid4()
+    deck_id = uuid.uuid4()
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO disciplines (id, name) "
+                    "VALUES (:id, :name)"
+                ),
+                {"id": discipline_id, "name": f"Postgres {discipline_id}"},
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO topics (id, discipline_id, name) "
+                    "VALUES (:id, :discipline_id, :name)"
+                ),
+                {
+                    "id": topic_id,
+                    "discipline_id": discipline_id,
+                    "name": "Integracao",
+                },
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO cards "
+                    "(id, canonical_key, discipline_id, topic_id, status) "
+                    "VALUES (:id, :key, :discipline_id, :topic_id, "
+                    "'published')"
+                ),
+                {
+                    "id": card_id,
+                    "key": f"postgres-{card_id}",
+                    "discipline_id": discipline_id,
+                    "topic_id": topic_id,
+                },
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO card_versions "
+                    "(id, card_id, version_number, front_text, back_text, "
+                    "answer_text, explanation_text, change_reason, created_by, "
+                    "status, content_hash) VALUES "
+                    "(:id, :card_id, 1, 'front', 'back', 'answer', "
+                    "'explanation', 'initial', 'postgres-test', 'published', "
+                    ":content_hash)"
+                ),
+                {
+                    "id": version_id,
+                    "card_id": card_id,
+                    "content_hash": uuid.uuid4().hex * 2,
+                },
+            )
+            connection.execute(
+                text(
+                    "UPDATE cards SET current_version_id = :version_id "
+                    "WHERE id = :card_id"
+                ),
+                {"version_id": version_id, "card_id": card_id},
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO decks (id, name, status) "
+                    "VALUES (:id, :name, 'draft')"
+                ),
+                {"id": deck_id, "name": f"Deck {deck_id}"},
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO releases "
+                    "(id, deck_id, release_number, published_at) "
+                    "VALUES (:id, :deck_id, 1, now())"
+                ),
+                {"id": uuid.uuid4(), "deck_id": deck_id},
+            )
+
+        with pytest.raises(DBAPIError):
+            with engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "UPDATE card_versions SET front_text = 'changed' "
+                        "WHERE id = :id"
+                    ),
+                    {"id": version_id},
+                )
+
+        with pytest.raises(IntegrityError):
+            with engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "INSERT INTO releases "
+                        "(id, deck_id, release_number, published_at) "
+                        "VALUES (:id, :deck_id, 1, now())"
+                    ),
+                    {"id": uuid.uuid4(), "deck_id": deck_id},
+                )
     finally:
         engine.dispose()
         get_settings.cache_clear()

@@ -108,6 +108,7 @@ Quando a política do deck exigir fundamentação:
 - `password_is_salted_and_hashed`
 - `inactive_user_cannot_authenticate`
 - `token_has_expiration`
+- `token_is_revoked_after_credential_change`
 - `role_is_checked_against_database`
 - `legacy_api_key_is_disabled_in_production`
 - `production_secret_is_not_default`
@@ -115,6 +116,14 @@ Quando a política do deck exigir fundamentação:
 - `migration_chain_reaches_head`
 - `public_report_is_rate_limited`
 - `login_is_rate_limited`
+- `rate_limit_memory_is_bounded`
+- `proxy_headers_are_explicitly_trusted`
+- `request_body_has_maximum_size`
+- `database_tls_is_required_in_production`
+- `database_pool_is_bounded`
+- `web_process_uses_provider_port`
+- `release_phase_runs_migrations`
+- `taxonomy_is_available_through_api`
 - `request_has_correlation_id`
 - `backup_restore_is_periodically_tested`
 

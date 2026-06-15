@@ -6,7 +6,6 @@ from sqlalchemy import (
     JSON,
     Boolean,
     CheckConstraint,
-    Date,
     DateTime,
     Enum,
     Float,
@@ -25,14 +24,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 from app.models.enums import (
+    CardReportStatus,
     CardStatus,
     CardVersionStatus,
     DeckStatus,
     DocumentExtractionStatus,
-    CardReportStatus,
+    ProcessingJobStatus,
     QuestionStatus,
     ReleaseAction,
-    ProcessingJobStatus,
     ReportType,
     ReviewDecision,
     ReviewTaskStatus,
@@ -71,12 +70,22 @@ class User(TimestampMixin, Base):
         server_default=text("true"),
         nullable=False,
     )
+    credential_version: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        server_default=text("1"),
+        nullable=False,
+    )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (
         CheckConstraint("length(email) > 3", name="email_not_empty"),
         CheckConstraint("length(display_name) > 0", name="display_name_not_empty"),
         CheckConstraint("length(password_hash) > 0", name="password_hash_not_empty"),
+        CheckConstraint(
+            "credential_version > 0",
+            name="positive_credential_version",
+        ),
     )
 
 
@@ -87,7 +96,11 @@ class RawDocument(TimestampMixin, Base):
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)
     file_path: Mapped[str] = mapped_column(String(1024), nullable=False)
     source_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    original_file_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    original_file_hash: Mapped[str] = mapped_column(
+        String(64),
+        unique=True,
+        nullable=False,
+    )
     raw_text: Mapped[str | None] = mapped_column(Text)
     metadata_json: Mapped[dict[str, Any]] = mapped_column(
         "metadata", JSON, default=dict, nullable=False
@@ -317,7 +330,7 @@ class CardReport(TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    user_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    reporter_reference: Mapped[str | None] = mapped_column(String(255), index=True)
     report_type: Mapped[ReportType] = mapped_column(
         enum_column(ReportType, "report_type"), nullable=False
     )
@@ -685,7 +698,7 @@ def protect_card_report_audit_fields(
     immutable_fields = (
         "card_id",
         "card_version_id",
-        "user_id",
+        "reporter_reference",
         "report_type",
         "message",
     )

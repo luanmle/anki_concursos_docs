@@ -21,3 +21,14 @@ def test_readiness_checks_database(session: Session) -> None:
 
     assert response.status_code == 200
     assert response.json() == {"status": "ready", "database": "ok"}
+
+
+def test_request_body_limit_rejects_oversized_payload() -> None:
+    response = TestClient(app).post(
+        "/reports",
+        content=b"x" * 262_145,
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 413
+    assert response.json() == {"detail": "Request body is too large"}

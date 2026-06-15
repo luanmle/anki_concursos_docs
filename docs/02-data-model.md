@@ -20,6 +20,7 @@ display_name
 password_hash
 role
 is_active
+credential_version
 last_login_at
 created_at
 updated_at
@@ -39,6 +40,8 @@ Regras:
 - senha nunca é armazenada em texto puro;
 - `password_hash` usa PBKDF2-HMAC-SHA256 com salt individual;
 - usuário inativo não pode autenticar nem continuar usando tokens;
+- alterações de senha, papel ou ativação incrementam `credential_version` e
+  revogam tokens emitidos anteriormente;
 - a autorização consulta o papel atual no banco, não apenas o papel no token;
 - `admin` gerencia usuários e possui todas as permissões;
 - `curator` cadastra, consulta e cria versões e decks;
@@ -189,7 +192,7 @@ Releases e seus itens são imutáveis após a criação.
 id
 card_id
 card_version_id
-user_id
+reporter_reference
 report_type
 message
 status
@@ -224,7 +227,9 @@ Regras:
 
 - report sempre aponta para `card_id` e `card_version_id`;
 - a versão deve pertencer ao mesmo cartão;
-- cartão, versão, autor, tipo e mensagem do report são imutáveis;
+- `reporter_reference` é uma referência opcional informada pelo cliente e não
+  representa identidade autenticada;
+- cartão, versão, referência, tipo e mensagem do report são imutáveis;
 - status terminal não pode ser reaberto;
 - reports não podem ser apagados;
 - o envio público aceita somente uma versão publicada.

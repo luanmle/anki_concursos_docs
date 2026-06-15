@@ -38,10 +38,12 @@ def create_deck(
 
 @router.get("", response_model=DeckListResponse)
 def list_decks(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
     _principal=Depends(require_staff),
     service: DeckService = Depends(get_deck_service),
 ) -> DeckListResponse:
-    return service.list_decks()
+    return service.list_decks(page=page, page_size=page_size)
 
 
 @router.get("/{deck_id}", response_model=DeckResponse)

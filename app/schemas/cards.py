@@ -7,10 +7,10 @@ from app.models.enums import CardStatus, CardVersionStatus
 
 
 class CardContentInput(BaseModel):
-    front_text: str = Field(min_length=1)
-    back_text: str = Field(min_length=1)
-    answer_text: str = Field(min_length=1)
-    explanation_text: str = Field(min_length=1)
+    front_text: str = Field(min_length=1, max_length=20_000)
+    back_text: str = Field(min_length=1, max_length=20_000)
+    answer_text: str = Field(min_length=1, max_length=20_000)
+    explanation_text: str = Field(min_length=1, max_length=20_000)
 
     @field_validator(
         "front_text",
@@ -28,7 +28,11 @@ class CardCreateRequest(CardContentInput):
     canonical_key: str = Field(min_length=1, max_length=255)
     discipline_id: uuid.UUID
     topic_id: uuid.UUID
-    change_reason: str = Field(default="Versao inicial", min_length=1)
+    change_reason: str = Field(
+        default="Versao inicial",
+        min_length=1,
+        max_length=2000,
+    )
     created_by: str = Field(min_length=1, max_length=255)
 
     @field_validator("canonical_key", "change_reason", "created_by", mode="before")
@@ -38,7 +42,7 @@ class CardCreateRequest(CardContentInput):
 
 
 class CardVersionCreateRequest(CardContentInput):
-    change_reason: str = Field(min_length=1)
+    change_reason: str = Field(min_length=1, max_length=2000)
     created_by: str = Field(min_length=1, max_length=255)
 
     @field_validator("change_reason", "created_by", mode="before")

@@ -154,8 +154,8 @@ Implementação:
 
 ## MVP 7 — Preparação para produção
 
-Status: implementação de código e validação PostgreSQL local concluídas em
-12 de junho de 2026; homologação externa e restore de backup ainda pendentes.
+Status: implementação de código concluída e reforçada em 15 de junho de 2026;
+homologação Heroku e restore no provedor ainda pendentes.
 
 Objetivo: transformar o backend funcional em uma base operacional confiável
 antes da construção da interface administrativa.
@@ -195,13 +195,21 @@ Implementação:
 - imagem Docker reconstruída e executada em configuração de produção;
 - backup e restore completos validados com comparação de dados e triggers;
 - `/ready`, login e `/auth/me` validados sobre o banco restaurado;
-- template DigitalOcean criado com pré-deploy, health checks e alertas.
+- configuração Heroku por `heroku.yml` e `Procfile`;
+- processo web usa `$PORT` e release phase executa o pré-deploy;
+- pool e TLS PostgreSQL configuráveis;
+- revogação de tokens por versão de credencial;
+- limite de payload e rate limit com memória limitada;
+- CI com PostgreSQL 17, lint, complexidade e cobertura;
+- endpoints de taxonomia e gestão administrativa de usuários;
+- listagem paginada e resumida de decks.
 
 Pendências externas:
 
-- autenticar o `doctl` em uma conta DigitalOcean;
-- implantar ambiente de homologação;
-- confirmar notificações dos alertas na conta do provedor.
+- criar e configurar o app de staging no Heroku;
+- anexar Heroku Postgres ao staging;
+- executar a suíte PostgreSQL e smoke test no staging;
+- configurar PGBackups, restore periódico, métricas e alertas.
 
 Critério de conclusão:
 
@@ -216,7 +224,8 @@ deploy em homologação
 
 ## MVP 8 — Interface administrativa essencial
 
-Status: planejado após o MVP 7.
+Status: backend pré-MVP 8 implementado; início condicionado à validação externa
+do staging Heroku.
 
 Objetivo: oferecer uma interface simples para administrar cartões e gerar o
 arquivo de importação do Anki sem acesso direto ao banco de dados.
@@ -224,6 +233,7 @@ arquivo de importação do Anki sem acesso direto ao banco de dados.
 Escopo obrigatório:
 
 - login de usuário administrativo;
+- seleção de disciplina e assunto pela API de taxonomia;
 - listar e buscar cartões;
 - consultar o conteúdo atual e o histórico de versões;
 - adicionar um cartão com sua versão inicial;

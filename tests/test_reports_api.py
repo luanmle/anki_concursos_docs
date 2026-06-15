@@ -1,5 +1,3 @@
-import uuid
-
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -55,7 +53,7 @@ def report_payload(card: dict, *, report_type: str = "wrong_answer") -> dict:
     return {
         "card_id": card["card_id"],
         "card_version_id": card["current_version"]["card_version_id"],
-        "user_id": "user-123",
+        "reporter_reference": "user-123",
         "report_type": report_type,
         "message": "O conteudo precisa de revisao.",
     }
@@ -76,6 +74,7 @@ def test_public_user_can_report_published_card_version(
         "card_version_id"
     ]
     assert body["status"] == "open"
+    assert body["reporter_reference"] == "user-123"
     assert body["review_task"]["status"] == "pending"
     assert body["review_task"]["decision"] is None
 

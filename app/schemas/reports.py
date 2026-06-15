@@ -1,7 +1,13 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from app.models.enums import (
     CardReportStatus,
@@ -14,22 +20,26 @@ from app.models.enums import (
 class ReportCreateRequest(BaseModel):
     card_id: uuid.UUID
     card_version_id: uuid.UUID
-    user_id: str | None = Field(default=None, max_length=255)
+    reporter_reference: str | None = Field(
+        default=None,
+        max_length=255,
+        validation_alias=AliasChoices("reporter_reference", "user_id"),
+    )
     report_type: ReportType
-    message: str = Field(min_length=1)
+    message: str = Field(min_length=1, max_length=5000)
 
-    @field_validator("user_id", "message", mode="before")
+    @field_validator("reporter_reference", "message", mode="before")
     @classmethod
     def strip_text(cls, value: object) -> object:
         return value.strip() if isinstance(value, str) else value
 
 
 class CuratedVersionInput(BaseModel):
-    front_text: str = Field(min_length=1)
-    back_text: str = Field(min_length=1)
-    answer_text: str = Field(min_length=1)
-    explanation_text: str = Field(min_length=1)
-    change_reason: str = Field(min_length=1)
+    front_text: str = Field(min_length=1, max_length=20_000)
+    back_text: str = Field(min_length=1, max_length=20_000)
+    answer_text: str = Field(min_length=1, max_length=20_000)
+    explanation_text: str = Field(min_length=1, max_length=20_000)
+    change_reason: str = Field(min_length=1, max_length=2000)
 
     @field_validator(
         "front_text",
@@ -47,7 +57,7 @@ class CuratedVersionInput(BaseModel):
 class ReportReviewRequest(BaseModel):
     decision: ReviewDecision
     reviewed_by: str = Field(min_length=1, max_length=255)
-    admin_comment: str = Field(min_length=1)
+    admin_comment: str = Field(min_length=1, max_length=5000)
     evidence_reviewed: bool = False
     proposed_version: CuratedVersionInput | None = None
 
@@ -89,7 +99,7 @@ class CardReportResponse(BaseModel):
     public_id: str
     card_version_id: uuid.UUID
     version_number: int
-    user_id: str | None
+    reporter_reference: str | None
     report_type: ReportType
     message: str
     status: CardReportStatus

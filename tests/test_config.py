@@ -22,6 +22,7 @@ def test_production_disables_docs_by_default() -> None:
         allow_legacy_admin_api_key=False,
         auth_secret_key="x" * 32,
         database_url="postgresql+psycopg://user:pass@db/app",
+        database_sslmode="require",
     )
 
     assert settings.docs_enabled is False
@@ -34,6 +35,7 @@ def test_production_rejects_default_auth_secret() -> None:
             app_env="production",
             allow_legacy_admin_api_key=False,
             database_url="postgresql+psycopg://user:pass@db/app",
+            database_sslmode="require",
         )
 
 
@@ -58,3 +60,15 @@ def test_native_postgresql_url_is_normalized_for_psycopg() -> None:
     assert settings.database_url == (
         "postgresql+psycopg://user:pass@db.example.com:25060/app"
     )
+
+
+def test_production_requires_database_tls() -> None:
+    with pytest.raises(ValidationError, match="DATABASE_SSLMODE"):
+        Settings(
+            _env_file=None,
+            app_env="production",
+            allow_legacy_admin_api_key=False,
+            auth_secret_key="x" * 32,
+            database_url="postgresql+psycopg://user:pass@db/app",
+            database_sslmode=None,
+        )

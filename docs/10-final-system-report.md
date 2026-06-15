@@ -213,14 +213,15 @@ permitida apenas quando explicitamente habilitada fora de produção.
 
 Validações executadas:
 
-- 66 testes automatizados locais aprovados;
+- 81 testes automatizados aprovados na validação pré-MVP 8;
+- 2 testes de integração aprovados contra PostgreSQL 17 ativo;
 - 1 teste de integração aprovado contra PostgreSQL 17 ativo;
 - migrations `0001` a `0006`, triggers, seed e bootstrap administrativo
   validados no PostgreSQL;
 - build da imagem, backup, restore e smoke test do banco restaurado aprovados;
 - compilação de `app`, `tests` e `migrations` sem erros;
 - `docker compose config` válido;
-- cadeia Alembic válida de `0001` até `0005`;
+- cadeia Alembic válida de `0001` até `0007`;
 - `git diff --check` sem erros.
 
 Cobertura comportamental relevante:
@@ -234,18 +235,19 @@ Cobertura comportamental relevante:
 - sincronização;
 - reports e decisões administrativas.
 
-Limitação de validação:
+Limitação da validação atual:
 
-- os testes funcionais usam SQLite em memória;
-- as migrations foram verificadas por geração SQL offline;
-- não foi executada uma suíte de integração contra PostgreSQL ativo.
+- os testes funcionais locais usam SQLite em memória;
+- a geração SQL offline foi validada até `20260615_0007`;
+- a suíte PostgreSQL aplicou migrations até `20260615_0007` e validou
+  imutabilidade, unicidade de releases e 13 triggers customizados;
+- staging, backup e restore no Heroku ainda precisam ser executados.
 
 ## Riscos e limitações
 
 ### Alta prioridade
 
-1. A suíte PostgreSQL foi validada localmente, mas ainda precisa ser executada
-   no ambiente de homologação do provedor.
+1. A suíte PostgreSQL deve passar no CI e ser repetida no Heroku staging.
 2. O rate limit de `POST /reports` é local por processo; múltiplas réplicas
    exigem limitação adicional no proxy ou armazenamento compartilhado.
 3. Backup e restore foram validados localmente; ainda falta repetir o

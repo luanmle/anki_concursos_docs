@@ -1,0 +1,12 @@
+build:
+  docker:
+    web: Dockerfile
+release:
+  image: web
+  command:
+    - python -m app.operations.predeploy
+run:
+  web:
+    image: web
+    command:
+      - sh -c "exec uvicorn app.main:app --host 0.0.0.0 --port $PORT"

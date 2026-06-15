@@ -2,6 +2,10 @@
 
 Data: 12 de junho de 2026.
 
+Este documento é um registro histórico da validação original. Em 15 de junho
+de 2026, o destino operacional principal passou de DigitalOcean para Heroku.
+O runbook vigente está em `docs/11-production-operations.md`.
+
 ## Ambiente local
 
 ```text

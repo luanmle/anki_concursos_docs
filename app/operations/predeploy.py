@@ -27,6 +27,7 @@ def run_migrations() -> None:
             (MIGRATION_LOCK_ID,),
         )
         try:
+            config.attributes["connection"] = connection
             command.upgrade(config, "head")
         finally:
             connection.exec_driver_sql(

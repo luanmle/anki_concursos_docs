@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import get_db
+from app.core.rate_limit import reset_rate_limits
 from app.main import app
 from app.models import Base
 
@@ -43,3 +44,8 @@ def client(session: Session) -> TestClient:
         )
     finally:
         app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def clear_rate_limits() -> None:
+    reset_rate_limits()

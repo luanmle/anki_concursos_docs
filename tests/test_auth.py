@@ -151,3 +151,115 @@ def test_reviewer_cannot_create_cards(session: Session) -> None:
 
     assert response.status_code == 403
     assert response.json() == {"detail": "Insufficient permissions"}
+
+
+def test_admin_can_list_and_update_users(session: Session) -> None:
+    admin = authenticated_client(
+        session,
+        email="management-admin@example.com",
+        role=UserRole.ADMIN,
+    )
+    managed = create_user(
+        session,
+        email="managed@example.com",
+        role=UserRole.REVIEWER,
+    )
+    try:
+        listed = admin.get("/admin/users", params={"page_size": 1})
+        updated = admin.patch(
+            f"/admin/users/{managed.id}",
+            json={"role": "curator", "is_active": False},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert listed.status_code == 200
+    assert listed.json()["total"] == 2
+    assert listed.json()["pages"] == 2
+    assert updated.status_code == 200
+    assert updated.json()["role"] == "curator"
+    assert updated.json()["is_active"] is False
+    session.refresh(managed)
+    assert managed.credential_version == 2
+
+
+def test_password_reset_revokes_existing_token(session: Session) -> None:
+    admin = authenticated_client(
+        session,
+        email="password-admin@example.com",
+        role=UserRole.ADMIN,
+    )
+    managed_client = authenticated_client(
+        session,
+        email="password-user@example.com",
+        role=UserRole.REVIEWER,
+    )
+    managed = session.query(User).filter_by(
+        email="password-user@example.com"
+    ).one()
+    try:
+        reset = admin.post(
+            f"/admin/users/{managed.id}/reset-password",
+            json={"password": "new-strong-password"},
+        )
+        revoked = managed_client.get("/auth/me")
+        relogin = TestClient(app).post(
+            "/auth/token",
+            json={
+                "email": managed.email,
+                "password": "new-strong-password",
+            },
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert reset.status_code == 200
+    assert revoked.status_code == 401
+    assert revoked.json() == {"detail": "Access token has been revoked"}
+    assert relogin.status_code == 200
+
+
+def test_last_active_admin_cannot_be_demoted(session: Session) -> None:
+    admin = authenticated_client(
+        session,
+        email="last-admin@example.com",
+        role=UserRole.ADMIN,
+    )
+    user = session.query(User).filter_by(email="last-admin@example.com").one()
+    try:
+        response = admin.patch(
+            f"/admin/users/{user.id}",
+            json={"role": "reviewer"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "At least one active administrator is required"
+    }
+
+
+def test_admin_can_be_demoted_when_another_active_admin_exists(
+    session: Session,
+) -> None:
+    acting = authenticated_client(
+        session,
+        email="acting-admin@example.com",
+        role=UserRole.ADMIN,
+    )
+    managed = create_user(
+        session,
+        email="managed-admin@example.com",
+        role=UserRole.ADMIN,
+    )
+    try:
+        response = acting.patch(
+            f"/admin/users/{managed.id}",
+            json={"role": "reviewer"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["role"] == "reviewer"

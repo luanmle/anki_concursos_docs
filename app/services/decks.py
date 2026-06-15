@@ -25,6 +25,7 @@ from app.schemas import (
 )
 from app.schemas.decks import (
     DeckCardResponse,
+    DeckSummaryResponse,
     ReleaseActionCounts,
     ReleaseItemResponse,
     ReleaseSummaryResponse,
@@ -74,11 +75,20 @@ class DeckService:
             ) from exc
         return self.get_deck(deck.id)
 
-    def list_decks(self) -> DeckListResponse:
-        decks = self.repository.list_all()
+    def list_decks(self, *, page: int, page_size: int) -> DeckListResponse:
+        decks, total = self.repository.list_decks(
+            page=page,
+            page_size=page_size,
+        )
         return DeckListResponse(
-            items=[self._deck_response(deck) for deck in decks],
-            total=len(decks),
+            items=[
+                self._deck_summary(deck, active_card_count)
+                for deck, active_card_count in decks
+            ],
+            page=page,
+            page_size=page_size,
+            total=total,
+            pages=math.ceil(total / page_size) if total else 0,
         )
 
     def get_deck(self, deck_id: uuid.UUID) -> DeckResponse:
@@ -251,48 +261,13 @@ class DeckService:
             if deck is None:
                 self._raise_deck_not_found()
 
-            previous_state: dict[uuid.UUID, uuid.UUID] = {}
-            for item in self.repository.release_items(deck.id):
-                if item.action in (ReleaseAction.ADDED, ReleaseAction.UPDATED):
-                    if item.card_version_id is not None:
-                        previous_state[item.card_id] = item.card_version_id
-                else:
-                    previous_state.pop(item.card_id, None)
-
-            active_memberships = {
-                membership.card_id: membership
-                for membership in deck.cards
-                if membership.removed_at is None
-            }
-            all_memberships = {
-                membership.card_id: membership for membership in deck.cards
-            }
-            release_changes: list[tuple[uuid.UUID, uuid.UUID | None, ReleaseAction]] = []
-
-            for card_id, previous_version_id in previous_state.items():
-                membership = active_memberships.get(card_id)
-                if membership is None:
-                    removed = all_memberships.get(card_id)
-                    action = (
-                        removed.removal_action
-                        if removed is not None and removed.removal_action is not None
-                        else ReleaseAction.REMOVED
-                    )
-                    release_changes.append((card_id, None, action))
-                elif membership.card_version_id != previous_version_id:
-                    release_changes.append(
-                        (
-                            card_id,
-                            membership.card_version_id,
-                            ReleaseAction.UPDATED,
-                        )
-                    )
-
-            for card_id, membership in active_memberships.items():
-                if card_id not in previous_state:
-                    release_changes.append(
-                        (card_id, membership.card_version_id, ReleaseAction.ADDED)
-                    )
+            previous_state = self._release_state(
+                self.repository.release_items(deck.id)
+            )
+            release_changes = self._release_changes(
+                previous_state,
+                deck.cards,
+            )
 
             if not release_changes:
                 raise HTTPException(
@@ -414,6 +389,77 @@ class DeckService:
             created_at=deck.created_at,
             updated_at=deck.updated_at,
         )
+
+    @staticmethod
+    def _deck_summary(
+        deck: Deck,
+        active_card_count: int,
+    ) -> DeckSummaryResponse:
+        return DeckSummaryResponse(
+            deck_id=deck.id,
+            name=deck.name,
+            discipline_id=deck.discipline_id,
+            description=deck.description,
+            status=deck.status,
+            active_card_count=active_card_count,
+            created_at=deck.created_at,
+            updated_at=deck.updated_at,
+        )
+
+    @staticmethod
+    def _release_state(
+        items: list[ReleaseItem],
+    ) -> dict[uuid.UUID, uuid.UUID]:
+        state: dict[uuid.UUID, uuid.UUID] = {}
+        for item in items:
+            if item.action in (ReleaseAction.ADDED, ReleaseAction.UPDATED):
+                if item.card_version_id is None:
+                    raise RuntimeError(
+                        "Release item is missing its published card version"
+                    )
+                state[item.card_id] = item.card_version_id
+            else:
+                state.pop(item.card_id, None)
+        return state
+
+    @staticmethod
+    def _release_changes(
+        previous_state: dict[uuid.UUID, uuid.UUID],
+        memberships: list[DeckCard],
+    ) -> list[tuple[uuid.UUID, uuid.UUID | None, ReleaseAction]]:
+        active = {
+            membership.card_id: membership
+            for membership in memberships
+            if membership.removed_at is None
+        }
+        all_memberships = {
+            membership.card_id: membership for membership in memberships
+        }
+        changes: list[tuple[uuid.UUID, uuid.UUID | None, ReleaseAction]] = []
+        for card_id, previous_version_id in previous_state.items():
+            membership = active.get(card_id)
+            if membership is None:
+                removed = all_memberships.get(card_id)
+                action = (
+                    removed.removal_action
+                    if removed is not None and removed.removal_action is not None
+                    else ReleaseAction.REMOVED
+                )
+                changes.append((card_id, None, action))
+            elif membership.card_version_id != previous_version_id:
+                changes.append(
+                    (
+                        card_id,
+                        membership.card_version_id,
+                        ReleaseAction.UPDATED,
+                    )
+                )
+        for card_id, membership in active.items():
+            if card_id not in previous_state:
+                changes.append(
+                    (card_id, membership.card_version_id, ReleaseAction.ADDED)
+                )
+        return changes
 
     @staticmethod
     def _release_response(release: Release) -> ReleaseResponse:

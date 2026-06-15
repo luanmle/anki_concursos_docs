@@ -100,6 +100,12 @@ fluxo principal enquanto exportações forem processadas de forma síncrona.
 - readiness check do PostgreSQL em `GET /ready`;
 - migrations serializadas, seed e bootstrap administrativo no pré-deploy;
 - documentação interativa desabilitável em produção.
+- endpoints autenticados de leitura de disciplinas e assuntos;
+- administração paginada de usuários, papéis, ativação e senha;
+- revogação de tokens por versão de credencial;
+- limite global de payload e rate limit com memória limitada;
+- configuração de pool, TLS e release phase para Heroku;
+- CI com PostgreSQL 17, lint, complexidade e cobertura.
 
 O schema inicial também contém tabelas de documentos e questões. Elas não
 fazem parte do escopo ativo e devem ser tratadas como candidatas a remoção em
@@ -165,6 +171,11 @@ POST /admin/reports/{report_id}/review
 POST /auth/token
 GET /auth/me
 POST /admin/users
+GET /admin/users
+PATCH /admin/users/{user_id}
+POST /admin/users/{user_id}/reset-password
+GET /disciplines
+GET /disciplines/{discipline_id}/topics
 ```
 
 Busca pública de cartão publicado:
@@ -185,5 +196,24 @@ Reports podem ser enviados sem a chave administrativa, mas somente para uma
 versão publicada. Listagem e decisões de curadoria exigem
 um usuário com papel `reviewer` ou `admin`.
 
-Operação de produção, PostgreSQL real, backup e restore estão descritos em
+Operação no Heroku, PostgreSQL real, backup e restore estão descritos em
 `docs/11-production-operations.md`.
+
+## Heroku
+
+O deploy por container usa `heroku.yml`:
+
+```text
+release -> python -m app.operations.predeploy
+web     -> uvicorn em $PORT
+```
+
+Variáveis adicionais obrigatórias em produção:
+
+```text
+DATABASE_SSLMODE=require
+TRUST_PROXY_HEADERS=true
+ALLOW_LEGACY_ADMIN_API_KEY=false
+```
+
+As versões testadas das dependências estão em `constraints.txt`.

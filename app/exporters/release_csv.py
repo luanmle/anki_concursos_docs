@@ -4,7 +4,6 @@ import io
 import uuid
 from dataclasses import dataclass
 
-
 CSV_COLUMNS = (
     "public_id",
     "card_id",

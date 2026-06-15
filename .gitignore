@@ -1,6 +1,9 @@
 .env
 .pytest_cache/
+.coverage
+.coverage.*
 .ruff_cache/
+.ruffdeps/
 .testdeps/
 .tools/
 .venv/

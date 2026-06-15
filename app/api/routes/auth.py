@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, status
+import uuid
+
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.rate_limit import limit_login_attempts
 from app.core.security import (
+    AuthPrincipal,
     create_access_token,
     require_admin,
     require_authenticated_user,
@@ -12,9 +15,12 @@ from app.models import User
 from app.repositories import UserRepository
 from app.schemas import (
     LoginRequest,
+    PasswordResetRequest,
     TokenResponse,
     UserCreateRequest,
+    UserListResponse,
     UserResponse,
+    UserUpdateRequest,
 )
 from app.services import AuthService
 from app.services.auth import user_response
@@ -63,3 +69,37 @@ def create_user(
     service: AuthService = Depends(get_auth_service),
 ) -> UserResponse:
     return user_response(service.create_user(payload))
+
+
+@admin_router.get("", response_model=UserListResponse)
+def list_users(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    service: AuthService = Depends(get_auth_service),
+) -> UserListResponse:
+    return service.list_users(page=page, page_size=page_size)
+
+
+@admin_router.patch("/{user_id}", response_model=UserResponse)
+def update_user(
+    user_id: uuid.UUID,
+    payload: UserUpdateRequest,
+    admin: AuthPrincipal = Depends(require_admin),
+    service: AuthService = Depends(get_auth_service),
+) -> UserResponse:
+    return user_response(
+        service.update_user(
+            user_id,
+            payload,
+            acting_user_id=admin.user_id,
+        )
+    )
+
+
+@admin_router.post("/{user_id}/reset-password", response_model=UserResponse)
+def reset_user_password(
+    user_id: uuid.UUID,
+    payload: PasswordResetRequest,
+    service: AuthService = Depends(get_auth_service),
+) -> UserResponse:
+    return user_response(service.reset_password(user_id, payload))

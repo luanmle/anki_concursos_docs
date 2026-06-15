@@ -74,6 +74,7 @@ def create_access_token(user: User) -> tuple[str, int]:
         "sub": str(user.id),
         "email": user.email,
         "role": user.role.value,
+        "ver": user.credential_version,
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(seconds=expires_in)).timestamp()),
     }
@@ -90,7 +91,8 @@ def create_access_token(user: User) -> tuple[str, int]:
         signing_input,
         hashlib.sha256,
     ).digest()
-    return f"{encoded_header}.{encoded_payload}.{_base64url_encode(signature)}", expires_in
+    token = f"{encoded_header}.{encoded_payload}.{_base64url_encode(signature)}"
+    return token, expires_in
 
 
 def _decode_access_token(token: str) -> dict[str, object]:
@@ -144,6 +146,20 @@ def require_authenticated_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Inactive or unknown user",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    try:
+        token_version = int(payload["ver"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid access token version",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+    if token_version != user.credential_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Access token has been revoked",
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user

@@ -10,7 +10,7 @@ from app.models.enums import DeckStatus, ReleaseAction
 class DeckCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     discipline_id: uuid.UUID | None = None
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=5000)
 
     @field_validator("name", mode="before")
     @classmethod
@@ -45,13 +45,27 @@ class DeckResponse(BaseModel):
     updated_at: datetime
 
 
+class DeckSummaryResponse(BaseModel):
+    deck_id: uuid.UUID
+    name: str
+    discipline_id: uuid.UUID | None
+    description: str | None
+    status: DeckStatus
+    active_card_count: int
+    created_at: datetime
+    updated_at: datetime
+
+
 class DeckListResponse(BaseModel):
-    items: list[DeckResponse]
+    items: list[DeckSummaryResponse]
+    page: int
+    page_size: int
     total: int
+    pages: int
 
 
 class ReleasePublishRequest(BaseModel):
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=5000)
 
 
 class ReleaseItemResponse(BaseModel):

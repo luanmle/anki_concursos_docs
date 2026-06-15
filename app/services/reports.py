@@ -47,7 +47,7 @@ class ReportService:
                     CardReport(
                         card_id=payload.card_id,
                         card_version_id=payload.card_version_id,
-                        user_id=payload.user_id,
+                        reporter_reference=payload.reporter_reference,
                         report_type=payload.report_type,
                         message=payload.message,
                         status=CardReportStatus.OPEN,
@@ -111,75 +111,12 @@ class ReportService:
                         status_code=status.HTTP_409_CONFLICT,
                         detail="Report has already been reviewed",
                     )
-                if (
-                    report.report_type == ReportType.OUTDATED_LAW
-                    and payload.decision
-                    == ReviewDecision.CONVERTED_TO_NEW_VERSION
-                    and not payload.evidence_reviewed
-                ):
-                    raise HTTPException(
-                        status_code=status.HTTP_409_CONFLICT,
-                        detail=(
-                            "Outdated law reports require evidence review "
-                            "before conversion"
-                        ),
-                    )
-
-                resulting_version_id = None
-                if (
-                    payload.decision
-                    == ReviewDecision.CONVERTED_TO_NEW_VERSION
-                ):
-                    proposed = payload.proposed_version
-                    if proposed is None:
-                        raise RuntimeError("Validated proposed version is missing")
-                    card = self.repository.get_card_for_update(report.card_id)
-                    if card is None:
-                        raise RuntimeError("Reported card could not be reloaded")
-                    content_hash = calculate_content_hash(
-                        front_text=proposed.front_text,
-                        back_text=proposed.back_text,
-                        answer_text=proposed.answer_text,
-                        explanation_text=proposed.explanation_text,
-                    )
-                    if any(
-                        version.content_hash == content_hash
-                        for version in card.versions
-                    ):
-                        raise HTTPException(
-                            status_code=status.HTTP_409_CONFLICT,
-                            detail="An identical card version already exists",
-                        )
-                    resulting_version = self.repository.create_version(
-                        CardVersion(
-                            card_id=card.id,
-                            version_number=self.repository.next_version_number(
-                                card.id
-                            ),
-                            front_text=proposed.front_text,
-                            back_text=proposed.back_text,
-                            answer_text=proposed.answer_text,
-                            explanation_text=proposed.explanation_text,
-                            change_reason=proposed.change_reason,
-                            created_by=payload.reviewed_by,
-                            status=CardVersionStatus.NEEDS_REVIEW,
-                            content_hash=content_hash,
-                        )
-                    )
-                    resulting_version_id = resulting_version.id
-                    report.status = CardReportStatus.RESOLVED
-                elif payload.decision == ReviewDecision.REJECTED:
-                    report.status = CardReportStatus.REJECTED
-                else:
-                    report.status = CardReportStatus.DUPLICATE
-
-                task.status = ReviewTaskStatus.COMPLETED
-                task.assigned_to = payload.reviewed_by
-                task.decision = payload.decision
-                task.admin_comment = payload.admin_comment
-                task.evidence_reviewed = payload.evidence_reviewed
-                task.resulting_card_version_id = resulting_version_id
-                task.reviewed_at = datetime.now(UTC)
+                self._validate_review_evidence(report.report_type, payload)
+                resulting_version_id = self._apply_review_decision(
+                    report,
+                    payload,
+                )
+                self._complete_task(task, payload, resulting_version_id)
                 self.session.flush()
         except IntegrityError as exc:
             self.session.rollback()
@@ -191,6 +128,92 @@ class ReportService:
         return self.get_report(report_id)
 
     @staticmethod
+    def _validate_review_evidence(
+        report_type: ReportType,
+        payload: ReportReviewRequest,
+    ) -> None:
+        if (
+            report_type == ReportType.OUTDATED_LAW
+            and payload.decision == ReviewDecision.CONVERTED_TO_NEW_VERSION
+            and not payload.evidence_reviewed
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "Outdated law reports require evidence review "
+                    "before conversion"
+                ),
+            )
+
+    def _apply_review_decision(
+        self,
+        report: CardReport,
+        payload: ReportReviewRequest,
+    ) -> uuid.UUID | None:
+        if payload.decision == ReviewDecision.CONVERTED_TO_NEW_VERSION:
+            report.status = CardReportStatus.RESOLVED
+            return self._create_resulting_version(report.card_id, payload)
+        if payload.decision == ReviewDecision.REJECTED:
+            report.status = CardReportStatus.REJECTED
+            return None
+        report.status = CardReportStatus.DUPLICATE
+        return None
+
+    def _create_resulting_version(
+        self,
+        card_id: uuid.UUID,
+        payload: ReportReviewRequest,
+    ) -> uuid.UUID:
+        proposed = payload.proposed_version
+        if proposed is None:
+            raise RuntimeError("Validated proposed version is missing")
+        card = self.repository.get_card_for_update(card_id)
+        if card is None:
+            raise RuntimeError("Reported card could not be reloaded")
+        content_hash = calculate_content_hash(
+            front_text=proposed.front_text,
+            back_text=proposed.back_text,
+            answer_text=proposed.answer_text,
+            explanation_text=proposed.explanation_text,
+        )
+        if any(
+            version.content_hash == content_hash for version in card.versions
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An identical card version already exists",
+            )
+        resulting_version = self.repository.create_version(
+            CardVersion(
+                card_id=card.id,
+                version_number=self.repository.next_version_number(card.id),
+                front_text=proposed.front_text,
+                back_text=proposed.back_text,
+                answer_text=proposed.answer_text,
+                explanation_text=proposed.explanation_text,
+                change_reason=proposed.change_reason,
+                created_by=payload.reviewed_by,
+                status=CardVersionStatus.NEEDS_REVIEW,
+                content_hash=content_hash,
+            )
+        )
+        return resulting_version.id
+
+    @staticmethod
+    def _complete_task(
+        task: ReviewTask,
+        payload: ReportReviewRequest,
+        resulting_version_id: uuid.UUID | None,
+    ) -> None:
+        task.status = ReviewTaskStatus.COMPLETED
+        task.assigned_to = payload.reviewed_by
+        task.decision = payload.decision
+        task.admin_comment = payload.admin_comment
+        task.evidence_reviewed = payload.evidence_reviewed
+        task.resulting_card_version_id = resulting_version_id
+        task.reviewed_at = datetime.now(UTC)
+
+    @staticmethod
     def _report_response(report: CardReport) -> CardReportResponse:
         task = report.review_task
         return CardReportResponse(
@@ -199,7 +222,7 @@ class ReportService:
             public_id=report.card.public_id,
             card_version_id=report.card_version_id,
             version_number=report.card_version.version_number,
-            user_id=report.user_id,
+            reporter_reference=report.reporter_reference,
             report_type=report.report_type,
             message=report.message,
             status=report.status,
