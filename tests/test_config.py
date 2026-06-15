@@ -78,6 +78,25 @@ def test_native_postgresql_url_is_normalized_for_psycopg() -> None:
     )
 
 
+def test_heroku_postgres_url_is_normalized_in_production(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("ALLOW_LEGACY_ADMIN_API_KEY", "false")
+    monkeypatch.setenv("AUTH_SECRET_KEY", "x" * 32)
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgres://user:pass@db.example.com:5432/app",
+    )
+    monkeypatch.setenv("DATABASE_SSLMODE", "require")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.database_url == (
+        "postgresql+psycopg://user:pass@db.example.com:5432/app"
+    )
+
+
 def test_production_requires_database_tls() -> None:
     with pytest.raises(ValidationError, match="DATABASE_SSLMODE"):
         Settings(

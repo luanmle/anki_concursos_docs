@@ -40,8 +40,8 @@ no início de cada dyno web.
 ## Heroku Postgres
 
 Anexar um add-on Heroku Postgres separado em staging e produção. O Heroku
-fornece `DATABASE_URL`; a aplicação normaliza URLs `postgresql://` para o driver
-`postgresql+psycopg://`.
+fornece `DATABASE_URL`; a aplicação normaliza URLs `postgres://` ou
+`postgresql://` para o driver `postgresql+psycopg://`.
 
 Configuração mínima:
 
