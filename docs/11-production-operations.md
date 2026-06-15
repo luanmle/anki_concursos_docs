@@ -72,6 +72,12 @@ TRUST_PROXY_HEADERS=true
 MAX_REQUEST_BODY_BYTES=262144
 ```
 
+Para múltiplas origens, `CORS_ORIGINS` usa uma lista separada por vírgulas:
+
+```text
+CORS_ORIGINS=https://admin.exemplo.com,https://admin2.exemplo.com
+```
+
 Depois da criação do primeiro administrador, remover
 `BOOTSTRAP_ADMIN_EMAIL` e `BOOTSTRAP_ADMIN_PASSWORD`.
 

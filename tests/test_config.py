@@ -51,6 +51,22 @@ def test_cors_origins_are_parsed_from_environment_format() -> None:
     ]
 
 
+def test_cors_origins_are_parsed_from_environment_variable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "CORS_ORIGINS",
+        "https://admin.example.com, http://localhost:3000",
+    )
+
+    settings = Settings(_env_file=None)
+
+    assert settings.cors_origins == [
+        "https://admin.example.com",
+        "http://localhost:3000",
+    ]
+
+
 def test_native_postgresql_url_is_normalized_for_psycopg() -> None:
     settings = Settings(
         _env_file=None,

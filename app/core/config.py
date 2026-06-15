@@ -1,7 +1,8 @@
 from functools import lru_cache
+from typing import Annotated
 
 from pydantic import field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 DEVELOPMENT_AUTH_SECRET = "development-auth-secret-change-me"
 
@@ -26,7 +27,7 @@ class Settings(BaseSettings):
     bootstrap_admin_email: str | None = None
     bootstrap_admin_password: str | None = None
     bootstrap_admin_name: str = "System administrator"
-    cors_origins: list[str] = []
+    cors_origins: Annotated[list[str], NoDecode] = []
     public_report_rate_limit: int = 20
     public_report_rate_window_seconds: int = 60
     login_rate_limit: int = 10
