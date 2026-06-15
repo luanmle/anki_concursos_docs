@@ -21,7 +21,7 @@ def run_migrations() -> None:
     if engine.dialect.name != "postgresql":
         command.upgrade(config, "head")
         return
-    with engine.connect() as connection:
+    with engine.begin() as connection:
         connection.exec_driver_sql(
             "SELECT pg_advisory_lock(%s)",
             (MIGRATION_LOCK_ID,),

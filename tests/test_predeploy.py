@@ -26,8 +26,10 @@ class FakeEngine:
 
     def __init__(self) -> None:
         self.connection = FakeConnection()
+        self.begin_calls = 0
 
-    def connect(self) -> FakeConnection:
+    def begin(self) -> FakeConnection:
+        self.begin_calls += 1
         return self.connection
 
 
@@ -50,6 +52,7 @@ def test_postgres_migrations_reuse_advisory_locked_connection(
         "connection": engine.connection,
         "revision": "head",
     }
+    assert engine.begin_calls == 1
     assert engine.connection.statements == [
         "SELECT pg_advisory_lock(%s)",
         "SELECT pg_advisory_unlock(%s)",

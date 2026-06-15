@@ -30,9 +30,10 @@ web      uvicorn app.main:app --host 0.0.0.0 --port $PORT
 A release phase:
 
 1. adquire advisory lock no PostgreSQL;
-2. aplica `alembic upgrade head` na mesma conexão bloqueada;
-3. executa o seed idempotente de taxonomia;
-4. cria o administrador inicial quando configurado.
+2. aplica `alembic upgrade head` na mesma conexão e transação bloqueadas;
+3. confirma a transação das migrations;
+4. executa o seed idempotente de taxonomia;
+5. cria o administrador inicial quando configurado.
 
 Uma falha impede a promoção da nova release. Migrations não devem ser executadas
 no início de cada dyno web.
