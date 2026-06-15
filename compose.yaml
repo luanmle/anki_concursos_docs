@@ -39,6 +39,7 @@ services:
       AUTH_SECRET_KEY: development-auth-secret-change-me
       BOOTSTRAP_ADMIN_EMAIL: admin@example.com
       BOOTSTRAP_ADMIN_PASSWORD: development-password
+      CORS_ORIGINS: http://localhost:5173
     command: >
       sh -c "python -m app.operations.predeploy &&
       uvicorn app.main:app --host 0.0.0.0 --port 8000"

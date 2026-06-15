@@ -13,6 +13,9 @@ import {
 } from './pages/ListPages'
 import { LoginPage } from './pages/LoginPage'
 import { CardDetailPage } from './pages/CardDetailPage'
+import { NewCardPage, NewCardVersionPage } from './pages/CardFormPage'
+import { DeckDetailPage, NewDeckPage } from './pages/DeckPages'
+import { ReportDetailPage } from './pages/ReportDetailPage'
 import { OperationPage } from './pages/OperationPage'
 import type { UserRole } from './types'
 
@@ -69,17 +72,49 @@ function AppRoutes() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="cards" element={<CardsPage />} />
-        <Route path="cards/new" element={<PlaceholderPage title="Novo cartão" />} />
+        <Route
+          path="cards/new"
+          element={
+            <ProtectedRoute roles={['admin', 'curator']}>
+              <NewCardPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="cards/:cardId" element={<CardDetailPage />} />
         <Route
           path="cards/:cardId/versions/new"
-          element={<PlaceholderPage title="Nova versão" />}
+          element={
+            <ProtectedRoute roles={['admin', 'curator']}>
+              <NewCardVersionPage />
+            </ProtectedRoute>
+          }
         />
         <Route path="decks" element={<DecksPage />} />
-        <Route path="decks/new" element={<PlaceholderPage title="Novo deck" />} />
-        <Route path="decks/:deckId" element={<PlaceholderPage title="Detalhe do deck" />} />
-        <Route path="reports" element={<ReportsPage />} />
-        <Route path="reports/:reportId" element={<PlaceholderPage title="Revisão de report" />} />
+        <Route
+          path="decks/new"
+          element={
+            <ProtectedRoute roles={['admin', 'curator']}>
+              <NewDeckPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="decks/:deckId" element={<DeckDetailPage />} />
+        <Route
+          path="reports"
+          element={
+            <ProtectedRoute roles={['admin', 'reviewer']}>
+              <ReportsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="reports/:reportId"
+          element={
+            <ProtectedRoute roles={['admin', 'reviewer']}>
+              <ReportDetailPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="users"
           element={

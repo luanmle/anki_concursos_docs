@@ -26,6 +26,30 @@ export interface Paginated<T> {
   pages: number
 }
 
+export interface Discipline {
+  discipline_id: string
+  name: string
+  parent_id: string | null
+}
+
+export interface Topic {
+  topic_id: string
+  discipline_id: string
+  name: string
+  parent_id: string | null
+}
+
+export interface DisciplineList {
+  items: Discipline[]
+  total: number
+}
+
+export interface TopicList {
+  discipline: Discipline
+  items: Topic[]
+  total: number
+}
+
 export interface CardVersion {
   card_version_id: string
   version_number: number
@@ -67,11 +91,57 @@ export interface DeckSummary {
   updated_at: string
 }
 
+export interface DeckCard {
+  card_id: string
+  public_id: string
+  card_version_id: string
+  version_number: number
+  added_at: string
+}
+
+export interface DeckDetail {
+  deck_id: string
+  name: string
+  discipline_id: string | null
+  description: string | null
+  status: string
+  cards: DeckCard[]
+  created_at: string
+  updated_at: string
+}
+
+export interface ReleaseActionCounts {
+  added: number
+  updated: number
+  removed: number
+  deprecated: number
+}
+
+export interface ReleaseSummary {
+  release_id: string
+  deck_id: string
+  release_number: number
+  published_at: string
+  description: string | null
+  item_count: number
+  actions: ReleaseActionCounts
+}
+
+export interface ReleaseList extends Paginated<ReleaseSummary> {
+  latest_release: number
+}
+
 export interface ReviewTask {
   review_task_id: string
   status: string
   assigned_to: string | null
   decision: string | null
+  admin_comment: string | null
+  evidence_reviewed: boolean
+  resulting_card_version_id: string | null
+  reviewed_at: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface Report {
