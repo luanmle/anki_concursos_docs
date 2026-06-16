@@ -6,6 +6,7 @@
 .ruffdeps/
 .testdeps/
 .tools/
+.stitch/
 .venv/
 __pycache__/
 *.py[cod]

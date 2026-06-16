@@ -22,8 +22,10 @@ import { formatDate } from '../lib/presentation'
 import type {
   CardSummary,
   DeckSummary,
+  DisciplineList,
   Paginated,
   Report,
+  TopicList,
   User,
 } from '../types'
 
@@ -33,8 +35,24 @@ export function CardsPage() {
   const [publicIdInput, setPublicIdInput] = useState('')
   const [publicId, setPublicId] = useState('')
   const [status, setStatus] = useState('')
+  const [disciplineId, setDisciplineId] = useState('')
+  const [topicId, setTopicId] = useState('')
+  const disciplines = useQuery({
+    queryKey: ['disciplines'],
+    queryFn: () => apiRequest<DisciplineList>('/disciplines', {}, token),
+  })
+  const topics = useQuery({
+    queryKey: ['topics', disciplineId],
+    enabled: Boolean(disciplineId),
+    queryFn: () =>
+      apiRequest<TopicList>(
+        `/disciplines/${disciplineId}/topics`,
+        {},
+        token,
+      ),
+  })
   const query = useQuery({
-    queryKey: ['cards', page, publicId, status],
+    queryKey: ['cards', page, publicId, status, disciplineId, topicId],
     queryFn: () => {
       const params = new URLSearchParams({
         page: String(page),
@@ -42,6 +60,8 @@ export function CardsPage() {
       })
       if (publicId) params.set('public_id', publicId)
       if (status) params.set('status', status)
+      if (disciplineId) params.set('discipline_id', disciplineId)
+      if (topicId) params.set('topic_id', topicId)
       return apiRequest<Paginated<CardSummary>>(
         `/cards?${params.toString()}`,
         {},
@@ -49,6 +69,9 @@ export function CardsPage() {
       )
     },
   })
+  const publishedCards = useCardCount('published', token)
+  const reviewCards = useCardCount('needs_review', token)
+  const reportedCards = useCardCount('reported', token)
 
   function applyFilters(event: FormEvent) {
     event.preventDefault()
@@ -57,28 +80,62 @@ export function CardsPage() {
   }
 
   return (
-    <>
-      <PageHeader
-        eyebrow="Base editorial"
-        title="Cartões"
-        description="Consulte identidades estáveis, versões atuais e estados editoriais."
-        action={
-          hasRole('admin', 'curator') ? (
-            <Link className="button button-primary" to="/cards/new">
-              <Plus size={18} /> Novo cartão
-            </Link>
-          ) : undefined
-        }
-      />
-      <form className="filter-panel" onSubmit={applyFilters}>
-        <label className="search-field">
-          <Search size={17} />
-          <span className="sr-only">Buscar por ID público</span>
-          <input
-            value={publicIdInput}
-            onChange={(event) => setPublicIdInput(event.target.value)}
-            placeholder="Buscar por ID público, ex.: AC-..."
-          />
+    <div className="cards-master-page">
+      <header className="master-list-header">
+        <div>
+          <p className="eyebrow">Base editorial</p>
+          <h1>Lista mestre de cartões</h1>
+          <p>
+            Gerencie e audite o repositório global de flashcards do Anki
+            Concursos.
+          </p>
+        </div>
+        {hasRole('admin', 'curator') && (
+          <Link className="button button-primary" to="/cards/new">
+            <Plus size={18} /> Novo cartão
+          </Link>
+        )}
+      </header>
+
+      <form className="filter-panel cards-filter-panel" onSubmit={applyFilters}>
+        <label>
+          <span>Disciplina</span>
+          <select
+            value={disciplineId}
+            onChange={(event) => {
+              setDisciplineId(event.target.value)
+              setTopicId('')
+              setPage(1)
+            }}
+          >
+            <option value="">Todas as disciplinas</option>
+            {disciplines.data?.items.map((discipline) => (
+              <option
+                key={discipline.discipline_id}
+                value={discipline.discipline_id}
+              >
+                {discipline.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Assunto</span>
+          <select
+            value={topicId}
+            disabled={!disciplineId || topics.isLoading}
+            onChange={(event) => {
+              setTopicId(event.target.value)
+              setPage(1)
+            }}
+          >
+            <option value="">Todos os assuntos</option>
+            {topics.data?.items.map((topic) => (
+              <option key={topic.topic_id} value={topic.topic_id}>
+                {topic.name}
+              </option>
+            ))}
+          </select>
         </label>
         <label>
           <span>Status</span>
@@ -97,6 +154,15 @@ export function CardsPage() {
             <option value="reported">Reportado</option>
             <option value="deprecated">Depreciado</option>
           </select>
+        </label>
+        <label className="search-field">
+          <Search size={17} />
+          <span className="sr-only">Buscar por ID público</span>
+          <input
+            value={publicIdInput}
+            onChange={(event) => setPublicIdInput(event.target.value)}
+            placeholder="Buscar por ID público, ex.: AC-..."
+          />
         </label>
         <button className="button button-secondary" type="submit">
           <Filter size={16} />
@@ -162,7 +228,59 @@ export function CardsPage() {
           )
         }
       </DataRegion>
-    </>
+      <section className="cards-summary-grid" aria-label="Resumo de cartões">
+        <SummaryMetric
+          label="Total de cartões"
+          value={query.data?.total}
+          detail="resultado do filtro atual"
+        />
+        <SummaryMetric
+          label="Cartões publicados"
+          value={publishedCards.data?.total}
+          detail="prontos para distribuição"
+        />
+        <SummaryMetric
+          label="Pendentes de revisão"
+          value={reviewCards.data?.total}
+          detail="aguardando decisão editorial"
+        />
+        <SummaryMetric
+          label="Reportados"
+          value={reportedCards.data?.total}
+          detail="exigem triagem"
+        />
+      </section>
+    </div>
+  )
+}
+
+function useCardCount(status: string, token: string | null) {
+  return useQuery({
+    queryKey: ['card-count', status],
+    queryFn: () =>
+      apiRequest<Paginated<CardSummary>>(
+        `/cards?page=1&page_size=1&status=${status}`,
+        {},
+        token,
+      ),
+  })
+}
+
+function SummaryMetric({
+  label,
+  value,
+  detail,
+}: {
+  label: string
+  value?: number
+  detail: string
+}) {
+  return (
+    <article className="summary-metric-card">
+      <small>{detail}</small>
+      <span>{label}</span>
+      <strong>{typeof value === 'number' ? value.toLocaleString('pt-BR') : '…'}</strong>
+    </article>
   )
 }
 
