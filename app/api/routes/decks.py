@@ -23,7 +23,9 @@ from app.services import DeckService
 router = APIRouter(prefix="/decks", tags=["decks"])
 
 
-def get_deck_service(session: Session = Depends(get_db)) -> DeckService:
+def get_deck_service(
+    session: Session = Depends(get_db, use_cache=False),
+) -> DeckService:
     return DeckService(DeckRepository(session))
 
 

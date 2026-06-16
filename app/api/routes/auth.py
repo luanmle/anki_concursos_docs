@@ -33,7 +33,9 @@ admin_router = APIRouter(
 )
 
 
-def get_auth_service(session: Session = Depends(get_db)) -> AuthService:
+def get_auth_service(
+    session: Session = Depends(get_db, use_cache=False),
+) -> AuthService:
     return AuthService(UserRepository(session))
 
 

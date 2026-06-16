@@ -6,9 +6,10 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import create_access_token, hash_password
 from app.main import app
-from app.models import Card, CardVersion, Discipline, Topic
-from app.models.enums import CardStatus, CardVersionStatus
+from app.models import Card, CardVersion, Discipline, Topic, User
+from app.models.enums import CardStatus, CardVersionStatus, UserRole
 
 
 def test_get_card_by_public_id(session: Session) -> None:
@@ -328,6 +329,25 @@ def csv_import_client(session: Session) -> TestClient:
     )
 
 
+def bearer_csv_import_client(session: Session) -> TestClient:
+    user = User(
+        email=f"curator-{uuid.uuid4().hex}@example.com",
+        display_name="CSV Curator",
+        password_hash=hash_password("csv-password"),
+        role=UserRole.CURATOR,
+    )
+    session.add(user)
+    session.commit()
+    token, _expires_in = create_access_token(user)
+
+    def override_get_db():
+        with Session(session.get_bind(), expire_on_commit=False) as request_session:
+            yield request_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    return TestClient(app, headers={"Authorization": f"Bearer {token}"})
+
+
 def test_import_csv_creates_cards_with_generated_identifiers(
     session: Session,
 ) -> None:
@@ -372,6 +392,36 @@ def test_import_csv_creates_cards_with_generated_identifiers(
     assert card.current_version is not None
     assert card.current_version.status == CardVersionStatus.NEEDS_REVIEW
     assert card.current_version.version_number == 1
+
+
+def test_import_csv_with_bearer_token_does_not_reuse_auth_transaction(
+    session: Session,
+) -> None:
+    discipline, topic = create_taxonomy(session, "Importacao Bearer")
+    csv_text = "\n".join(
+        [
+            "discipline,topic,front_text,back_text,answer_text,explanation_text",
+            (
+                f"{discipline.name},{topic.name},Pergunta bearer,"
+                "Verso bearer,Resposta bearer,Explicacao bearer"
+            ),
+        ]
+    )
+
+    client = bearer_csv_import_client(session)
+    try:
+        response = client.post(
+            "/card-imports/csv",
+            json={"csv_text": csv_text},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["created"] == 1
+    assert body["errors"] == 0
+    assert body["items"][0]["status"] == "created"
 
 
 def test_import_csv_reports_duplicates_without_creating_second_card(

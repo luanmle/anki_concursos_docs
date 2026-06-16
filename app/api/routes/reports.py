@@ -25,7 +25,7 @@ admin_router = APIRouter(
 
 
 def get_report_service(
-    session: Session = Depends(get_db),
+    session: Session = Depends(get_db, use_cache=False),
 ) -> ReportService:
     return ReportService(ReportRepository(session))
 

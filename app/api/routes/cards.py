@@ -28,7 +28,9 @@ router = APIRouter(prefix="/cards", tags=["cards"])
 import_router = APIRouter(prefix="/card-imports", tags=["card-imports"])
 
 
-def get_card_service(session: Session = Depends(get_db)) -> CardService:
+def get_card_service(
+    session: Session = Depends(get_db, use_cache=False),
+) -> CardService:
     return CardService(CardRepository(session))
 
 
