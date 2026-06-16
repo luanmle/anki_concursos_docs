@@ -12,6 +12,7 @@ const contentFields = {
 }
 
 export const cardCreateSchema = z.object({
+  card_kind: z.enum(['basic', 'cloze']),
   canonical_key: z
     .string()
     .trim()
