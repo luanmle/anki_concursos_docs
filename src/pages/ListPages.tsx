@@ -6,6 +6,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Upload,
 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
@@ -91,9 +92,14 @@ export function CardsPage() {
           </p>
         </div>
         {hasRole('admin', 'curator') && (
-          <Link className="button button-primary" to="/cards/new">
+          <div className="action-group">
+            <Link className="button button-secondary" to="/cards/import">
+              <Upload size={18} /> Importar CSV
+            </Link>
+            <Link className="button button-primary" to="/cards/new">
             <Plus size={18} /> Novo cartão
-          </Link>
+            </Link>
+          </div>
         )}
       </header>
 

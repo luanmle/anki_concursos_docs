@@ -283,6 +283,12 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
 }
 .button-secondary:hover { border-color: var(--outline); background: var(--surface-high); }
 .button-success { color: #001a12; background: var(--success); }
+.action-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
 .dashboard-page {
   display: grid;
@@ -667,6 +673,146 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
   line-height: 1;
 }
 
+.csv-import-page {
+  display: grid;
+  gap: 22px;
+}
+.csv-import-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, .8fr);
+  gap: 18px;
+  align-items: start;
+}
+.csv-import-card, .csv-rules-card, .csv-result-panel {
+  border: 1px solid var(--outline-variant);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(18, 18, 21, .96), rgba(15, 15, 18, .96));
+}
+.csv-import-card, .csv-rules-card {
+  padding: 24px;
+}
+.section-heading h2, .csv-rules-card h2 {
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 20px;
+}
+.section-heading p:last-child, .csv-rules-card li {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.file-drop-zone {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 190px;
+  margin-top: 20px;
+  padding: 28px;
+  border: 1px dashed #6d4cc7;
+  border-radius: 16px;
+  color: var(--muted);
+  background: rgba(124, 58, 237, .08);
+  text-align: center;
+  cursor: pointer;
+}
+.file-drop-zone strong {
+  color: var(--text);
+  font-size: 15px;
+}
+.file-drop-zone input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+.csv-options-grid {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 14px;
+  margin-top: 18px;
+}
+.csv-options-grid label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.csv-options-grid input, .csv-options-grid select {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  background: var(--surface-lowest);
+}
+.dry-run-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.dry-run-toggle input { margin-top: 3px; accent-color: var(--primary); }
+.csv-import-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+}
+.csv-import-actions span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.csv-rules-card ul {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding-left: 18px;
+}
+.csv-result-panel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+.csv-result-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.csv-result-summary div {
+  padding: 16px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+}
+.csv-result-summary span {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.csv-result-summary strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--text);
+  font-size: 28px;
+}
+.csv-status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.csv-status-cell svg { color: var(--primary); }
+
 .table-card {
   overflow: hidden;
   border: 1px solid var(--outline-variant);
@@ -748,17 +894,17 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   letter-spacing: .05em;
   text-transform: uppercase;
 }
-.status-published, .status-approved, .status-completed, .status-active, .status-admin {
+.status-published, .status-approved, .status-completed, .status-active, .status-admin, .status-created, .status-ready {
   color: #6ee7b7;
   border-color: #047857;
   background: var(--success-container);
 }
-.status-needs_review, .status-open, .status-pending, .status-in_review, .status-reviewer {
+.status-needs_review, .status-open, .status-pending, .status-in_review, .status-reviewer, .status-duplicate {
   color: #fde68a;
   border-color: #a16207;
   background: var(--warning-container);
 }
-.status-deprecated, .status-rejected, .status-inactive {
+.status-deprecated, .status-rejected, .status-inactive, .status-error {
   color: #fca5a5;
   border-color: #b91c1c;
   background: var(--danger-container);
@@ -1489,6 +1635,9 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   .workflow-panel { min-height: auto; padding: 26px; }
   .filter-panel { grid-template-columns: 1fr; }
   .cards-summary-grid { grid-template-columns: 1fr; }
+  .csv-import-layout, .csv-options-grid, .csv-result-summary {
+    grid-template-columns: 1fr;
+  }
   .table-card { overflow-x: auto; }
   .table-card table { min-width: 760px; }
   .operation-detail > div { grid-template-columns: 1fr; gap: 6px; }

@@ -14,6 +14,7 @@ import {
 import { LoginPage } from './pages/LoginPage'
 import { CardDetailPage } from './pages/CardDetailPage'
 import { NewCardPage, NewCardVersionPage } from './pages/CardFormPage'
+import { CardImportPage } from './pages/CardImportPage'
 import { DeckDetailPage, NewDeckPage } from './pages/DeckPages'
 import { ReportDetailPage } from './pages/ReportDetailPage'
 import { EditUserPage, NewUserPage } from './pages/UserPages'
@@ -73,6 +74,14 @@ function AppRoutes() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="cards" element={<CardsPage />} />
+        <Route
+          path="cards/import"
+          element={
+            <ProtectedRoute roles={['admin', 'curator']}>
+              <CardImportPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="cards/new"
           element={
