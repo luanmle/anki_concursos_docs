@@ -24,6 +24,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 from app.models.enums import (
+    CardKind,
     CardReportStatus,
     CardStatus,
     CardVersionStatus,
@@ -267,6 +268,13 @@ class Card(TimestampMixin, Base):
     status: Mapped[CardStatus] = mapped_column(
         enum_column(CardStatus, "card_status"),
         default=CardStatus.GENERATED,
+        nullable=False,
+    )
+    card_kind: Mapped[CardKind] = mapped_column(
+        enum_column(CardKind, "card_kind"),
+        default=CardKind.BASIC,
+        server_default=CardKind.BASIC.value,
+        index=True,
         nullable=False,
     )
 

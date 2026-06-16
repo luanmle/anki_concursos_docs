@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from app.exporters import CsvExport, ReleaseCsvRow, build_release_csv
 from app.models import Card, Deck, DeckCard, DeckSubscription, Release, ReleaseItem
 from app.models.enums import (
+    CardKind,
     CardStatus,
     CardVersionStatus,
     DeckStatus,
@@ -27,7 +28,6 @@ from app.schemas import (
     SubscribableDeckListResponse,
 )
 from app.schemas.decks import (
-    AnkiCardFields,
     AnkiDeckManifestResponse,
     AnkiDeckSyncResponse,
     AnkiSyncChangeResponse,
@@ -46,6 +46,28 @@ class DeckService:
         "comma": ",",
         "semicolon": ";",
         "tab": "\t",
+    }
+    ANKI_NOTE_TYPES = {
+        CardKind.BASIC: {
+            "note_type": "Anki Concursos Basic",
+            "fields": ["Front", "Back", "Answer", "Explanation"],
+            "field_mapping": {
+                "Front": "front_text",
+                "Back": "back_text",
+                "Answer": "answer_text",
+                "Explanation": "explanation_text",
+            },
+        },
+        CardKind.CLOZE: {
+            "note_type": "Anki Concursos Cloze",
+            "fields": ["Text", "Extra", "Answer", "Explanation"],
+            "field_mapping": {
+                "Text": "front_text",
+                "Extra": "back_text",
+                "Answer": "answer_text",
+                "Explanation": "explanation_text",
+            },
+        },
     }
 
     def __init__(self, repository: DeckRepository) -> None:
@@ -297,6 +319,14 @@ class DeckService:
                 "Answer": "answer_text",
                 "Explanation": "explanation_text",
             },
+            supported_note_types={
+                kind.value: {
+                    "note_type": config["note_type"],
+                    "fields": config["fields"],
+                    "field_mapping": config["field_mapping"],
+                }
+                for kind, config in self.ANKI_NOTE_TYPES.items()
+            },
             tags=[f"deck::{deck.id}"],
         )
 
@@ -487,6 +517,10 @@ class DeckService:
                 public_id=item.card.public_id,
                 card_id=item.card_id,
                 card_version_id=item.card_version.id,
+                card_kind=item.card.card_kind.value,
+                note_type=str(
+                    self.ANKI_NOTE_TYPES[item.card.card_kind]["note_type"]
+                ),
                 front_text=item.card_version.front_text,
                 back_text=item.card_version.back_text,
                 answer_text=item.card_version.answer_text,
@@ -594,18 +628,22 @@ class DeckService:
     ) -> AnkiSyncChangeResponse:
         fields = None
         new_card_version_id = None
+        card_kind = None
+        note_type = None
         if action in (ReleaseAction.ADDED, ReleaseAction.UPDATED):
             if item.card_version is None:
                 raise RuntimeError(
                     "Release item is missing its published card version"
                 )
             new_card_version_id = item.card_version.id
-            fields = AnkiCardFields(
-                Front=item.card_version.front_text,
-                Back=item.card_version.back_text,
-                Answer=item.card_version.answer_text,
-                Explanation=item.card_version.explanation_text,
-            )
+            card_kind = item.card.card_kind
+            note_config = self.ANKI_NOTE_TYPES[card_kind]
+            note_type = str(note_config["note_type"])
+            field_mapping = note_config["field_mapping"]
+            fields = {
+                field_name: getattr(item.card_version, source_column)
+                for field_name, source_column in field_mapping.items()
+            }
 
         return AnkiSyncChangeResponse(
             release_id=item.release_id,
@@ -616,6 +654,8 @@ class DeckService:
             public_id=item.card.public_id,
             old_card_version_id=old_card_version_id,
             new_card_version_id=new_card_version_id,
+            card_kind=card_kind.value if card_kind is not None else None,
+            note_type=note_type,
             fields=fields,
             tags=[f"deck::{item.release.deck_id}", f"card::{item.card.public_id}"],
         )

@@ -492,3 +492,60 @@ def test_import_csv_dry_run_validates_without_persisting(
     assert body["errors"] == 1
     assert [item["status"] for item in body["items"]] == ["ready", "error"]
     assert session.scalar(select(func.count()).select_from(Card)) == 0
+
+
+def test_import_csv_supports_cloze_cards(session: Session) -> None:
+    discipline, topic = create_taxonomy(session, "Importacao Cloze")
+    csv_text = "\n".join(
+        [
+            "discipline,topic,card_kind,front_text,back_text,answer_text,explanation_text",
+            (
+                f"{discipline.name},{topic.name},cloze,"
+                '"A Constituicao admite {{c1::habeas corpus}}.",'
+                "Extra cloze,Resposta cloze,Explicacao cloze"
+            ),
+        ]
+    )
+
+    client = csv_import_client(session)
+    try:
+        response = client.post("/card-imports/csv", json={"csv_text": csv_text})
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert item["status"] == "created"
+    assert item["card_kind"] == "cloze"
+
+    card = session.get(Card, uuid.UUID(item["card_id"]))
+    assert card is not None
+    assert card.card_kind == "cloze"
+    assert card.current_version.front_text == (
+        "A Constituicao admite {{c1::habeas corpus}}."
+    )
+
+
+def test_import_csv_rejects_cloze_without_cloze_markup(session: Session) -> None:
+    discipline, topic = create_taxonomy(session, "Importacao Cloze Invalido")
+    csv_text = "\n".join(
+        [
+            "discipline,topic,card_kind,front_text,back_text,answer_text,explanation_text",
+            (
+                f"{discipline.name},{topic.name},cloze,"
+                "Texto sem lacuna,Extra,Resposta,Explicacao"
+            ),
+        ]
+    )
+
+    client = csv_import_client(session)
+    try:
+        response = client.post("/card-imports/csv", json={"csv_text": csv_text})
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["created"] == 0
+    assert body["errors"] == 1
+    assert body["items"][0]["status"] == "error"

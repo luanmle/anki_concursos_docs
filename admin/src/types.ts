@@ -68,6 +68,8 @@ export interface CardSummary {
   card_id: string
   public_id: string
   canonical_key: string
+  card_kind: 'basic' | 'cloze'
+  note_type: string
   discipline_id: string
   topic_id: string
   status: string
@@ -84,6 +86,7 @@ export interface CardCsvImportRowResult {
   row_number: number
   status: 'created' | 'ready' | 'duplicate' | 'error' | string
   message: string
+  card_kind: 'basic' | 'cloze' | null
   public_id: string | null
   card_id: string | null
   card_version_id: string | null
@@ -198,14 +201,15 @@ export interface AnkiDeckManifest {
   note_type: string
   fields: string[]
   field_mapping: Record<string, string>
+  supported_note_types: Record<
+    string,
+    {
+      note_type: string
+      fields: string[]
+      field_mapping: Record<string, string>
+    }
+  >
   tags: string[]
-}
-
-export interface AnkiCardFields {
-  Front: string
-  Back: string
-  Answer: string
-  Explanation: string
 }
 
 export interface AnkiSyncChange {
@@ -217,7 +221,9 @@ export interface AnkiSyncChange {
   public_id: string
   old_card_version_id: string | null
   new_card_version_id: string | null
-  fields: AnkiCardFields | null
+  card_kind: 'basic' | 'cloze' | null
+  note_type: string | null
+  fields: Record<string, string> | null
   tags: string[]
 }
 

@@ -37,11 +37,18 @@ Campos:
 
 ## Formato Do CSV
 
-Formato recomendado usando nomes de taxonomia:
+Formato recomendado usando nomes de taxonomia para cartoes Basic:
 
 ```csv
-discipline,topic,front_text,back_text,answer_text,explanation_text,tags
-Direito Constitucional,Controle de constitucionalidade,Pergunta,Verso,Resposta,Explicacao,tag1 tag2
+discipline,topic,card_kind,front_text,back_text,answer_text,explanation_text,tags
+Direito Constitucional,Controle de constitucionalidade,basic,Pergunta,Verso,Resposta,Explicacao,tag1 tag2
+```
+
+Formato recomendado para cartoes Cloze:
+
+```csv
+discipline,topic,card_kind,text,extra,answer_text,explanation,tags
+Direito Constitucional,Remedios constitucionais,cloze,"A Constituicao admite {{c1::habeas corpus}}.","Art. 5, LXVIII.","Resposta definida no cloze.","Explicacao completa",tag1 tag2
 ```
 
 Formato alternativo usando IDs de taxonomia ja existentes:
@@ -57,6 +64,13 @@ Colunas obrigatorias de conteudo:
 - `back_text`
 - `answer_text`
 - `explanation_text`
+
+Para `card_kind=cloze`, o CSV pode usar `text` no lugar de `front_text`.
+Esse campo deve conter marcacoes cloze no formato `{{c1::...}}`. As colunas
+`extra`, `answer_text` e `explanation` sao mapeadas para os campos editoriais
+internos `back_text`, `answer_text` e `explanation_text`.
+
+`card_kind` e opcional. Quando omitido, o backend assume `basic`.
 
 A taxonomia deve ser informada por um destes pares:
 
@@ -108,6 +122,7 @@ A resposta traz um resumo e um resultado por linha:
       "row_number": 2,
       "status": "ready",
       "message": "Linha valida para importacao.",
+      "card_kind": "basic",
       "public_id": null,
       "card_id": null,
       "card_version_id": null

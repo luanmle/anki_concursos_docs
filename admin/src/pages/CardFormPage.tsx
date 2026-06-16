@@ -44,6 +44,7 @@ export function NewCardPage() {
   const form = useForm<CardCreateValues>({
     resolver: zodResolver(cardCreateSchema),
     defaultValues: {
+      card_kind: 'basic',
       canonical_key: '',
       discipline_id: '',
       topic_id: '',
@@ -52,6 +53,7 @@ export function NewCardPage() {
     },
   })
   const values = useWatch({ control: form.control }) as CardCreateValues
+  const cardKind = useWatch({ control: form.control, name: 'card_kind' })
   const disciplineId = useWatch({
     control: form.control,
     name: 'discipline_id',
@@ -127,6 +129,15 @@ export function NewCardPage() {
               />
             </Field>
             <Field
+              label="Tipo de cartao"
+              error={form.formState.errors.card_kind?.message}
+            >
+              <select {...form.register('card_kind')}>
+                <option value="basic">Basic</option>
+                <option value="cloze">Cloze</option>
+              </select>
+            </Field>
+            <Field
               label="Disciplina"
               error={form.formState.errors.discipline_id?.message}
             >
@@ -175,6 +186,7 @@ export function NewCardPage() {
           register={form.register as UseFormRegister<EditorValues>}
           errors={form.formState.errors}
           values={values}
+          cardKind={cardKind}
         />
 
         <section className="form-section">
@@ -300,6 +312,7 @@ export function NewCardVersionPage() {
           register={form.register as UseFormRegister<EditorValues>}
           errors={form.formState.errors}
           values={values}
+          cardKind={card.card_kind}
         />
         <section className="form-section">
           <SectionTitle
@@ -367,19 +380,23 @@ function ContentEditor({
   register,
   errors,
   values,
+  cardKind,
 }: {
   register: UseFormRegister<EditorValues>
   errors: FieldErrors<EditorValues>
   values: ContentValues
+  cardKind?: 'basic' | 'cloze'
 }) {
+  const isCloze = cardKind === 'cloze'
   const preview = useMemo(
     () => [
-      ['Frente', values.front_text],
+      [isCloze ? 'Texto cloze' : 'Frente', values.front_text],
       ['Resposta', values.answer_text],
-      ['Verso', values.back_text],
+      [isCloze ? 'Extra' : 'Verso', values.back_text],
       ['Explicação', values.explanation_text],
     ],
     [
+      isCloze,
       values.answer_text,
       values.back_text,
       values.explanation_text,

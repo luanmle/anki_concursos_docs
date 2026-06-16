@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -165,14 +165,8 @@ class AnkiDeckManifestResponse(BaseModel):
     note_type: str
     fields: list[str]
     field_mapping: dict[str, str]
+    supported_note_types: dict[str, dict[str, Any]]
     tags: list[str]
-
-
-class AnkiCardFields(BaseModel):
-    Front: str
-    Back: str
-    Answer: str
-    Explanation: str
 
 
 class AnkiSyncChangeResponse(BaseModel):
@@ -184,7 +178,9 @@ class AnkiSyncChangeResponse(BaseModel):
     public_id: str
     old_card_version_id: uuid.UUID | None
     new_card_version_id: uuid.UUID | None
-    fields: AnkiCardFields | None = None
+    card_kind: str | None = None
+    note_type: str | None = None
+    fields: dict[str, str] | None = None
     tags: list[str]
 
 

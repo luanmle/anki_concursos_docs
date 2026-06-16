@@ -156,6 +156,18 @@ Cartão de português
 Cartão de informática
 ```
 
+### Modelos oficiais atuais
+
+O sistema ja possui uma selecao oficial simples por `cards.card_kind`:
+
+- `basic`: usa o note type `Anki Concursos Basic`.
+- `cloze`: usa o note type `Anki Concursos Cloze`.
+
+Essa selecao cobre a sincronizacao inicial com o Anki sem criar tabelas extras.
+O texto cloze fica em `front_text` usando marcacoes `{{c1::...}}`, enquanto
+`back_text`, `answer_text` e `explanation_text` continuam preservados para
+compatibilidade editorial e exportacao.
+
 ## 4. Regras para IA de desenvolvimento
 
 Ao implementar novas funcionalidades, a IA deve seguir estas regras:

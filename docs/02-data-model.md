@@ -81,6 +81,7 @@ discipline_id
 topic_id
 current_version_id
 status
+card_kind
 created_at
 updated_at
 ```
@@ -90,6 +91,14 @@ de documento ou questão.
 
 `public_id` usa o formato `AC-` seguido de 32 caracteres hexadecimais
 maiúsculos. Ele é único, imutável, pesquisável e preservado entre versões.
+
+`card_kind` define o modelo pedagogico do cartao. Valores oficiais iniciais:
+
+- `basic`: mapeado para o note type `Anki Concursos Basic`.
+- `cloze`: mapeado para o note type `Anki Concursos Cloze`.
+
+Cartoes existentes assumem `basic`. O tipo pertence ao `card_id` estavel; novas
+versoes preservam o mesmo `card_kind`.
 
 ### card_versions
 

@@ -171,6 +171,7 @@ class ReportService:
         if card is None:
             raise RuntimeError("Reported card could not be reloaded")
         content_hash = calculate_content_hash(
+            card_kind=card.card_kind,
             front_text=proposed.front_text,
             back_text=proposed.back_text,
             answer_text=proposed.answer_text,

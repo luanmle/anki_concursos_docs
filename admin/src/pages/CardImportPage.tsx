@@ -8,8 +8,9 @@ import { ErrorState, PageHeader, StatusBadge } from '../components/ui'
 import type { CardCsvImportResponse } from '../types'
 
 const CSV_TEMPLATE = [
-  'discipline,topic,front_text,back_text,answer_text,explanation_text,tags',
-  'Direito Constitucional,Controle de constitucionalidade,"Pergunta do cartao","Verso do cartao","Resposta curta","Explicacao completa","tag1 tag2"',
+  'discipline,topic,card_kind,front_text,back_text,answer_text,explanation_text,tags',
+  'Direito Constitucional,Controle de constitucionalidade,basic,"Pergunta do cartao","Verso do cartao","Resposta curta","Explicacao completa","tag1 tag2"',
+  'Direito Constitucional,Remedios constitucionais,cloze,"A Constituicao admite {{c1::habeas corpus}} para proteger a liberdade de locomocao.","Art. 5, LXVIII.","Resposta definida no cloze.","Explicacao completa","tag1 tag2"',
 ].join('\n')
 
 export function CardImportPage() {
@@ -126,8 +127,8 @@ export function CardImportPage() {
             <Upload size={26} />
             <strong>{fileName || 'Escolher arquivo .csv'}</strong>
             <span>
-              Colunas minimas: discipline, topic, front_text, back_text,
-              answer_text, explanation_text.
+              Basic usa front_text, back_text, answer_text e explanation_text.
+              Cloze usa card_kind=cloze e texto com {'{{c1::...}}'}.
             </span>
             <input accept=".csv,text/csv" type="file" onChange={handleFileChange} />
           </label>
@@ -184,6 +185,7 @@ export function CardImportPage() {
           <h2>Como a plataforma evita duplicatas</h2>
           <ul>
             <li>O CSV nao precisa trazer card_id, public_id ou canonical_key.</li>
+            <li>Use card_kind basic ou cloze para escolher o modelo Anki.</li>
             <li>Conteudo identico gera o mesmo hash e entra como duplicado.</li>
             <li>Cartoes importados entram como needs_review.</li>
             <li>A coluna tags e aceita, mas ainda nao e gravada no banco.</li>
@@ -213,6 +215,7 @@ function ImportResult({ data }: { data: CardCsvImportResponse }) {
             <tr>
               <th>Linha</th>
               <th>Status</th>
+              <th>Tipo</th>
               <th>Mensagem</th>
               <th>ID publico</th>
             </tr>
@@ -231,6 +234,7 @@ function ImportResult({ data }: { data: CardCsvImportResponse }) {
                     <StatusBadge value={item.status} />
                   </span>
                 </td>
+                <td>{item.card_kind || '-'}</td>
                 <td>{item.message}</td>
                 <td>{item.public_id || '-'}</td>
               </tr>

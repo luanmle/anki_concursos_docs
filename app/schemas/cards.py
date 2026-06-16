@@ -3,10 +3,11 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.models.enums import CardStatus, CardVersionStatus
+from app.models.enums import CardKind, CardStatus, CardVersionStatus
 
 
 class CardContentInput(BaseModel):
+    card_kind: CardKind = CardKind.BASIC
     front_text: str = Field(min_length=1, max_length=20_000)
     back_text: str = Field(min_length=1, max_length=20_000)
     answer_text: str = Field(min_length=1, max_length=20_000)
@@ -71,6 +72,7 @@ class CardCsvImportRowResult(BaseModel):
     row_number: int
     status: str
     message: str
+    card_kind: CardKind | None = None
     public_id: str | None = None
     card_id: uuid.UUID | None = None
     card_version_id: uuid.UUID | None = None
@@ -105,6 +107,8 @@ class CardSummaryResponse(BaseModel):
     card_id: uuid.UUID
     public_id: str
     canonical_key: str
+    card_kind: CardKind
+    note_type: str
     discipline_id: uuid.UUID
     topic_id: uuid.UUID
     status: CardStatus

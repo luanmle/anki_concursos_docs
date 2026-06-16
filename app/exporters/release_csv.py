@@ -8,6 +8,8 @@ CSV_COLUMNS = (
     "public_id",
     "card_id",
     "card_version_id",
+    "card_kind",
+    "note_type",
     "front_text",
     "back_text",
     "answer_text",
@@ -21,6 +23,8 @@ class ReleaseCsvRow:
     public_id: str
     card_id: uuid.UUID
     card_version_id: uuid.UUID
+    card_kind: str
+    note_type: str
     front_text: str
     back_text: str
     answer_text: str
@@ -55,6 +59,8 @@ def build_release_csv(
                 "public_id": row.public_id,
                 "card_id": str(row.card_id),
                 "card_version_id": str(row.card_version_id),
+                "card_kind": row.card_kind,
+                "note_type": row.note_type,
                 "front_text": row.front_text,
                 "back_text": row.back_text,
                 "answer_text": row.answer_text,

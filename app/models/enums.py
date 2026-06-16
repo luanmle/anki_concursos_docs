@@ -34,6 +34,11 @@ class CardVersionStatus(StrEnum):
     SUPERSEDED = "superseded"
 
 
+class CardKind(StrEnum):
+    BASIC = "basic"
+    CLOZE = "cloze"
+
+
 class DeckStatus(StrEnum):
     DRAFT = "draft"
     PUBLISHED = "published"

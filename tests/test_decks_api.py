@@ -47,14 +47,18 @@ def create_card(
     discipline: Discipline,
     topic: Topic,
     canonical_key: str,
+    *,
+    card_kind: str = "basic",
+    front_text: str | None = None,
 ) -> dict:
     response = client.post(
         "/cards",
         json={
+            "card_kind": card_kind,
             "canonical_key": canonical_key,
             "discipline_id": str(discipline.id),
             "topic_id": str(topic.id),
-            "front_text": f"Frente {canonical_key}",
+            "front_text": front_text or f"Frente {canonical_key}",
             "back_text": f"Verso {canonical_key}",
             "answer_text": f"Resposta {canonical_key}",
             "explanation_text": f"Explicacao {canonical_key}",
@@ -399,6 +403,8 @@ def test_release_csv_is_utf8_escaped_configurable_and_deterministic(
             "public_id": card["public_id"],
             "card_id": card["card_id"],
             "card_version_id": card["current_version"]["card_version_id"],
+            "card_kind": "basic",
+            "note_type": "Anki Concursos Basic",
             "front_text": 'O que significa "ação"?\nExplique, brevemente.',
             "back_text": "É um conteúdo; com delimitadores.",
             "answer_text": "Ação pública",
@@ -625,6 +631,8 @@ def test_subscriber_can_fetch_manifest_and_initial_anki_snapshot(
                 "public_id": card["public_id"],
                 "old_card_version_id": None,
                 "new_card_version_id": card["current_version"]["card_version_id"],
+                "card_kind": "basic",
+                "note_type": "Anki Concursos Basic",
                 "fields": {
                     "Front": card["current_version"]["front_text"],
                     "Back": card["current_version"]["back_text"],
@@ -667,6 +675,53 @@ def test_addon_sync_requires_active_subscription(
         assert response.status_code == 403
         assert response.json() == {
             "detail": "Subscribe to this deck before syncing it"
+        }
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_addon_sync_returns_cloze_note_type(
+    session: Session, client: TestClient
+) -> None:
+    discipline, topic = create_taxonomy(session, "Addon Cloze")
+    card = approve_and_publish(
+        client,
+        create_card(
+            client,
+            discipline,
+            topic,
+            "addon-cloze-card",
+            card_kind="cloze",
+            front_text="A Constituicao admite {{c1::habeas corpus}}.",
+        ),
+    )
+    deck = create_deck(client, discipline, "Deck Addon Cloze")
+    assert client.post(
+        f"/decks/{deck['deck_id']}/cards",
+        json={"card_id": card["card_id"]},
+    ).status_code == 200
+    assert client.post(
+        f"/decks/{deck['deck_id']}/publish-release",
+        json={},
+    ).status_code == 201
+
+    bearer_client = create_bearer_client(session)
+    try:
+        assert bearer_client.post(
+            f"/subscriptions/{deck['deck_id']}"
+        ).status_code == 200
+        sync = bearer_client.get(
+            f"/addon/decks/{deck['deck_id']}/sync?since_release=0"
+        )
+        assert sync.status_code == 200
+        change = sync.json()["changes"][0]
+        assert change["card_kind"] == "cloze"
+        assert change["note_type"] == "Anki Concursos Cloze"
+        assert change["fields"] == {
+            "Text": "A Constituicao admite {{c1::habeas corpus}}.",
+            "Extra": card["current_version"]["back_text"],
+            "Answer": card["current_version"]["answer_text"],
+            "Explanation": card["current_version"]["explanation_text"],
         }
     finally:
         app.dependency_overrides.clear()

@@ -310,6 +310,12 @@ function AddonContractPreview({
         <span>Manifesto</span>
         <strong>{manifest.note_type}</strong>
         <p>Campos: {manifest.fields.join(', ')}</p>
+        <p>
+          Modelos suportados:{' '}
+          {Object.values(manifest.supported_note_types)
+            .map((note) => note.note_type)
+            .join(', ')}
+        </p>
         <pre>{JSON.stringify(manifest.field_mapping, null, 2)}</pre>
       </article>
       <article>

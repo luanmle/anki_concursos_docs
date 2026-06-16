@@ -10,7 +10,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
 from app.models import Card, CardVersion
-from app.models.enums import CardStatus, CardVersionStatus
+from app.models.enums import CardKind, CardStatus, CardVersionStatus
 from app.repositories import CardRepository
 from app.schemas import (
     CardCreateRequest,
@@ -31,9 +31,16 @@ CSV_REQUIRED_CONTENT_COLUMNS = {
     "explanation_text",
 }
 
+CLOZE_PATTERN = re.compile(r"\{\{c\d+::.+?\}\}")
+ANKI_NOTE_TYPES = {
+    CardKind.BASIC: "Anki Concursos Basic",
+    CardKind.CLOZE: "Anki Concursos Cloze",
+}
+
 
 def calculate_content_hash(
     *,
+    card_kind: CardKind = CardKind.BASIC,
     front_text: str,
     back_text: str,
     answer_text: str,
@@ -43,6 +50,7 @@ def calculate_content_hash(
         {
             "answer_text": answer_text,
             "back_text": back_text,
+            "card_kind": card_kind.value,
             "explanation_text": explanation_text,
             "front_text": front_text,
         },
@@ -62,12 +70,14 @@ class CardService:
         try:
             with self.session.begin():
                 self._validate_taxonomy(payload.discipline_id, payload.topic_id)
+                self._validate_content_for_kind(payload.card_kind, payload.front_text)
                 if self.repository.get_by_canonical_key(payload.canonical_key):
                     self._raise_canonical_key_conflict()
 
                 card = self.repository.create_card(
                     Card(
                         canonical_key=payload.canonical_key,
+                        card_kind=payload.card_kind,
                         discipline_id=payload.discipline_id,
                         topic_id=payload.topic_id,
                         status=CardStatus.NEEDS_REVIEW,
@@ -84,7 +94,10 @@ class CardService:
                         change_reason=payload.change_reason,
                         created_by=payload.created_by,
                         status=CardVersionStatus.NEEDS_REVIEW,
-                        content_hash=calculate_content_hash(**self._content(payload)),
+                        content_hash=calculate_content_hash(
+                            card_kind=payload.card_kind,
+                            **self._content(payload),
+                        ),
                     )
                 )
                 card.current_version_id = version.id
@@ -139,8 +152,12 @@ class CardService:
                 card = self.repository.get_by_id(card_id, for_update=True)
                 if card is None:
                     self._raise_card_not_found()
+                self._validate_content_for_kind(card.card_kind, payload.front_text)
 
-                content_hash = calculate_content_hash(**self._content(payload))
+                content_hash = calculate_content_hash(
+                    card_kind=card.card_kind,
+                    **self._content(payload),
+                )
                 if any(
                     version.content_hash == content_hash for version in card.versions
                 ):
@@ -276,8 +293,9 @@ class CardService:
         try:
             discipline_id = self._resolve_import_discipline(row)
             topic_id = self._resolve_import_topic(row, discipline_id)
-            content = self._import_row_content(row)
-            content_hash = calculate_content_hash(**content)
+            card_kind = self._import_row_kind(row)
+            content = self._import_row_content(row, card_kind)
+            content_hash = calculate_content_hash(card_kind=card_kind, **content)
             if content_hash in seen_hashes or self.repository.content_hash_exists(
                 content_hash
             ):
@@ -285,6 +303,7 @@ class CardService:
                 return CardCsvImportRowResult(
                     row_number=row_number,
                     status="duplicate",
+                    card_kind=card_kind,
                     message="Conteúdo idêntico já existe ou foi repetido no arquivo.",
                 )
             seen_hashes.add(content_hash)
@@ -293,12 +312,14 @@ class CardService:
                 return CardCsvImportRowResult(
                     row_number=row_number,
                     status="ready",
+                    card_kind=card_kind,
                     message="Linha válida para importação.",
                 )
 
             card = self.repository.create_card(
                 Card(
                     canonical_key=self._canonical_key_for_import(content_hash),
+                    card_kind=card_kind,
                     discipline_id=discipline_id,
                     topic_id=topic_id,
                     status=CardStatus.NEEDS_REVIEW,
@@ -323,6 +344,7 @@ class CardService:
             return CardCsvImportRowResult(
                 row_number=row_number,
                 status="created",
+                card_kind=card_kind,
                 message="Cartão criado com versão inicial em revisão.",
                 public_id=card.public_id,
                 card_id=card.id,
@@ -368,18 +390,23 @@ class CardService:
         columns = {
             column.strip().lstrip("\ufeff") for column in reader.fieldnames if column
         }
-        missing = sorted(CSV_REQUIRED_CONTENT_COLUMNS - columns)
+        has_basic_content = CSV_REQUIRED_CONTENT_COLUMNS.issubset(columns)
+        has_cloze_content = bool(
+            {"text", "card_kind"}.issubset(columns)
+            or {"text", "note_type"}.issubset(columns)
+        )
         has_taxonomy = (
             {"discipline_id", "topic_id"}.issubset(columns)
             or {"discipline", "topic"}.issubset(columns)
         )
-        if missing or not has_taxonomy:
+        if not (has_basic_content or has_cloze_content) or not has_taxonomy:
             required = sorted(CSV_REQUIRED_CONTENT_COLUMNS)
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=(
-                    "CSV must include content columns "
-                    f"{required} and either discipline/topic or "
+                    "CSV must include Basic content columns "
+                    f"{required} or Cloze columns card_kind/text, and either "
+                    "discipline/topic or "
                     "discipline_id/topic_id"
                 ),
             )
@@ -444,7 +471,40 @@ class CardService:
         return topic.id
 
     @staticmethod
-    def _import_row_content(row: dict[str, str]) -> dict[str, str]:
+    def _import_row_kind(row: dict[str, str]) -> CardKind:
+        raw_value = (row.get("card_kind") or row.get("note_type") or "basic").strip()
+        normalized = raw_value.lower().replace("anki concursos ", "")
+        if normalized in {"basic", "basico", "bÃ¡sico"}:
+            return CardKind.BASIC
+        if normalized == "cloze":
+            return CardKind.CLOZE
+        raise ValueError("card_kind/note_type deve ser basic ou cloze.")
+
+    @staticmethod
+    def _import_row_content(row: dict[str, str], card_kind: CardKind) -> dict[str, str]:
+        if card_kind == CardKind.CLOZE:
+            text = (row.get("text") or row.get("front_text") or "").strip()
+            if not text:
+                raise ValueError("Campos obrigatÃ³rios vazios: text.")
+            if not CLOZE_PATTERN.search(text):
+                raise ValueError("CartÃ£o cloze deve conter marcaÃ§Ã£o {{c1::...}}.")
+            return {
+                "front_text": text,
+                "back_text": (
+                    row.get("extra") or row.get("back_text") or "Sem complemento."
+                ).strip(),
+                "answer_text": (
+                    row.get("answer_text")
+                    or row.get("answer")
+                    or "Resposta definida nas lacunas cloze."
+                ).strip(),
+                "explanation_text": (
+                    row.get("explanation")
+                    or row.get("explanation_text")
+                    or "Sem explicaÃ§Ã£o complementar."
+                ).strip(),
+            }
+
         content = {
             column: row.get(column, "").strip()
             for column in CSV_REQUIRED_CONTENT_COLUMNS
@@ -471,6 +531,14 @@ class CardService:
         }
 
     @staticmethod
+    def _validate_content_for_kind(card_kind: CardKind, front_text: str) -> None:
+        if card_kind == CardKind.CLOZE and not CLOZE_PATTERN.search(front_text):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Cloze cards must include {{c1::...}} markup in front_text",
+            )
+
+    @staticmethod
     def _version_response(version: CardVersion) -> CardVersionResponse:
         return CardVersionResponse(
             card_version_id=version.id,
@@ -491,6 +559,8 @@ class CardService:
             card_id=card.id,
             public_id=card.public_id,
             canonical_key=card.canonical_key,
+            card_kind=card.card_kind,
+            note_type=ANKI_NOTE_TYPES[card.card_kind],
             discipline_id=card.discipline_id,
             topic_id=card.topic_id,
             status=card.status,

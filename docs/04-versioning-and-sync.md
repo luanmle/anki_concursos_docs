@@ -248,6 +248,28 @@ O manifesto informa como o add-on deve criar ou atualizar o note type local:
     "Answer": "answer_text",
     "Explanation": "explanation_text"
   },
+  "supported_note_types": {
+    "basic": {
+      "note_type": "Anki Concursos Basic",
+      "fields": ["Front", "Back", "Answer", "Explanation"],
+      "field_mapping": {
+        "Front": "front_text",
+        "Back": "back_text",
+        "Answer": "answer_text",
+        "Explanation": "explanation_text"
+      }
+    },
+    "cloze": {
+      "note_type": "Anki Concursos Cloze",
+      "fields": ["Text", "Extra", "Answer", "Explanation"],
+      "field_mapping": {
+        "Text": "front_text",
+        "Extra": "back_text",
+        "Answer": "answer_text",
+        "Explanation": "explanation_text"
+      }
+    }
+  },
   "tags": ["deck::deck_id"]
 }
 ```
@@ -259,6 +281,9 @@ O sync do add-on difere do sync administrativo em um ponto importante:
 
 Cada mudanca destinada ao add-on inclui os campos do cartao quando a acao e
 `added` ou `updated`. Acoes `removed` e `deprecated` retornam `fields = null`.
+Para acoes com conteudo, cada item tambem retorna `card_kind` e `note_type`;
+assim o add-on escolhe entre `Anki Concursos Basic` e `Anki Concursos Cloze`
+sem inferir pelo texto.
 
 O progresso do estudante continua pertencendo ao Anki local e deve ser
 associado pelo add-on ao `card_id`, nunca ao texto do cartao.
