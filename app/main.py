@@ -7,6 +7,7 @@ from app.api.routes.auth import (
 from app.api.routes.auth import (
     router as auth_router,
 )
+from app.api.routes.cards import import_router as card_imports_router
 from app.api.routes.cards import router as cards_router
 from app.api.routes.decks import router as decks_router
 from app.api.routes.health import router as health_router
@@ -54,6 +55,7 @@ app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(admin_users_router)
 app.include_router(taxonomy_router)
+app.include_router(card_imports_router)
 app.include_router(cards_router)
 app.include_router(decks_router)
 app.include_router(reports_router)

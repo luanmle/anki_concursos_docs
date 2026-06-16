@@ -80,6 +80,24 @@ export interface CardDetail extends CardSummary {
   versions: CardVersion[]
 }
 
+export interface CardCsvImportRowResult {
+  row_number: number
+  status: 'created' | 'ready' | 'duplicate' | 'error' | string
+  message: string
+  public_id: string | null
+  card_id: string | null
+  card_version_id: string | null
+}
+
+export interface CardCsvImportResponse {
+  dry_run: boolean
+  total_rows: number
+  created: number
+  duplicates: number
+  errors: number
+  items: CardCsvImportRowResult[]
+}
+
 export interface DeckSummary {
   deck_id: string
   name: string

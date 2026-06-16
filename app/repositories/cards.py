@@ -40,6 +40,25 @@ class CardRepository:
             select(Card).where(Card.canonical_key == canonical_key)
         )
 
+    def content_hash_exists(self, content_hash: str) -> bool:
+        statement = select(CardVersion.id).where(
+            CardVersion.content_hash == content_hash
+        )
+        return self.session.scalar(statement) is not None
+
+    def get_discipline_by_name(self, name: str) -> Discipline | None:
+        return self.session.scalar(
+            select(Discipline).where(func.lower(Discipline.name) == name.lower())
+        )
+
+    def get_topic_by_name(self, discipline_id: uuid.UUID, name: str) -> Topic | None:
+        return self.session.scalar(
+            select(Topic).where(
+                Topic.discipline_id == discipline_id,
+                func.lower(Topic.name) == name.lower(),
+            )
+        )
+
     def get_version(
         self, card_id: uuid.UUID, version_id: uuid.UUID
     ) -> CardVersion | None:

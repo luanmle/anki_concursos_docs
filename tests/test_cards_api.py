@@ -314,3 +314,131 @@ def test_create_identical_version_returns_conflict(
 
     assert response.status_code == 409
     assert response.json() == {"detail": "An identical card version already exists"}
+
+
+def csv_import_client(session: Session) -> TestClient:
+    def override_get_db():
+        with Session(session.get_bind(), expire_on_commit=False) as request_session:
+            yield request_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    return TestClient(
+        app,
+        headers={"X-Admin-API-Key": "development-admin-key"},
+    )
+
+
+def test_import_csv_creates_cards_with_generated_identifiers(
+    session: Session,
+) -> None:
+    discipline, topic = create_taxonomy(session, "Importacao CSV")
+    csv_text = "\n".join(
+        [
+            "discipline,topic,front_text,back_text,answer_text,explanation_text,tags",
+            (
+                f"{discipline.name},{topic.name},Pergunta importada,"
+                "Verso importado,Resposta importada,Explicacao importada,"
+                "tag_importada"
+            ),
+        ]
+    )
+
+    client = csv_import_client(session)
+    try:
+        response = client.post(
+            "/card-imports/csv",
+            json={"csv_text": csv_text},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total_rows"] == 1
+    assert body["created"] == 1
+    assert body["duplicates"] == 0
+    assert body["errors"] == 0
+    item = body["items"][0]
+    assert item["status"] == "created"
+    assert item["public_id"].startswith("AC-")
+    assert item["card_id"]
+    assert item["card_version_id"]
+
+    card = session.get(Card, uuid.UUID(item["card_id"]))
+    assert card is not None
+    assert card.public_id == item["public_id"]
+    assert card.canonical_key.startswith("csv-")
+    assert card.status == CardStatus.NEEDS_REVIEW
+    assert card.current_version is not None
+    assert card.current_version.status == CardVersionStatus.NEEDS_REVIEW
+    assert card.current_version.version_number == 1
+
+
+def test_import_csv_reports_duplicates_without_creating_second_card(
+    session: Session,
+) -> None:
+    discipline, topic = create_taxonomy(session, "Importacao Duplicada")
+    csv_text = "\n".join(
+        [
+            "discipline,topic,front_text,back_text,answer_text,explanation_text",
+            (
+                f"{discipline.name},{topic.name},Pergunta duplicada,"
+                "Verso,Resposta,Explicacao"
+            ),
+            (
+                f"{discipline.name},{topic.name},Pergunta duplicada,"
+                "Verso,Resposta,Explicacao"
+            ),
+        ]
+    )
+
+    client = csv_import_client(session)
+    try:
+        response = client.post("/card-imports/csv", json={"csv_text": csv_text})
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total_rows"] == 2
+    assert body["created"] == 1
+    assert body["duplicates"] == 1
+    assert body["errors"] == 0
+    assert [item["status"] for item in body["items"]] == ["created", "duplicate"]
+    assert session.scalar(select(func.count()).select_from(Card)) == 1
+
+
+def test_import_csv_dry_run_validates_without_persisting(
+    session: Session,
+) -> None:
+    discipline, topic = create_taxonomy(session, "Importacao Dry Run")
+    csv_text = "\n".join(
+        [
+            "discipline_id,topic_id,front_text,back_text,answer_text,explanation_text",
+            (
+                f"{discipline.id},{topic.id},Pergunta valida,"
+                "Verso,Resposta,Explicacao"
+            ),
+            (
+                f"{discipline.id},{topic.id},,"
+                "Verso sem frente,Resposta,Explicacao"
+            ),
+        ]
+    )
+
+    client = csv_import_client(session)
+    try:
+        response = client.post(
+            "/card-imports/csv",
+            json={"csv_text": csv_text, "dry_run": True},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["dry_run"] is True
+    assert body["created"] == 1
+    assert body["errors"] == 1
+    assert [item["status"] for item in body["items"]] == ["ready", "error"]
+    assert session.scalar(select(func.count()).select_from(Card)) == 0

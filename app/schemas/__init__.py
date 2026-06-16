@@ -9,6 +9,9 @@ from app.schemas.auth import (
 )
 from app.schemas.cards import (
     CardCreateRequest,
+    CardCsvImportRequest,
+    CardCsvImportResponse,
+    CardCsvImportRowResult,
     CardDetailResponse,
     CardListResponse,
     CardSummaryResponse,
@@ -44,6 +47,9 @@ __all__ = [
     "UserResponse",
     "UserUpdateRequest",
     "CardCreateRequest",
+    "CardCsvImportRequest",
+    "CardCsvImportResponse",
+    "CardCsvImportRowResult",
     "CardDetailResponse",
     "CardListResponse",
     "CardSummaryResponse",

@@ -14,6 +14,8 @@ from app.models.enums import CardStatus
 from app.repositories import CardRepository
 from app.schemas import (
     CardCreateRequest,
+    CardCsvImportRequest,
+    CardCsvImportResponse,
     CardDetailResponse,
     CardListResponse,
     CardSummaryResponse,
@@ -23,6 +25,7 @@ from app.schemas import (
 from app.services import CardService
 
 router = APIRouter(prefix="/cards", tags=["cards"])
+import_router = APIRouter(prefix="/card-imports", tags=["card-imports"])
 
 
 def get_card_service(session: Session = Depends(get_db)) -> CardService:
@@ -38,6 +41,15 @@ def create_card(
     return service.create_card(
         payload.model_copy(update={"created_by": principal.email})
     )
+
+
+@import_router.post("/csv", response_model=CardCsvImportResponse)
+def import_cards_csv(
+    payload: CardCsvImportRequest,
+    principal: AuthPrincipal = Depends(require_curator),
+    service: CardService = Depends(get_card_service),
+) -> CardCsvImportResponse:
+    return service.import_csv(payload, created_by=principal.email)
 
 
 @router.get("", response_model=CardListResponse)

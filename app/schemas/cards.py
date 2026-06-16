@@ -51,6 +51,40 @@ class CardVersionCreateRequest(CardContentInput):
         return value.strip() if isinstance(value, str) else value
 
 
+class CardCsvImportRequest(BaseModel):
+    csv_text: str = Field(min_length=1, max_length=2_000_000)
+    delimiter: str = Field(default=",", min_length=1, max_length=1)
+    dry_run: bool = False
+    default_change_reason: str = Field(
+        default="Importação CSV",
+        min_length=1,
+        max_length=2000,
+    )
+
+    @field_validator("csv_text", "default_change_reason", mode="before")
+    @classmethod
+    def strip_csv_metadata(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
+class CardCsvImportRowResult(BaseModel):
+    row_number: int
+    status: str
+    message: str
+    public_id: str | None = None
+    card_id: uuid.UUID | None = None
+    card_version_id: uuid.UUID | None = None
+
+
+class CardCsvImportResponse(BaseModel):
+    dry_run: bool
+    total_rows: int
+    created: int
+    duplicates: int
+    errors: int
+    items: list[CardCsvImportRowResult]
+
+
 class CardVersionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
