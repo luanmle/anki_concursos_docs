@@ -437,6 +437,29 @@ class Deck(TimestampMixin, Base):
     releases: Mapped[list["Release"]] = relationship(
         back_populates="deck", cascade="all, delete-orphan"
     )
+    subscriptions: Mapped[list["DeckSubscription"]] = relationship(
+        back_populates="deck", cascade="all, delete-orphan"
+    )
+
+
+class DeckSubscription(TimestampMixin, Base):
+    __tablename__ = "deck_subscriptions"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    deck_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("decks.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    unsubscribed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    user: Mapped[User] = relationship()
+    deck: Mapped[Deck] = relationship(back_populates="subscriptions")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "deck_id", name="uq_deck_subscription_user_deck"),
+    )
 
 
 class DeckCard(Base):

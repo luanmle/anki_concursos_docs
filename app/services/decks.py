@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
 from app.exporters import CsvExport, ReleaseCsvRow, build_release_csv
-from app.models import Card, Deck, DeckCard, Release, ReleaseItem
+from app.models import Card, Deck, DeckCard, DeckSubscription, Release, ReleaseItem
 from app.models.enums import (
     CardStatus,
     CardVersionStatus,
@@ -18,17 +18,25 @@ from app.schemas import (
     DeckCreateRequest,
     DeckListResponse,
     DeckResponse,
+    DeckSubscriptionListResponse,
+    DeckSubscriptionResponse,
     DeckSyncResponse,
     ReleaseListResponse,
     ReleasePublishRequest,
     ReleaseResponse,
+    SubscribableDeckListResponse,
 )
 from app.schemas.decks import (
+    AnkiCardFields,
+    AnkiDeckManifestResponse,
+    AnkiDeckSyncResponse,
+    AnkiSyncChangeResponse,
     DeckCardResponse,
     DeckSummaryResponse,
     ReleaseActionCounts,
     ReleaseItemResponse,
     ReleaseSummaryResponse,
+    SubscribableDeckResponse,
     SyncChangeResponse,
 )
 
@@ -89,6 +97,97 @@ class DeckService:
             page_size=page_size,
             total=total,
             pages=math.ceil(total / page_size) if total else 0,
+        )
+
+    def list_subscribable_decks(
+        self,
+        *,
+        user_id: uuid.UUID,
+        page: int,
+        page_size: int,
+    ) -> SubscribableDeckListResponse:
+        decks, total = self.repository.list_published_decks(
+            user_id=user_id,
+            page=page,
+            page_size=page_size,
+        )
+        return SubscribableDeckListResponse(
+            items=[
+                SubscribableDeckResponse(
+                    **self._deck_summary(deck, active_card_count).model_dump(),
+                    latest_release=latest_release,
+                    subscribed=subscribed,
+                )
+                for deck, active_card_count, latest_release, subscribed in decks
+            ],
+            page=page,
+            page_size=page_size,
+            total=total,
+            pages=math.ceil(total / page_size) if total else 0,
+        )
+
+    def list_subscriptions(
+        self, *, user_id: uuid.UUID
+    ) -> DeckSubscriptionListResponse:
+        subscriptions = self.repository.list_active_subscriptions(user_id)
+        return DeckSubscriptionListResponse(
+            items=[
+                self._subscription_response(
+                    subscription,
+                    active_card_count=active_card_count,
+                    latest_release=latest_release,
+                )
+                for subscription, active_card_count, latest_release in subscriptions
+            ],
+            total=len(subscriptions),
+        )
+
+    def subscribe(
+        self, deck_id: uuid.UUID, *, user_id: uuid.UUID
+    ) -> DeckSubscriptionResponse:
+        with self.session.begin():
+            deck = self.repository.get_by_id(deck_id, for_update=True)
+            if deck is None:
+                self._raise_deck_not_found()
+            if deck.status != DeckStatus.PUBLISHED:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Only published decks can be subscribed to",
+                )
+
+            subscription = self.repository.get_subscription(user_id, deck.id)
+            if subscription is None:
+                subscription = self.repository.save_subscription(
+                    DeckSubscription(user_id=user_id, deck_id=deck.id)
+                )
+                subscription.deck = deck
+            else:
+                subscription.unsubscribed_at = None
+            self.session.flush()
+
+        return self._subscription_response(
+            subscription,
+            active_card_count=self._active_card_count(deck),
+            latest_release=self.repository.latest_release_number(deck.id),
+        )
+
+    def unsubscribe(
+        self, deck_id: uuid.UUID, *, user_id: uuid.UUID
+    ) -> DeckSubscriptionResponse:
+        with self.session.begin():
+            subscription = self.repository.get_subscription(user_id, deck_id)
+            if subscription is None or subscription.unsubscribed_at is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Active subscription not found",
+                )
+            subscription.unsubscribed_at = datetime.now(UTC)
+            self.session.flush()
+
+        return self._subscription_response(
+            subscription,
+            active_card_count=self._active_card_count(subscription.deck),
+            latest_release=self.repository.latest_release_number(deck_id),
         )
 
     def get_deck(self, deck_id: uuid.UUID) -> DeckResponse:
@@ -174,6 +273,56 @@ class DeckService:
                 state.pop(item.card_id, None)
 
         return DeckSyncResponse(
+            deck_id=deck_id,
+            from_release=since_release,
+            to_release=latest_release,
+            has_changes=bool(changes),
+            changes=changes,
+        )
+
+    def anki_manifest(
+        self, deck_id: uuid.UUID, *, user_id: uuid.UUID
+    ) -> AnkiDeckManifestResponse:
+        deck = self._require_active_subscription(user_id, deck_id).deck
+        return AnkiDeckManifestResponse(
+            deck_id=deck.id,
+            name=deck.name,
+            description=deck.description,
+            latest_release=self.repository.latest_release_number(deck.id),
+            note_type="Anki Concursos Basic",
+            fields=["Front", "Back", "Answer", "Explanation"],
+            field_mapping={
+                "Front": "front_text",
+                "Back": "back_text",
+                "Answer": "answer_text",
+                "Explanation": "explanation_text",
+            },
+            tags=[f"deck::{deck.id}"],
+        )
+
+    def anki_sync(
+        self,
+        deck_id: uuid.UUID,
+        *,
+        user_id: uuid.UUID,
+        since_release: int,
+    ) -> AnkiDeckSyncResponse:
+        self._require_active_subscription(user_id, deck_id)
+        latest_release = self.repository.latest_release_number(deck_id)
+        if since_release > 0 and not self.repository.release_number_exists(
+            deck_id, since_release
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Release number not found in this deck",
+            )
+
+        if since_release == 0:
+            changes = self._anki_snapshot_changes(deck_id, latest_release)
+        else:
+            changes = self._anki_delta_changes(deck_id, latest_release, since_release)
+
+        return AnkiDeckSyncResponse(
             deck_id=deck_id,
             from_release=since_release,
             to_release=latest_release,
@@ -363,6 +512,133 @@ class DeckService:
                 f"deck::{deck_id}",
                 f"card::{card.public_id}",
             )
+        )
+
+    def _require_active_subscription(
+        self, user_id: uuid.UUID, deck_id: uuid.UUID
+    ) -> DeckSubscription:
+        subscription = self.repository.get_subscription(user_id, deck_id)
+        if subscription is None or subscription.unsubscribed_at is not None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Subscribe to this deck before syncing it",
+            )
+        if subscription.deck.status != DeckStatus.PUBLISHED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Deck is not published",
+            )
+        return subscription
+
+    def _anki_snapshot_changes(
+        self, deck_id: uuid.UUID, latest_release: int
+    ) -> list[AnkiSyncChangeResponse]:
+        snapshot: dict[uuid.UUID, ReleaseItem] = {}
+        for item in self.repository.release_items_through(deck_id, latest_release):
+            if item.action in (ReleaseAction.ADDED, ReleaseAction.UPDATED):
+                if item.card_version is None:
+                    raise RuntimeError(
+                        "Release item is missing its published card version"
+                    )
+                snapshot[item.card_id] = item
+            else:
+                snapshot.pop(item.card_id, None)
+
+        return [
+            self._anki_change_response(
+                item,
+                action=ReleaseAction.ADDED,
+                old_card_version_id=None,
+            )
+            for item in sorted(
+                snapshot.values(),
+                key=lambda value: value.card.public_id,
+            )
+        ]
+
+    def _anki_delta_changes(
+        self,
+        deck_id: uuid.UUID,
+        latest_release: int,
+        since_release: int,
+    ) -> list[AnkiSyncChangeResponse]:
+        state: dict[uuid.UUID, uuid.UUID] = {}
+        changes: list[AnkiSyncChangeResponse] = []
+        for item in self.repository.release_items_through(deck_id, latest_release):
+            old_version_id = state.get(item.card_id)
+            if item.release.release_number > since_release:
+                changes.append(
+                    self._anki_change_response(
+                        item,
+                        action=item.action,
+                        old_card_version_id=old_version_id,
+                    )
+                )
+
+            if item.action in (ReleaseAction.ADDED, ReleaseAction.UPDATED):
+                if item.card_version_id is None:
+                    raise RuntimeError(
+                        "Release item is missing its published card version"
+                    )
+                state[item.card_id] = item.card_version_id
+            else:
+                state.pop(item.card_id, None)
+        return changes
+
+    def _anki_change_response(
+        self,
+        item: ReleaseItem,
+        *,
+        action: ReleaseAction,
+        old_card_version_id: uuid.UUID | None,
+    ) -> AnkiSyncChangeResponse:
+        fields = None
+        new_card_version_id = None
+        if action in (ReleaseAction.ADDED, ReleaseAction.UPDATED):
+            if item.card_version is None:
+                raise RuntimeError(
+                    "Release item is missing its published card version"
+                )
+            new_card_version_id = item.card_version.id
+            fields = AnkiCardFields(
+                Front=item.card_version.front_text,
+                Back=item.card_version.back_text,
+                Answer=item.card_version.answer_text,
+                Explanation=item.card_version.explanation_text,
+            )
+
+        return AnkiSyncChangeResponse(
+            release_id=item.release_id,
+            release_number=item.release.release_number,
+            published_at=self._as_utc(item.release.published_at),
+            action=action,
+            card_id=item.card_id,
+            public_id=item.card.public_id,
+            old_card_version_id=old_card_version_id,
+            new_card_version_id=new_card_version_id,
+            fields=fields,
+            tags=[f"deck::{item.release.deck_id}", f"card::{item.card.public_id}"],
+        )
+
+    @staticmethod
+    def _active_card_count(deck: Deck) -> int:
+        return sum(1 for membership in deck.cards if membership.removed_at is None)
+
+    @staticmethod
+    def _subscription_response(
+        subscription: DeckSubscription,
+        *,
+        active_card_count: int,
+        latest_release: int,
+    ) -> DeckSubscriptionResponse:
+        return DeckSubscriptionResponse(
+            subscription_id=subscription.id,
+            deck_id=subscription.deck_id,
+            deck_name=subscription.deck.name,
+            latest_release=latest_release,
+            active_card_count=active_card_count,
+            subscribed_at=subscription.created_at,
+            unsubscribed_at=subscription.unsubscribed_at,
         )
 
     @staticmethod

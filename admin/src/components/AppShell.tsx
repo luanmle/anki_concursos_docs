@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  PlugZap,
   ShieldCheck,
   Users,
   X,
@@ -20,6 +21,7 @@ const baseNav = [
   { to: '/', label: 'Visão geral', icon: LayoutDashboard },
   { to: '/cards', label: 'Cartões', icon: Library },
   { to: '/decks', label: 'Decks', icon: BookOpenCheck },
+  { to: '/addon', label: 'Add-on', icon: PlugZap },
   { to: '/operation', label: 'Operação', icon: Activity },
 ]
 
@@ -32,14 +34,14 @@ export function AppShell() {
     'STAGING'
   ).toUpperCase()
   const nav = [
-    ...baseNav.slice(0, 3),
+    ...baseNav.slice(0, 4),
     ...(hasRole('admin', 'reviewer')
       ? [{ to: '/reports', label: 'Reports', icon: FileWarning }]
       : []),
     ...(hasRole('admin')
       ? [{ to: '/users', label: 'Usuários', icon: Users }]
       : []),
-    baseNav[3],
+    baseNav[4],
   ]
 
   return (

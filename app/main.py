@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes.addon import router as addon_router
 from app.api.routes.auth import (
     admin_router as admin_users_router,
 )
@@ -17,6 +18,7 @@ from app.api.routes.reports import (
 from app.api.routes.reports import (
     router as reports_router,
 )
+from app.api.routes.subscriptions import router as subscriptions_router
 from app.api.routes.taxonomy import router as taxonomy_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
@@ -55,8 +57,10 @@ app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(admin_users_router)
 app.include_router(taxonomy_router)
+app.include_router(subscriptions_router)
 app.include_router(card_imports_router)
 app.include_router(cards_router)
 app.include_router(decks_router)
+app.include_router(addon_router)
 app.include_router(reports_router)
 app.include_router(admin_reports_router)

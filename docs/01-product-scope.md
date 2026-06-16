@@ -87,6 +87,20 @@ release_number
 As mudanças são aplicadas sequencialmente. O sistema não acessa o banco interno
 do Anki e não armazena o progresso de revisão do usuário.
 
+### Assinaturas de decks
+
+O produto passa a tratar decks publicados como unidade principal de distribuicao.
+Um usuario autenticado pode assinar um deck e o add-on do Anki pode consultar:
+
+```text
+GET /addon/decks/{deck_id}/manifest
+GET /addon/decks/{deck_id}/sync?since_release=0
+```
+
+O manifesto descreve o note type e os campos esperados pelo Anki. O sync do
+add-on entrega snapshot inicial ou deltas posteriores, sempre preservando
+`card_id`, `public_id` e `card_version_id`.
+
 Endpoint conceitual:
 
 ```text

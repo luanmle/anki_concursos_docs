@@ -64,6 +64,34 @@ class DeckListResponse(BaseModel):
     pages: int
 
 
+class SubscribableDeckResponse(DeckSummaryResponse):
+    latest_release: int
+    subscribed: bool
+
+
+class SubscribableDeckListResponse(BaseModel):
+    items: list[SubscribableDeckResponse]
+    page: int
+    page_size: int
+    total: int
+    pages: int
+
+
+class DeckSubscriptionResponse(BaseModel):
+    subscription_id: uuid.UUID
+    deck_id: uuid.UUID
+    deck_name: str
+    latest_release: int
+    active_card_count: int
+    subscribed_at: datetime
+    unsubscribed_at: datetime | None
+
+
+class DeckSubscriptionListResponse(BaseModel):
+    items: list[DeckSubscriptionResponse]
+    total: int
+
+
 class ReleasePublishRequest(BaseModel):
     description: str | None = Field(default=None, max_length=5000)
 
@@ -127,3 +155,42 @@ class DeckSyncResponse(BaseModel):
     to_release: int
     has_changes: bool
     changes: list[SyncChangeResponse]
+
+
+class AnkiDeckManifestResponse(BaseModel):
+    deck_id: uuid.UUID
+    name: str
+    description: str | None
+    latest_release: int
+    note_type: str
+    fields: list[str]
+    field_mapping: dict[str, str]
+    tags: list[str]
+
+
+class AnkiCardFields(BaseModel):
+    Front: str
+    Back: str
+    Answer: str
+    Explanation: str
+
+
+class AnkiSyncChangeResponse(BaseModel):
+    release_id: uuid.UUID
+    release_number: int
+    published_at: datetime
+    action: ReleaseAction
+    card_id: uuid.UUID
+    public_id: str
+    old_card_version_id: uuid.UUID | None
+    new_card_version_id: uuid.UUID | None
+    fields: AnkiCardFields | None = None
+    tags: list[str]
+
+
+class AnkiDeckSyncResponse(BaseModel):
+    deck_id: uuid.UUID
+    from_release: int
+    to_release: int
+    has_changes: bool
+    changes: list[AnkiSyncChangeResponse]

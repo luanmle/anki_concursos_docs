@@ -7,10 +7,12 @@ from app.models import (
     Card,
     Deck,
     DeckCard,
+    DeckSubscription,
     Discipline,
     Release,
     ReleaseItem,
 )
+from app.models.enums import DeckStatus
 
 
 class DeckRepository:
@@ -26,6 +28,17 @@ class DeckRepository:
     def deck_exists(self, deck_id: uuid.UUID) -> bool:
         return (
             self.session.scalar(select(Deck.id).where(Deck.id == deck_id))
+            is not None
+        )
+
+    def published_deck_exists(self, deck_id: uuid.UUID) -> bool:
+        return (
+            self.session.scalar(
+                select(Deck.id).where(
+                    Deck.id == deck_id,
+                    Deck.status == DeckStatus.PUBLISHED,
+                )
+            )
             is not None
         )
 
@@ -73,6 +86,115 @@ class DeckRepository:
             (deck, int(card_count))
             for deck, card_count in self.session.execute(statement)
         ], total
+
+    def list_published_decks(
+        self,
+        *,
+        user_id: uuid.UUID,
+        page: int,
+        page_size: int,
+    ) -> tuple[list[tuple[Deck, int, int, bool]], int]:
+        total = self.session.scalar(
+            select(func.count())
+            .select_from(Deck)
+            .where(Deck.status == DeckStatus.PUBLISHED)
+        ) or 0
+        active_card_count = (
+            select(func.count(DeckCard.id))
+            .where(
+                DeckCard.deck_id == Deck.id,
+                DeckCard.removed_at.is_(None),
+            )
+            .correlate(Deck)
+            .scalar_subquery()
+        )
+        latest_release = (
+            select(func.max(Release.release_number))
+            .where(Release.deck_id == Deck.id)
+            .correlate(Deck)
+            .scalar_subquery()
+        )
+        subscribed = (
+            select(func.count(DeckSubscription.id))
+            .where(
+                DeckSubscription.deck_id == Deck.id,
+                DeckSubscription.user_id == user_id,
+                DeckSubscription.unsubscribed_at.is_(None),
+            )
+            .correlate(Deck)
+            .scalar_subquery()
+        )
+        statement = (
+            select(Deck, active_card_count, latest_release, subscribed)
+            .where(Deck.status == DeckStatus.PUBLISHED)
+            .order_by(Deck.name, Deck.id)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        return [
+            (
+                deck,
+                int(card_count),
+                int(release_number or 0),
+                int(subscription_count) > 0,
+            )
+            for deck, card_count, release_number, subscription_count in (
+                self.session.execute(statement)
+            )
+        ], total
+
+    def get_subscription(
+        self, user_id: uuid.UUID, deck_id: uuid.UUID
+    ) -> DeckSubscription | None:
+        return self.session.scalar(
+            select(DeckSubscription)
+            .options(joinedload(DeckSubscription.deck))
+            .where(
+                DeckSubscription.user_id == user_id,
+                DeckSubscription.deck_id == deck_id,
+            )
+        )
+
+    def list_active_subscriptions(
+        self, user_id: uuid.UUID
+    ) -> list[tuple[DeckSubscription, int, int]]:
+        active_card_count = (
+            select(func.count(DeckCard.id))
+            .where(
+                DeckCard.deck_id == DeckSubscription.deck_id,
+                DeckCard.removed_at.is_(None),
+            )
+            .correlate(DeckSubscription)
+            .scalar_subquery()
+        )
+        latest_release = (
+            select(func.max(Release.release_number))
+            .where(Release.deck_id == DeckSubscription.deck_id)
+            .correlate(DeckSubscription)
+            .scalar_subquery()
+        )
+        statement = (
+            select(DeckSubscription, active_card_count, latest_release)
+            .options(joinedload(DeckSubscription.deck))
+            .where(
+                DeckSubscription.user_id == user_id,
+                DeckSubscription.unsubscribed_at.is_(None),
+            )
+            .order_by(DeckSubscription.created_at.desc(), DeckSubscription.id)
+        )
+        return [
+            (subscription, int(card_count), int(release_number or 0))
+            for subscription, card_count, release_number in self.session.execute(
+                statement
+            )
+        ]
+
+    def save_subscription(
+        self, subscription: DeckSubscription
+    ) -> DeckSubscription:
+        self.session.add(subscription)
+        self.session.flush()
+        return subscription
 
     def get_card(self, card_id: uuid.UUID) -> Card | None:
         return self.session.scalar(

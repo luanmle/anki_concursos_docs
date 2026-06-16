@@ -6,8 +6,11 @@ import uuid
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.core.database import get_db
+from app.core.security import create_access_token, hash_password
 from app.main import app
-from app.models import Discipline, Topic
+from app.models import Discipline, Topic, User
+from app.models.enums import UserRole
 
 
 def create_taxonomy(session: Session, suffix: str) -> tuple[Discipline, Topic]:
@@ -18,6 +21,25 @@ def create_taxonomy(session: Session, suffix: str) -> tuple[Discipline, Topic]:
     session.add(topic)
     session.commit()
     return discipline, topic
+
+
+def create_bearer_client(session: Session) -> TestClient:
+    user = User(
+        email=f"subscriber-{uuid.uuid4().hex}@example.com",
+        display_name="Subscriber",
+        password_hash=hash_password("subscriber-password"),
+        role=UserRole.ADMIN,
+    )
+    session.add(user)
+    session.commit()
+    token, _expires_in = create_access_token(user)
+
+    def override_get_db():
+        with Session(session.get_bind(), expire_on_commit=False) as request_session:
+            yield request_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    return TestClient(app, headers={"Authorization": f"Bearer {token}"})
 
 
 def create_card(
@@ -534,6 +556,208 @@ def test_release_csv_rejects_release_from_another_deck(
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Release not found in this deck"}
+
+
+def test_subscriber_can_fetch_manifest_and_initial_anki_snapshot(
+    session: Session, client: TestClient
+) -> None:
+    discipline, topic = create_taxonomy(session, "Assinatura")
+    card = approve_and_publish(
+        client,
+        create_card(client, discipline, topic, "subscription-initial-card"),
+    )
+    deck = create_deck(client, discipline, "Deck Assinavel")
+    assert client.post(
+        f"/decks/{deck['deck_id']}/cards",
+        json={"card_id": card["card_id"]},
+    ).status_code == 200
+    assert client.post(
+        f"/decks/{deck['deck_id']}/publish-release",
+        json={"description": "Primeira release assinavel"},
+    ).status_code == 201
+
+    bearer_client = create_bearer_client(session)
+    try:
+        available = bearer_client.get("/subscriptions/decks")
+        assert available.status_code == 200
+        available_decks = {
+            item["deck_id"]: item for item in available.json()["items"]
+        }
+        assert available_decks[deck["deck_id"]]["subscribed"] is False
+        assert available_decks[deck["deck_id"]]["latest_release"] == 1
+
+        subscription = bearer_client.post(
+            f"/subscriptions/{deck['deck_id']}"
+        )
+        assert subscription.status_code == 200
+        assert subscription.json()["deck_id"] == deck["deck_id"]
+        assert subscription.json()["latest_release"] == 1
+        assert subscription.json()["active_card_count"] == 1
+
+        manifest = bearer_client.get(
+            f"/addon/decks/{deck['deck_id']}/manifest"
+        )
+        assert manifest.status_code == 200
+        assert manifest.json()["note_type"] == "Anki Concursos Basic"
+        assert manifest.json()["fields"] == [
+            "Front",
+            "Back",
+            "Answer",
+            "Explanation",
+        ]
+        assert manifest.json()["latest_release"] == 1
+
+        sync = bearer_client.get(
+            f"/addon/decks/{deck['deck_id']}/sync?since_release=0"
+        )
+        assert sync.status_code == 200
+        body = sync.json()
+        assert body["from_release"] == 0
+        assert body["to_release"] == 1
+        assert body["has_changes"] is True
+        assert body["changes"] == [
+            {
+                "release_id": body["changes"][0]["release_id"],
+                "release_number": 1,
+                "published_at": body["changes"][0]["published_at"],
+                "action": "added",
+                "card_id": card["card_id"],
+                "public_id": card["public_id"],
+                "old_card_version_id": None,
+                "new_card_version_id": card["current_version"]["card_version_id"],
+                "fields": {
+                    "Front": card["current_version"]["front_text"],
+                    "Back": card["current_version"]["back_text"],
+                    "Answer": card["current_version"]["answer_text"],
+                    "Explanation": card["current_version"]["explanation_text"],
+                },
+                "tags": [
+                    f"deck::{deck['deck_id']}",
+                    f"card::{card['public_id']}",
+                ],
+            }
+        ]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_addon_sync_requires_active_subscription(
+    session: Session, client: TestClient
+) -> None:
+    discipline, topic = create_taxonomy(session, "Sync Bloqueado")
+    card = approve_and_publish(
+        client,
+        create_card(client, discipline, topic, "subscription-required-card"),
+    )
+    deck = create_deck(client, discipline, "Deck Sync Bloqueado")
+    assert client.post(
+        f"/decks/{deck['deck_id']}/cards",
+        json={"card_id": card["card_id"]},
+    ).status_code == 200
+    assert client.post(
+        f"/decks/{deck['deck_id']}/publish-release",
+        json={},
+    ).status_code == 201
+
+    bearer_client = create_bearer_client(session)
+    try:
+        response = bearer_client.get(
+            f"/addon/decks/{deck['deck_id']}/manifest"
+        )
+        assert response.status_code == 403
+        assert response.json() == {
+            "detail": "Subscribe to this deck before syncing it"
+        }
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_anki_delta_sync_returns_updated_and_removed_cards(
+    session: Session, client: TestClient
+) -> None:
+    discipline, topic = create_taxonomy(session, "Delta Addon")
+    updated_card = approve_and_publish(
+        client,
+        create_card(client, discipline, topic, "addon-updated-card"),
+    )
+    removed_card = approve_and_publish(
+        client,
+        create_card(client, discipline, topic, "addon-removed-card"),
+    )
+    deck = create_deck(client, discipline, "Deck Delta Addon")
+    for card in (updated_card, removed_card):
+        assert client.post(
+            f"/decks/{deck['deck_id']}/cards",
+            json={"card_id": card["card_id"]},
+        ).status_code == 200
+    assert client.post(
+        f"/decks/{deck['deck_id']}/publish-release",
+        json={},
+    ).status_code == 201
+
+    bearer_client = create_bearer_client(session)
+    try:
+        assert bearer_client.post(
+            f"/subscriptions/{deck['deck_id']}"
+        ).status_code == 200
+
+        version_two_id = create_and_publish_new_version(
+            client,
+            updated_card,
+            "addon",
+        )
+        assert client.post(
+            f"/decks/{deck['deck_id']}/cards",
+            json={"card_id": updated_card["card_id"]},
+        ).status_code == 200
+        assert client.post(
+            f"/decks/{deck['deck_id']}/cards/{removed_card['card_id']}/remove",
+            json={"action": "removed"},
+        ).status_code == 200
+        assert client.post(
+            f"/decks/{deck['deck_id']}/publish-release",
+            json={"description": "Delta addon"},
+        ).status_code == 201
+
+        sync = bearer_client.get(
+            f"/addon/decks/{deck['deck_id']}/sync?since_release=1"
+        )
+        assert sync.status_code == 200
+        changes = {item["card_id"]: item for item in sync.json()["changes"]}
+        assert changes[updated_card["card_id"]]["action"] == "updated"
+        assert (
+            changes[updated_card["card_id"]]["old_card_version_id"]
+            == updated_card["current_version"]["card_version_id"]
+        )
+        assert (
+            changes[updated_card["card_id"]]["new_card_version_id"]
+            == version_two_id
+        )
+        assert changes[updated_card["card_id"]]["fields"]["Front"] == (
+            "Frente revisada addon"
+        )
+        assert changes[removed_card["card_id"]]["action"] == "removed"
+        assert (
+            changes[removed_card["card_id"]]["old_card_version_id"]
+            == removed_card["current_version"]["card_version_id"]
+        )
+        assert changes[removed_card["card_id"]]["new_card_version_id"] is None
+        assert changes[removed_card["card_id"]]["fields"] is None
+
+        initial_sync = bearer_client.get(
+            f"/addon/decks/{deck['deck_id']}/sync?since_release=0"
+        )
+        assert initial_sync.status_code == 200
+        assert [
+            item["card_id"] for item in initial_sync.json()["changes"]
+        ] == [updated_card["card_id"]]
+        assert initial_sync.json()["changes"][0]["action"] == "added"
+        assert (
+            initial_sync.json()["changes"][0]["new_card_version_id"]
+            == version_two_id
+        )
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_empty_deck_has_no_releases_or_sync_changes(

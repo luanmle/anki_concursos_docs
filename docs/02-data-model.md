@@ -147,6 +147,27 @@ Quando `removed_at` estiver preenchido, `removal_action` deve ser `removed` ou
 `deprecated`. A depreciação registrada aqui é específica da distribuição no
 deck.
 
+### deck_subscriptions
+
+```text
+id
+user_id
+deck_id
+unsubscribed_at
+created_at
+updated_at
+```
+
+Representa a assinatura de um usuario autenticado em um deck publicado.
+
+Regras:
+
+- `UNIQUE(user_id, deck_id)`;
+- apenas decks publicados devem ser assinados;
+- cancelamento preenche `unsubscribed_at` em vez de apagar o historico;
+- o add-on do Anki so pode consultar manifesto e sync de decks com assinatura
+  ativa.
+
 ### releases
 
 ```text

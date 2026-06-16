@@ -211,6 +211,58 @@ O contrato atual retorna identidades e versões, não o conteúdo completo da
 versão. Um futuro add-on poderá usar esses IDs em endpoints de distribuição
 específicos sem alterar o modelo de releases.
 
+## Assinaturas e add-on do Anki
+
+O fluxo tipo AnkiHub usa decks como unidade de assinatura. Um usuario
+autenticado assina um deck publicado e o add-on consome apenas decks com
+assinatura ativa.
+
+Endpoints de assinatura:
+
+```text
+GET /subscriptions/decks
+GET /subscriptions
+POST /subscriptions/{deck_id}
+POST /subscriptions/{deck_id}/cancel
+```
+
+Endpoints do add-on:
+
+```text
+GET /addon/decks/{deck_id}/manifest
+GET /addon/decks/{deck_id}/sync?since_release=0
+```
+
+O manifesto informa como o add-on deve criar ou atualizar o note type local:
+
+```json
+{
+  "deck_id": "deck_id",
+  "name": "Direito Constitucional",
+  "latest_release": 12,
+  "note_type": "Anki Concursos Basic",
+  "fields": ["Front", "Back", "Answer", "Explanation"],
+  "field_mapping": {
+    "Front": "front_text",
+    "Back": "back_text",
+    "Answer": "answer_text",
+    "Explanation": "explanation_text"
+  },
+  "tags": ["deck::deck_id"]
+}
+```
+
+O sync do add-on difere do sync administrativo em um ponto importante:
+
+- `since_release=0` retorna o snapshot atual do deck como acoes `added`;
+- `since_release>0` retorna apenas deltas posteriores a release local.
+
+Cada mudanca destinada ao add-on inclui os campos do cartao quando a acao e
+`added` ou `updated`. Acoes `removed` e `deprecated` retornam `fields = null`.
+
+O progresso do estudante continua pertencendo ao Anki local e deve ser
+associado pelo add-on ao `card_id`, nunca ao texto do cartao.
+
 ## Curadoria e versionamento
 
 Um report é vinculado ao `card_id` e à `card_version_id` publicada que motivou

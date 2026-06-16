@@ -19,6 +19,7 @@ import { DeckDetailPage, NewDeckPage } from './pages/DeckPages'
 import { ReportDetailPage } from './pages/ReportDetailPage'
 import { EditUserPage, NewUserPage } from './pages/UserPages'
 import { OperationPage } from './pages/OperationPage'
+import { AddonPage } from './pages/AddonPage'
 import type { UserRole } from './types'
 
 const queryClient = new QueryClient({
@@ -109,6 +110,7 @@ function AppRoutes() {
           }
         />
         <Route path="decks/:deckId" element={<DeckDetailPage />} />
+        <Route path="addon" element={<AddonPage />} />
         <Route
           path="reports"
           element={

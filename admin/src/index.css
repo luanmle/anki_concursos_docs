@@ -894,7 +894,7 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   letter-spacing: .05em;
   text-transform: uppercase;
 }
-.status-published, .status-approved, .status-completed, .status-active, .status-admin, .status-created, .status-ready {
+.status-published, .status-approved, .status-completed, .status-active, .status-admin, .status-created, .status-ready, .status-subscribed {
   color: #6ee7b7;
   border-color: #047857;
   background: var(--success-container);
@@ -988,6 +988,217 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   background: var(--surface-container);
 }
 .operation-detail code { overflow-wrap: anywhere; color: #c4b5fd; }
+
+.addon-page {
+  display: grid;
+  gap: 22px;
+}
+.addon-flow-card {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.addon-flow-card > div {
+  display: grid;
+  gap: 9px;
+  padding: 22px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(18, 18, 21, .96), rgba(15, 15, 18, .96));
+}
+.addon-flow-card svg {
+  color: var(--primary);
+}
+.addon-flow-card strong {
+  color: var(--text);
+  font-size: 16px;
+}
+.addon-flow-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.addon-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, .9fr) minmax(0, 1.3fr);
+  gap: 18px;
+  align-items: start;
+}
+.addon-panel {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 18px;
+  background: var(--surface-container);
+}
+.addon-detail-panel {
+  position: sticky;
+  top: 90px;
+}
+.addon-section-title h2 {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 22px;
+}
+.addon-deck-list {
+  display: grid;
+  gap: 12px;
+}
+.addon-deck-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+}
+.addon-deck-card-selected {
+  border-color: #6d4cc7;
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, .22);
+}
+.addon-deck-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.addon-deck-main strong {
+  display: block;
+  color: var(--text);
+  font-size: 15px;
+}
+.addon-deck-main p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.addon-deck-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.addon-deck-meta span {
+  padding: 5px 8px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-container);
+  font-size: 10px;
+}
+.addon-endpoints {
+  display: grid;
+  gap: 8px;
+}
+.addon-endpoints button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+  color: #c4b5fd;
+  background: var(--surface-low);
+  cursor: pointer;
+}
+.addon-endpoints code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sync-release-control {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+.sync-release-control label {
+  display: grid;
+  flex: 1;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.sync-release-control input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  background: var(--surface-lowest);
+}
+.addon-contract-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.addon-contract-grid article {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+}
+.addon-contract-grid span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.addon-contract-grid strong {
+  display: block;
+  color: var(--text);
+  font-size: 18px;
+}
+.addon-contract-grid p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.addon-contract-grid pre {
+  max-height: 220px;
+  overflow: auto;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  color: #d4d4d8;
+  background: var(--surface-lowest);
+  font-size: 11px;
+}
+.addon-change-list {
+  display: grid;
+  gap: 8px;
+}
+.addon-change-list > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.addon-change-list code {
+  overflow: hidden;
+  color: #c4b5fd;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.addon-change-list small {
+  color: var(--muted);
+  font-size: 10px;
+}
 
 .card-detail-page { max-width: 1180px !important; }
 .back-link {
@@ -1638,6 +1849,11 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   .csv-import-layout, .csv-options-grid, .csv-result-summary {
     grid-template-columns: 1fr;
   }
+  .addon-flow-card, .addon-layout, .addon-contract-grid {
+    grid-template-columns: 1fr;
+  }
+  .addon-detail-panel { position: static; }
+  .sync-release-control { align-items: stretch; flex-direction: column; }
   .table-card { overflow-x: auto; }
   .table-card table { min-width: 760px; }
   .operation-detail > div { grid-template-columns: 1fr; gap: 6px; }
