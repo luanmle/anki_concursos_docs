@@ -168,6 +168,67 @@ export interface DeckSync {
   changes: SyncChange[]
 }
 
+export interface SubscribableDeck extends DeckSummary {
+  latest_release: number
+  subscribed: boolean
+}
+
+export type SubscribableDeckList = Paginated<SubscribableDeck>
+
+export interface DeckSubscription {
+  subscription_id: string
+  deck_id: string
+  deck_name: string
+  latest_release: number
+  active_card_count: number
+  subscribed_at: string
+  unsubscribed_at: string | null
+}
+
+export interface DeckSubscriptionList {
+  items: DeckSubscription[]
+  total: number
+}
+
+export interface AnkiDeckManifest {
+  deck_id: string
+  name: string
+  description: string | null
+  latest_release: number
+  note_type: string
+  fields: string[]
+  field_mapping: Record<string, string>
+  tags: string[]
+}
+
+export interface AnkiCardFields {
+  Front: string
+  Back: string
+  Answer: string
+  Explanation: string
+}
+
+export interface AnkiSyncChange {
+  release_id: string
+  release_number: number
+  published_at: string
+  action: string
+  card_id: string
+  public_id: string
+  old_card_version_id: string | null
+  new_card_version_id: string | null
+  fields: AnkiCardFields | null
+  tags: string[]
+}
+
+export interface AnkiDeckSync {
+  deck_id: string
+  from_release: number
+  to_release: number
+  has_changes: boolean
+  changes: AnkiSyncChange[]
+}
+
 export interface ReviewTask {
   review_task_id: string
   status: string

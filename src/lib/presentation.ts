@@ -21,6 +21,7 @@ const labels: Record<string, string> = {
   cancelled: 'Cancelado',
   active: 'Ativo',
   inactive: 'Inativo',
+  subscribed: 'Assinado',
   added: 'Adicionado',
   updated: 'Atualizado',
   removed: 'Removido',
