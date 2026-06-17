@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -8,6 +8,8 @@ from app.core.rate_limit import limit_login_attempts
 from app.core.security import (
     AuthPrincipal,
     create_access_token,
+    create_refresh_token,
+    decode_refresh_token,
     require_admin,
     require_authenticated_user,
 )
@@ -16,6 +18,7 @@ from app.repositories import UserRepository
 from app.schemas import (
     LoginRequest,
     PasswordResetRequest,
+    RefreshTokenRequest,
     TokenResponse,
     UserCreateRequest,
     UserListResponse,
@@ -50,6 +53,38 @@ def login(
     return TokenResponse(
         access_token=access_token,
         expires_in=expires_in,
+        refresh_token=create_refresh_token(user),
+        user=user_response(user),
+    )
+
+
+@router.post("/refresh", response_model=TokenResponse)
+def refresh_token(
+    payload: RefreshTokenRequest,
+    service: AuthService = Depends(get_auth_service),
+) -> TokenResponse:
+    token_payload = decode_refresh_token(payload.refresh_token)
+    try:
+        user_id = uuid.UUID(str(token_payload["sub"]))
+        token_version = int(token_payload["ver"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+    user = service.get_user(user_id)
+    if token_version != user.credential_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token has been revoked",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token, expires_in = create_access_token(user)
+    return TokenResponse(
+        access_token=access_token,
+        expires_in=expires_in,
+        refresh_token=create_refresh_token(user),
         user=user_response(user),
     )
 

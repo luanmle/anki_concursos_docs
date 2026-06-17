@@ -649,6 +649,76 @@ def test_subscriber_can_fetch_manifest_and_initial_anki_snapshot(
         app.dependency_overrides.clear()
 
 
+def test_addon_status_exposes_version_contract() -> None:
+    response = TestClient(app).get("/addon/status")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "api_version": "1",
+        "min_addon_version": "0.1.0",
+        "supported_note_types": ["basic", "cloze"],
+    }
+
+
+def test_addon_sync_supports_real_pagination(
+    session: Session, client: TestClient
+) -> None:
+    discipline, topic = create_taxonomy(session, "Addon Paginado")
+    cards = [
+        approve_and_publish(
+            client,
+            create_card(
+                client,
+                discipline,
+                topic,
+                f"addon-paginated-card-{index}",
+            ),
+        )
+        for index in range(3)
+    ]
+    deck = create_deck(client, discipline, "Deck Addon Paginado")
+    for card in cards:
+        assert client.post(
+            f"/decks/{deck['deck_id']}/cards",
+            json={"card_id": card["card_id"]},
+        ).status_code == 200
+    assert client.post(
+        f"/decks/{deck['deck_id']}/publish-release",
+        json={},
+    ).status_code == 201
+
+    bearer_client = create_bearer_client(session)
+    try:
+        assert bearer_client.post(
+            f"/subscriptions/{deck['deck_id']}"
+        ).status_code == 200
+        first_page = bearer_client.get(
+            f"/addon/decks/{deck['deck_id']}/sync",
+            params={"since_release": 0, "page": 1, "page_size": 2},
+        )
+        second_page = bearer_client.get(
+            f"/addon/decks/{deck['deck_id']}/sync",
+            params={"since_release": 0, "page": 2, "page_size": 2},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert first_page.status_code == 200
+    assert second_page.status_code == 200
+    assert first_page.json()["page"] == 1
+    assert first_page.json()["pages"] == 2
+    assert first_page.json()["total_changes"] == 3
+    assert len(first_page.json()["changes"]) == 2
+    assert second_page.json()["page"] == 2
+    assert second_page.json()["pages"] == 2
+    assert second_page.json()["total_changes"] == 3
+    assert len(second_page.json()["changes"]) == 1
+    assert [
+        change["public_id"]
+        for change in first_page.json()["changes"] + second_page.json()["changes"]
+    ] == sorted(card["public_id"] for card in cards)
+
+
 def test_addon_sync_requires_active_subscription(
     session: Session, client: TestClient
 ) -> None:

@@ -79,8 +79,13 @@ class PasswordResetRequest(BaseModel):
     password: str = Field(min_length=12, max_length=1024)
 
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str = Field(min_length=1, max_length=4096)
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     expires_in: int
     user: UserResponse
+    refresh_token: str | None = None

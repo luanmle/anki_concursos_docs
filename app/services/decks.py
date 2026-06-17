@@ -336,6 +336,8 @@ class DeckService:
         *,
         user_id: uuid.UUID,
         since_release: int,
+        page: int | None = None,
+        page_size: int | None = None,
     ) -> AnkiDeckSyncResponse:
         self._require_active_subscription(user_id, deck_id)
         latest_release = self.repository.latest_release_number(deck_id)
@@ -352,12 +354,24 @@ class DeckService:
         else:
             changes = self._anki_delta_changes(deck_id, latest_release, since_release)
 
+        total_changes = len(changes)
+        pages = None
+        if page is not None or page_size is not None:
+            page = page or 1
+            page_size = page_size or 500
+            pages = math.ceil(total_changes / page_size) if total_changes else 0
+            start = (page - 1) * page_size
+            changes = changes[start : start + page_size]
+
         return AnkiDeckSyncResponse(
             deck_id=deck_id,
             from_release=since_release,
             to_release=latest_release,
-            has_changes=bool(changes),
+            has_changes=total_changes > 0,
             changes=changes,
+            page=page,
+            pages=pages,
+            total_changes=total_changes if page is not None else None,
         )
 
     def add_card(self, deck_id: uuid.UUID, card_id: uuid.UUID) -> DeckResponse:

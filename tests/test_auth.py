@@ -74,6 +74,91 @@ def test_login_and_me_return_authenticated_user(session: Session) -> None:
     assert response.json()["role"] == "admin"
 
 
+def test_login_returns_refresh_token_and_refresh_issues_new_access_token(
+    session: Session,
+) -> None:
+    create_user(
+        session,
+        email="refresh@example.com",
+        role=UserRole.STUDENT,
+    )
+
+    def override_get_db():
+        yield session
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        login = TestClient(app).post(
+            "/auth/token",
+            json={
+                "email": "refresh@example.com",
+                "password": "strong-test-password",
+            },
+        )
+        refresh = TestClient(app).post(
+            "/auth/refresh",
+            json={"refresh_token": login.json()["refresh_token"]},
+        )
+        me = TestClient(
+            app,
+            headers={
+                "Authorization": f"Bearer {refresh.json()['access_token']}"
+            },
+        ).get("/auth/me")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert login.status_code == 200
+    assert login.json()["refresh_token"]
+    assert refresh.status_code == 200
+    assert refresh.json()["refresh_token"]
+    assert me.status_code == 200
+    assert me.json()["email"] == "refresh@example.com"
+
+
+def test_refresh_token_is_revoked_after_password_reset(session: Session) -> None:
+    admin = authenticated_client(
+        session,
+        email="refresh-admin@example.com",
+        role=UserRole.ADMIN,
+    )
+    create_user(
+        session,
+        email="refresh-revoked@example.com",
+        role=UserRole.STUDENT,
+    )
+
+    def override_get_db():
+        yield session
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        login = TestClient(app).post(
+            "/auth/token",
+            json={
+                "email": "refresh-revoked@example.com",
+                "password": "strong-test-password",
+            },
+        )
+        managed = session.query(User).filter_by(
+            email="refresh-revoked@example.com"
+        ).one()
+        reset = admin.post(
+            f"/admin/users/{managed.id}/reset-password",
+            json={"password": "new-refresh-password"},
+        )
+        refresh = TestClient(app).post(
+            "/auth/refresh",
+            json={"refresh_token": login.json()["refresh_token"]},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert reset.status_code == 200
+    assert refresh.status_code == 401
+    assert refresh.json() == {"detail": "Refresh token has been revoked"}
+
+
 def test_invalid_login_is_rejected(session: Session) -> None:
     create_user(
         session,

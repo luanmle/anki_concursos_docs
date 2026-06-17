@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Annotated
 
-from pydantic import field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 DEVELOPMENT_AUTH_SECRET = "development-auth-secret-change-me"
@@ -23,7 +23,10 @@ class Settings(BaseSettings):
     admin_api_key: str = "development-admin-key"
     allow_legacy_admin_api_key: bool = True
     auth_secret_key: str = DEVELOPMENT_AUTH_SECRET
-    access_token_expire_minutes: int = 60
+    access_token_expire_minutes: int = Field(default=60, ge=1)
+    refresh_token_expire_days: int = Field(default=30, ge=1)
+    addon_api_version: str = "1"
+    min_addon_version: str = "0.1.0"
     bootstrap_admin_email: str | None = None
     bootstrap_admin_password: str | None = None
     bootstrap_admin_name: str = "System administrator"

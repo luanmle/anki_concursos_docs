@@ -190,3 +190,12 @@ class AnkiDeckSyncResponse(BaseModel):
     to_release: int
     has_changes: bool
     changes: list[AnkiSyncChangeResponse]
+    page: int | None = None
+    pages: int | None = None
+    total_changes: int | None = None
+
+
+class AddonStatusResponse(BaseModel):
+    api_version: str
+    min_addon_version: str
+    supported_note_types: list[str]

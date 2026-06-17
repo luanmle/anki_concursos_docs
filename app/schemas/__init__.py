@@ -1,6 +1,7 @@
 from app.schemas.auth import (
     LoginRequest,
     PasswordResetRequest,
+    RefreshTokenRequest,
     TokenResponse,
     UserCreateRequest,
     UserListResponse,
@@ -20,6 +21,7 @@ from app.schemas.cards import (
     PublicCardResponse,
 )
 from app.schemas.decks import (
+    AddonStatusResponse,
     AnkiDeckManifestResponse,
     AnkiDeckSyncResponse,
     DeckCardAddRequest,
@@ -46,6 +48,7 @@ from app.schemas.reports import (
 __all__ = [
     "LoginRequest",
     "PasswordResetRequest",
+    "RefreshTokenRequest",
     "TokenResponse",
     "UserCreateRequest",
     "UserListResponse",
@@ -61,6 +64,7 @@ __all__ = [
     "CardVersionCreateRequest",
     "CardVersionResponse",
     "PublicCardResponse",
+    "AddonStatusResponse",
     "AnkiDeckManifestResponse",
     "AnkiDeckSyncResponse",
     "DeckCardAddRequest",

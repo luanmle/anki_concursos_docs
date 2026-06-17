@@ -66,15 +66,15 @@ def verify_password(password: str, encoded: str) -> bool:
         return False
 
 
-def create_access_token(user: User) -> tuple[str, int]:
+def _create_signed_token(user: User, *, expires_in: int, token_type: str) -> str:
     settings = get_settings()
     now = datetime.now(UTC)
-    expires_in = settings.access_token_expire_minutes * 60
     payload = {
         "sub": str(user.id),
         "email": user.email,
         "role": user.role.value,
         "ver": user.credential_version,
+        "token_type": token_type,
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(seconds=expires_in)).timestamp()),
     }
@@ -92,10 +92,31 @@ def create_access_token(user: User) -> tuple[str, int]:
         hashlib.sha256,
     ).digest()
     token = f"{encoded_header}.{encoded_payload}.{_base64url_encode(signature)}"
+    return token
+
+
+def create_access_token(user: User) -> tuple[str, int]:
+    settings = get_settings()
+    expires_in = settings.access_token_expire_minutes * 60
+    token = _create_signed_token(
+        user,
+        expires_in=expires_in,
+        token_type="access",
+    )
     return token, expires_in
 
 
-def _decode_access_token(token: str) -> dict[str, object]:
+def create_refresh_token(user: User) -> str:
+    settings = get_settings()
+    expires_in = settings.refresh_token_expire_days * 24 * 60 * 60
+    return _create_signed_token(
+        user,
+        expires_in=expires_in,
+        token_type="refresh",
+    )
+
+
+def _decode_token(token: str, *, expected_token_type: str) -> dict[str, object]:
     settings = get_settings()
     try:
         encoded_header, encoded_payload, encoded_signature = token.split(".", 2)
@@ -113,6 +134,12 @@ def _decode_access_token(token: str) -> dict[str, object]:
             raise ValueError("invalid header")
         if int(payload["exp"]) <= int(datetime.now(UTC).timestamp()):
             raise ValueError("expired token")
+        token_type = payload.get("token_type")
+        if not (
+            token_type == expected_token_type
+            or (expected_token_type == "access" and token_type is None)
+        ):
+            raise ValueError("invalid token type")
         return payload
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
         raise HTTPException(
@@ -120,6 +147,14 @@ def _decode_access_token(token: str) -> dict[str, object]:
             detail="Invalid or expired access token",
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
+
+
+def _decode_access_token(token: str) -> dict[str, object]:
+    return _decode_token(token, expected_token_type="access")
+
+
+def decode_refresh_token(token: str) -> dict[str, object]:
+    return _decode_token(token, expected_token_type="refresh")
 
 
 def require_authenticated_user(
