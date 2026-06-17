@@ -217,6 +217,10 @@ O fluxo tipo AnkiHub usa decks como unidade de assinatura. Um usuario
 autenticado assina um deck publicado e o add-on consome apenas decks com
 assinatura ativa.
 
+Usuarios finais devem usar o papel `student`. Esse papel pode autenticar,
+assinar decks e acessar endpoints `/addon`, mas nao tem permissoes
+administrativas.
+
 Endpoints de assinatura:
 
 ```text

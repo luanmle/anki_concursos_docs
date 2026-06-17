@@ -97,3 +97,4 @@ class UserRole(StrEnum):
     ADMIN = "admin"
     CURATOR = "curator"
     REVIEWER = "reviewer"
+    STUDENT = "student"

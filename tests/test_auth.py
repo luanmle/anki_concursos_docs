@@ -109,7 +109,7 @@ def test_only_admin_can_create_users(session: Session) -> None:
                 "email": "new@example.com",
                 "display_name": "New user",
                 "password": "another-strong-password",
-                "role": "reviewer",
+                "role": "student",
             },
         )
     finally:
@@ -128,14 +128,14 @@ def test_only_admin_can_create_users(session: Session) -> None:
                 "email": "new@example.com",
                 "display_name": "New user",
                 "password": "another-strong-password",
-                "role": "reviewer",
+                "role": "student",
             },
         )
     finally:
         app.dependency_overrides.clear()
 
     assert created.status_code == 201
-    assert created.json()["role"] == "reviewer"
+    assert created.json()["role"] == "student"
 
 
 def test_reviewer_cannot_create_cards(session: Session) -> None:
@@ -151,6 +151,29 @@ def test_reviewer_cannot_create_cards(session: Session) -> None:
 
     assert response.status_code == 403
     assert response.json() == {"detail": "Insufficient permissions"}
+
+
+def test_student_can_authenticate_but_cannot_use_staff_routes(
+    session: Session,
+) -> None:
+    student = authenticated_client(
+        session,
+        email="student@example.com",
+        role=UserRole.STUDENT,
+    )
+    try:
+        me = student.get("/auth/me")
+        cards = student.get("/cards")
+        create_card = student.post("/cards", json={})
+        users = student.get("/admin/users")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert me.status_code == 200
+    assert me.json()["role"] == "student"
+    assert cards.status_code == 403
+    assert create_card.status_code == 403
+    assert users.status_code == 403
 
 
 def test_admin_can_list_and_update_users(session: Session) -> None:

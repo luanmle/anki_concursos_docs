@@ -15,7 +15,7 @@ const createSchema = z
   .object({
     display_name: z.string().trim().min(1).max(255),
     email: z.string().trim().email(),
-    role: z.enum(['admin', 'curator', 'reviewer']),
+    role: z.enum(['admin', 'curator', 'reviewer', 'student']),
     password: z.string().min(12, 'Use pelo menos 12 caracteres.'),
     password_confirmation: z.string(),
   })
@@ -26,7 +26,7 @@ const createSchema = z
 
 const editSchema = z.object({
   display_name: z.string().trim().min(1).max(255),
-  role: z.enum(['admin', 'curator', 'reviewer']),
+  role: z.enum(['admin', 'curator', 'reviewer', 'student']),
   is_active: z.boolean(),
 })
 
@@ -48,6 +48,11 @@ const rolePermissions: Record<UserRole, string[]> = {
     'Aprova e publica versões',
     'Publica releases',
     'Revisa reports de usuários',
+  ],
+  student: [
+    'Acessa o add-on do Anki',
+    'Assina decks publicados',
+    'Sincroniza cartoes assinados',
   ],
 }
 
@@ -115,6 +120,7 @@ export function NewUserPage() {
                 <option value="admin">Administrador</option>
                 <option value="curator">Curador</option>
                 <option value="reviewer">Revisor</option>
+                <option value="student">Estudante</option>
               </select>
             </UserField>
           </div>
@@ -241,6 +247,7 @@ export function EditUserPage() {
                 <option value="admin">Administrador</option>
                 <option value="curator">Curador</option>
                 <option value="reviewer">Revisor</option>
+                <option value="student">Estudante</option>
               </select>
             </UserField>
           </div>
@@ -425,5 +432,6 @@ function roleLabel(role: UserRole) {
     admin: 'Administrador',
     curator: 'Curador',
     reviewer: 'Revisor',
+    student: 'Estudante',
   }[role]
 }

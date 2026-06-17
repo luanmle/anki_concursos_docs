@@ -2,6 +2,7 @@ const labels: Record<string, string> = {
   admin: 'Administrador',
   curator: 'Curador',
   reviewer: 'Revisor',
+  student: 'Estudante',
   needs_review: 'Precisa de revisão',
   approved: 'Aprovado',
   published: 'Publicado',

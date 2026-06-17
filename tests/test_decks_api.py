@@ -28,7 +28,7 @@ def create_bearer_client(session: Session) -> TestClient:
         email=f"subscriber-{uuid.uuid4().hex}@example.com",
         display_name="Subscriber",
         password_hash=hash_password("subscriber-password"),
-        role=UserRole.ADMIN,
+        role=UserRole.STUDENT,
     )
     session.add(user)
     session.commit()

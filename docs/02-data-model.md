@@ -32,6 +32,7 @@ Papéis:
 admin
 curator
 reviewer
+student
 ```
 
 Regras:
@@ -46,6 +47,8 @@ Regras:
 - `admin` gerencia usuários e possui todas as permissões;
 - `curator` cadastra, consulta e cria versões e decks;
 - `reviewer` aprova, publica, cria releases e revisa reports.
+- `student` acessa o add-on, assina decks publicados e sincroniza cartoes;
+  nao possui permissao administrativa.
 
 ## Núcleo
 

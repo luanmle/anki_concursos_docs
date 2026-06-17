@@ -48,6 +48,7 @@ Papéis iniciais:
 admin
 curator
 reviewer
+student
 ```
 
 `X-Admin-API-Key` é compatibilidade temporária para desenvolvimento e testes.
