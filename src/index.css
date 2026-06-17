@@ -910,6 +910,7 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   background: var(--danger-container);
 }
 .status-curator { color: #ddd6fe; border-color: #6d4cc7; background: #21123c; }
+.status-student { color: #bfdbfe; border-color: #2563eb; background: #10213f; }
 .status-added, .status-updated {
   color: #6ee7b7;
   border-color: #047857;
