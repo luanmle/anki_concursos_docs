@@ -167,6 +167,17 @@ Exemplo de mapeamento:
 O add-on deve garantir que cada nota tenha os campos esperados pelo template.
 Se um campo obrigatorio estiver faltando, o backend rejeita o upload.
 
+Importante:
+
+- o backend nao assume que o campo cloze esteja em uma posicao fixa;
+- o backend usa o `field_mapping` do template para descobrir qual campo preenche
+  `front_text`;
+- o mesmo deck pode conter varios templates com campos diferentes;
+- cada `note_type` deve ser mapeado pelo template correspondente.
+- `explanation_text` e opcional e pode ficar vazio se o modelo de nota nao
+  possuir um campo equivalente;
+- o importador nao bloqueia o upload apenas porque nao existe explicacao.
+
 ## Tipos Suportados
 
 O upload suporta inicialmente:
@@ -182,11 +193,17 @@ Use quando a nota tiver frente, verso, resposta e explicacao.
 
 Use quando a nota tiver lacunas no texto.
 
-O campo de frente deve conter a marcação cloze:
+O campo mapeado para `front_text` deve conter a marcação cloze:
 
 ```text
 {{c1::...}}
 ```
+
+Se o cloze vier em um campo chamado `Cloze`, o template deve mapear esse
+campo para `front_text`. Se vier em outro campo, o add-on deve mapear esse
+campo corretamente no `field_mapping`.
+
+Se a nota cloze nao tiver um campo de explicacao, o upload continua valido.
 
 ## Taxonomy
 

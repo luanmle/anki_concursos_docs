@@ -855,26 +855,25 @@ class DeckService:
             for source, target in field_mapping.items()
             if source and target
         }
-        canonical_fields = {
-            "front_text": None,
-            "back_text": None,
-            "answer_text": None,
-            "explanation_text": None,
-        }
-        for canonical_name in canonical_fields:
+        canonical_fields: dict[str, str] = {}
+        required_fields = (
+            "front_text",
+            "back_text",
+            "answer_text",
+        )
+        optional_fields = ("explanation_text",)
+        for canonical_name in (*required_fields, *optional_fields):
             source_name = reverse_mapping.get(canonical_name, canonical_name)
             raw_value = fields.get(source_name, "")
             value = raw_value.strip() if isinstance(raw_value, str) else ""
-            if not value:
+            if not value and canonical_name in required_fields:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                     detail=f"Missing required field for {canonical_name}",
                 )
             canonical_fields[canonical_name] = value
-        return {
-            key: value if value is not None else ""
-            for key, value in canonical_fields.items()
-        }
+        canonical_fields.setdefault("explanation_text", "")
+        return canonical_fields
 
     @staticmethod
     def _canonical_key_for_deck_upload(

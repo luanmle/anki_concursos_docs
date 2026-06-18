@@ -1321,3 +1321,136 @@ def test_addon_upload_reuses_cards_for_identical_content(
     assert second.json()["published"] is False
     assert second.json()["latest_release"] == 1
     assert second.json()["items"][0]["status"] == "reused"
+
+
+def test_addon_can_upload_multiple_note_types_in_one_deck(
+    session: Session,
+) -> None:
+    student_client = create_bearer_client(session)
+    upload_payload = {
+        "deck_name": "Deck Upload Multitipo",
+        "description": "Baralho com Basic e Cloze",
+        "source_name": "addon",
+        "publish_release": True,
+        "templates": [
+            {
+                "template_name": "Getting Started Basic",
+                "note_type": "Getting Started Basic",
+                "card_kind": "basic",
+                "fields": [
+                    "Lesson",
+                    "Prompt",
+                    "Answer",
+                    "Extra",
+                    "ankihub_id",
+                ],
+                "field_mapping": {
+                    "Lesson": "front_text",
+                    "Prompt": "back_text",
+                    "Answer": "answer_text",
+                    "Extra": "explanation_text",
+                },
+                "front_html": "<div>{{Lesson}}</div>",
+                "back_html": "<div>{{Prompt}}</div>",
+                "styling_css": ".card { font-family: Inter; }",
+            },
+            {
+                "template_name": "Getting Started Cloze",
+                "note_type": "Getting Started Cloze",
+                "card_kind": "cloze",
+                "fields": [
+                    "Lesson",
+                    "Cloze",
+                    "Extra",
+                    "Deep Dive",
+                    "ankihub_id",
+                ],
+                "field_mapping": {
+                    "Cloze": "front_text",
+                    "Lesson": "back_text",
+                    "Extra": "answer_text",
+                    "Deep Dive": "explanation_text",
+                },
+                "front_html": "<div>{{Cloze}}</div>",
+                "back_html": "<div>{{Lesson}}</div>",
+                "styling_css": ".card { font-family: Inter; }",
+            },
+        ],
+        "notes": [
+            {
+                "note_type": "Getting Started Basic",
+                "card_kind": "basic",
+                "fields": {
+                    "Lesson": "Introducao ao sistema",
+                    "Prompt": "O que o sistema faz?",
+                    "Answer": "Recebe e distribui baralhos",
+                    "Extra": "Baralho base",
+                    "ankihub_id": "basic-1",
+                },
+            },
+            {
+                "note_type": "Getting Started Cloze",
+                "card_kind": "cloze",
+                "fields": {
+                    "Lesson": "Anki will create cards from the note above.",
+                    "Cloze": "Anki will create {{c1::two::#}} cards from the note above.",
+                    "Extra": "Cloze example",
+                    "Deep Dive": "Cloze notes can generate multiple cards.",
+                    "ankihub_id": "cloze-1",
+                },
+            },
+        ],
+    }
+
+    response = student_client.post("/addon/decks/upload", json=upload_payload)
+    assert response.status_code == 201
+    body = response.json()
+    assert body["total_notes"] == 2
+    assert body["created_cards"] == 2
+    assert body["items"][0]["card_kind"] == "basic"
+    assert body["items"][1]["card_kind"] == "cloze"
+
+
+def test_addon_upload_allows_missing_explanation_field(
+    session: Session,
+) -> None:
+    student_client = create_bearer_client(session)
+    upload_payload = {
+        "deck_name": "Deck Upload Sem Explicacao",
+        "description": "Baralho sem explanation_text",
+        "source_name": "addon",
+        "publish_release": True,
+        "templates": [
+            {
+                "template_name": "Basic Sem Explicacao",
+                "note_type": "Basic Sem Explicacao",
+                "card_kind": "basic",
+                "fields": ["Front", "Back", "Answer"],
+                "field_mapping": {
+                    "Front": "front_text",
+                    "Back": "back_text",
+                    "Answer": "answer_text",
+                },
+                "front_html": "<div>{{Front}}</div>",
+                "back_html": "<div>{{Back}}</div>",
+                "styling_css": ".card { font-family: Inter; }",
+            }
+        ],
+        "notes": [
+            {
+                "note_type": "Basic Sem Explicacao",
+                "card_kind": "basic",
+                "fields": {
+                    "Front": "Pergunta de teste",
+                    "Back": "Resposta de teste",
+                    "Answer": "Resposta de teste",
+                },
+            }
+        ],
+    }
+
+    response = student_client.post("/addon/decks/upload", json=upload_payload)
+    assert response.status_code == 201
+    body = response.json()
+    assert body["created_cards"] == 1
+    assert body["items"][0]["status"] == "created"

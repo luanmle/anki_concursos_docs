@@ -321,7 +321,6 @@ class CardVersion(TimestampMixin, Base):
         CheckConstraint("length(front_text) > 0", name="front_not_empty"),
         CheckConstraint("length(back_text) > 0", name="back_not_empty"),
         CheckConstraint("length(answer_text) > 0", name="answer_not_empty"),
-        CheckConstraint("length(explanation_text) > 0", name="explanation_not_empty"),
         CheckConstraint("length(change_reason) > 0", name="change_reason_not_empty"),
     )
 
