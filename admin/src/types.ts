@@ -16,6 +16,7 @@ export interface TokenResponse {
   token_type: 'bearer'
   expires_in: number
   user: User
+  refresh_token: string | null
 }
 
 export interface Paginated<T> {

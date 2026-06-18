@@ -11,6 +11,7 @@ const content = {
 describe('card form schemas', () => {
   it('accepts a complete initial card', () => {
     const result = cardCreateSchema.safeParse({
+      card_kind: 'basic',
       canonical_key: 'direito-constitucional',
       discipline_id: '11111111-1111-4111-8111-111111111111',
       topic_id: '22222222-2222-4222-8222-222222222222',
@@ -23,6 +24,7 @@ describe('card form schemas', () => {
 
   it('requires every pedagogical content field', () => {
     const result = cardCreateSchema.safeParse({
+      card_kind: 'basic',
       canonical_key: 'direito-constitucional',
       discipline_id: '11111111-1111-4111-8111-111111111111',
       topic_id: '22222222-2222-4222-8222-222222222222',

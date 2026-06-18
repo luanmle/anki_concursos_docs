@@ -3,11 +3,12 @@ import {
   BookOpenCheck,
   ChevronDown,
   FileWarning,
-  Library,
   LayoutDashboard,
+  Library,
   LogOut,
   Menu,
   PlugZap,
+  Search,
   ShieldCheck,
   Users,
   X,
@@ -17,12 +18,10 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/auth-context'
 import { translateStatus } from '../lib/presentation'
 
-const baseNav = [
-  { to: '/', label: 'Visão geral', icon: LayoutDashboard },
-  { to: '/cards', label: 'Cartões', icon: Library },
-  { to: '/decks', label: 'Decks', icon: BookOpenCheck },
-  { to: '/addon', label: 'Add-on', icon: PlugZap },
-  { to: '/operation', label: 'Operação', icon: Activity },
+const studentNav = [
+  { to: '/', label: 'Explore', icon: Search },
+  { to: '/my-decks', label: 'Meus Baralhos', icon: BookOpenCheck },
+  { to: '/community', label: 'Community', icon: PlugZap },
 ]
 
 export function AppShell() {
@@ -34,22 +33,38 @@ export function AppShell() {
     'STAGING'
   ).toUpperCase()
   const nav = [
-    ...baseNav.slice(0, 4),
+    ...studentNav,
+    ...(hasRole('admin', 'curator', 'reviewer')
+      ? [{ to: '/admin', label: 'Administracao', icon: LayoutDashboard }]
+      : []),
+    ...(hasRole('admin', 'curator')
+      ? [{ to: '/admin/decks', label: 'Gerenciar Baralhos', icon: Library }]
+      : []),
+    ...(hasRole('admin', 'reviewer')
+      ? [{ to: '/admin/suggestions', label: 'Sugestoes', icon: FileWarning }]
+      : []),
+    ...(hasRole('admin', 'curator')
+      ? [{ to: '/cards', label: 'Cartoes internos', icon: Library }]
+      : []),
+    ...(hasRole('admin', 'curator')
+      ? [{ to: '/decks', label: 'Decks internos', icon: BookOpenCheck }]
+      : []),
     ...(hasRole('admin', 'reviewer')
       ? [{ to: '/reports', label: 'Reports', icon: FileWarning }]
       : []),
     ...(hasRole('admin')
-      ? [{ to: '/users', label: 'Usuários', icon: Users }]
+      ? [{ to: '/users', label: 'Usuarios', icon: Users }]
       : []),
-    baseNav[4],
+    { to: '/addon', label: 'Add-on', icon: PlugZap },
+    { to: '/operation', label: 'Operacao', icon: Activity },
   ]
 
   return (
-    <div className="app-shell">
+    <div className="app-shell ac-shell">
       <button
         className="mobile-menu-button"
         type="button"
-        aria-label="Abrir navegação"
+        aria-label="Abrir navegacao"
         onClick={() => setOpen(true)}
       >
         <Menu size={22} />
@@ -58,7 +73,7 @@ export function AppShell() {
         <button
           className="sidebar-backdrop"
           type="button"
-          aria-label="Fechar navegação"
+          aria-label="Fechar navegacao"
           onClick={() => setOpen(false)}
         />
       )}
@@ -69,18 +84,18 @@ export function AppShell() {
           </div>
           <div>
             <strong>Anki Concursos</strong>
-            <span>Admin Console</span>
+            <span>Web Interface</span>
           </div>
           <button
             className="sidebar-close"
             type="button"
-            aria-label="Fechar navegação"
+            aria-label="Fechar navegacao"
             onClick={() => setOpen(false)}
           >
             <X size={20} />
           </button>
         </div>
-        <nav className="sidebar-nav" aria-label="Navegação principal">
+        <nav className="sidebar-nav" aria-label="Navegacao principal">
           {nav.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -124,7 +139,7 @@ export function AppShell() {
             <ChevronDown size={15} aria-hidden="true" />
           </div>
         </header>
-        <main className="main-content">
+        <main className="main-content ac-main-content">
           <Outlet />
         </main>
       </div>
