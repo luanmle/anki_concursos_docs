@@ -15,11 +15,13 @@ export interface StudentComment {
 export interface StudentSuggestion {
   id: string
   deckId: string
+  cardId?: string
   publicId: string
   changeType: string
   message: string
   proposedFields: Record<string, string>
   status: 'pending' | 'converted_to_new_version' | 'rejected'
+  resultingCardVersionId?: string | null
   createdAt: string
 }
 
