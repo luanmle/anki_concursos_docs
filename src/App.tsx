@@ -20,6 +20,15 @@ import { ReportDetailPage } from './pages/ReportDetailPage'
 import { EditUserPage, NewUserPage } from './pages/UserPages'
 import { OperationPage } from './pages/OperationPage'
 import { AddonPage } from './pages/AddonPage'
+import {
+  AdminDashboardPage,
+  AdminDecksPage,
+  AdminSuggestionsPage,
+  CommunityFuturePage,
+  DeckPage,
+  ExplorePage,
+  MyDecksPage,
+} from './pages/CommunityInterfacePages'
 import type { UserRole } from './types'
 
 const queryClient = new QueryClient({
@@ -73,7 +82,35 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<DashboardPage />} />
+        <Route index element={<ExplorePage />} />
+        <Route path="my-decks" element={<MyDecksPage />} />
+        <Route path="deck/:deckId" element={<DeckPage />} />
+        <Route path="community" element={<CommunityFuturePage />} />
+        <Route
+          path="admin"
+          element={
+            <ProtectedRoute roles={['admin', 'curator', 'reviewer']}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/decks"
+          element={
+            <ProtectedRoute roles={['admin', 'curator']}>
+              <AdminDecksPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/suggestions"
+          element={
+            <ProtectedRoute roles={['admin', 'reviewer']}>
+              <AdminSuggestionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="cards" element={<CardsPage />} />
         <Route
           path="cards/import"
