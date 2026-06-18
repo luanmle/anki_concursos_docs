@@ -302,6 +302,18 @@ class CardVersion(TimestampMixin, Base):
     back_text: Mapped[str] = mapped_column(Text, nullable=False)
     answer_text: Mapped[str] = mapped_column(Text, nullable=False)
     explanation_text: Mapped[str] = mapped_column(Text, nullable=False)
+    note_type: Mapped[str | None] = mapped_column(String(255), index=True)
+    template_name: Mapped[str | None] = mapped_column(String(255), index=True)
+    anki_fields: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, nullable=False
+    )
+    anki_template: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, nullable=False
+    )
+    anki_tags: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    source_note_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    source_note_guid: Mapped[str | None] = mapped_column(String(255), index=True)
+    source_deck_path: Mapped[str | None] = mapped_column(Text)
     change_reason: Mapped[str] = mapped_column(Text, nullable=False)
     created_by: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[CardVersionStatus] = mapped_column(

@@ -652,12 +652,17 @@ def test_subscriber_can_fetch_manifest_and_initial_anki_snapshot(
                 "new_card_version_id": card["current_version"]["card_version_id"],
                 "card_kind": "basic",
                 "note_type": "Anki Concursos Basic",
+                "template_name": None,
                 "fields": {
                     "Front": card["current_version"]["front_text"],
                     "Back": card["current_version"]["back_text"],
                     "Answer": card["current_version"]["answer_text"],
                     "Explanation": card["current_version"]["explanation_text"],
                 },
+                "template": None,
+                "source_note_id": None,
+                "source_note_guid": None,
+                "source_deck_path": None,
                 "tags": [
                     f"deck::{deck['deck_id']}",
                     f"card::{card['public_id']}",
@@ -1454,3 +1459,313 @@ def test_addon_upload_allows_missing_explanation_field(
     body = response.json()
     assert body["created_cards"] == 1
     assert body["items"][0]["status"] == "created"
+
+
+def test_addon_upload_distinguishes_note_type_in_canonical_key(
+    session: Session,
+) -> None:
+    student_client = create_bearer_client(session)
+    upload_payload = {
+        "deck_name": "Deck Upload Canonical Key",
+        "description": "Baralho com conteudo igual em tipos diferentes",
+        "source_name": "addon",
+        "publish_release": True,
+        "templates": [
+            {
+                "template_name": "Type A",
+                "note_type": "Type A",
+                "card_kind": "basic",
+                "fields": ["Front", "Back"],
+                "field_mapping": {
+                    "Front": "front_text",
+                    "Back": "back_text",
+                },
+                "front_html": "<div>{{Front}}</div>",
+                "back_html": "<div>{{Back}}</div>",
+                "styling_css": "",
+            },
+            {
+                "template_name": "Type B",
+                "note_type": "Type B",
+                "card_kind": "basic",
+                "fields": ["Front", "Back"],
+                "field_mapping": {
+                    "Front": "front_text",
+                    "Back": "back_text",
+                },
+                "front_html": "<div>{{Front}}</div>",
+                "back_html": "<div>{{Back}}</div>",
+                "styling_css": "",
+            },
+        ],
+        "notes": [
+            {
+                "note_type": "Type A",
+                "template_name": "Type A",
+                "card_kind": "basic",
+                "fields": {
+                    "Front": "Conteudo idêntico",
+                    "Back": "Resposta idêntica",
+                },
+            },
+            {
+                "note_type": "Type B",
+                "template_name": "Type B",
+                "card_kind": "basic",
+                "fields": {
+                    "Front": "Conteudo idêntico",
+                    "Back": "Resposta idêntica",
+                },
+            },
+        ],
+    }
+
+    response = student_client.post("/addon/decks/upload", json=upload_payload)
+    assert response.status_code == 201
+    body = response.json()
+    assert body["created_cards"] == 2
+    assert body["reused_cards"] == 0
+    assert {item["note_type"] for item in body["items"]} == {"Type A", "Type B"}
+
+
+def test_addon_upload_recovers_cloze_markup_from_any_raw_field(
+    session: Session,
+) -> None:
+    student_client = create_bearer_client(session)
+    upload_payload = {
+        "deck_name": "Deck Upload Cloze Recovery",
+        "description": "Baralho cloze com marcação fora do front_text",
+        "source_name": "addon",
+        "publish_release": True,
+        "templates": [
+            {
+                "template_name": "Getting Started Cloze",
+                "note_type": "Getting Started Cloze",
+                "card_kind": "cloze",
+                "fields": [
+                    "Lesson",
+                    "Cloze",
+                    "Extra",
+                    "Deep Dive",
+                ],
+                "field_mapping": {
+                    "Lesson": "front_text",
+                    "Cloze": "back_text",
+                    "Extra": "answer_text",
+                    "Deep Dive": "explanation_text",
+                },
+                "front_html": "<div>{{Lesson}}</div>",
+                "back_html": "<div>{{Cloze}}</div>",
+                "styling_css": ".card { font-family: Inter; }",
+            }
+        ],
+        "notes": [
+            {
+                "note_type": "Getting Started Cloze",
+                "template_name": "Getting Started Cloze",
+                "card_kind": "cloze",
+                "fields": {
+                    "Lesson": "Anki will create cards from the note above.",
+                    "Cloze": "Anki will create {{c1::two::#}} cards from the note above.",
+                    "Extra": "Cloze example",
+                    "Deep Dive": "Cloze notes can generate multiple cards.",
+                },
+            }
+        ],
+    }
+
+    response = student_client.post("/addon/decks/upload", json=upload_payload)
+    assert response.status_code == 201
+    body = response.json()
+    assert body["created_cards"] == 1
+    assert body["items"][0]["status"] == "created"
+    assert body["items"][0]["card_kind"] == "cloze"
+
+
+def test_addon_upload_syncs_native_anki_fields_and_template(
+    session: Session,
+) -> None:
+    student_client = create_bearer_client(session)
+    upload_payload = {
+        "deck_name": "Deck Upload Anki Nativo",
+        "description": "Baralho sem campos canonicos",
+        "source_name": "addon",
+        "source_deck_path": "Concurso::Direito",
+        "publish_release": True,
+        "templates": [
+            {
+                "template_name": "Modelo Personalizado",
+                "note_type": "Modelo Personalizado",
+                "card_kind": "basic",
+                "fields": ["Enunciado", "Alternativas", "Comentario"],
+                "field_mapping": {},
+                "front_html": "<section>{{Enunciado}}</section>",
+                "back_html": "<section>{{Alternativas}}{{Comentario}}</section>",
+                "styling_css": ".card { color: #111827; }",
+            }
+        ],
+        "notes": [
+            {
+                "note_type": "Modelo Personalizado",
+                "template_name": "Modelo Personalizado",
+                "card_kind": "basic",
+                "source_note_id": "1714851485108",
+                "source_note_guid": "native-guid-1",
+                "source_deck_path": "Concurso::Direito::Constitucional",
+                "fields": {
+                    "Enunciado": "Julgue o item.",
+                    "Alternativas": "Certo ou errado",
+                    "Comentario": "Comentário livre.",
+                },
+                "tags": ["constitucional", "controle"],
+            }
+        ],
+    }
+
+    upload = student_client.post("/addon/decks/upload", json=upload_payload)
+    assert upload.status_code == 201
+    upload_body = upload.json()
+    assert upload_body["created_cards"] == 1
+    assert upload_body["updated_cards"] == 0
+
+    sync_client = create_bearer_client(session)
+    try:
+        assert sync_client.post(
+            f"/subscriptions/{upload_body['deck_id']}"
+        ).status_code == 200
+        sync = sync_client.get(
+            f"/addon/decks/{upload_body['deck_id']}/sync?since_release=0"
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert sync.status_code == 200
+    change = sync.json()["changes"][0]
+    assert change["note_type"] == "Modelo Personalizado"
+    assert change["template_name"] == "Modelo Personalizado"
+    assert change["fields"] == upload_payload["notes"][0]["fields"]
+    assert change["template"]["front_html"] == "<section>{{Enunciado}}</section>"
+    assert change["template"]["styling_css"] == ".card { color: #111827; }"
+    assert change["source_note_id"] == "1714851485108"
+    assert change["source_note_guid"] == "native-guid-1"
+    assert change["source_deck_path"] == "Concurso::Direito::Constitucional"
+    assert "constitucional" in change["tags"]
+
+
+def test_addon_reupload_same_source_note_creates_new_card_version(
+    session: Session,
+) -> None:
+    student_client = create_bearer_client(session)
+    upload_payload = {
+        "deck_name": "Deck Upload Atualizacao Anki",
+        "description": "Baralho com nota atualizada",
+        "source_name": "addon",
+        "publish_release": True,
+        "templates": [
+            {
+                "template_name": "Modelo Livre",
+                "note_type": "Modelo Livre",
+                "card_kind": "basic",
+                "fields": ["Pergunta", "Resposta"],
+                "field_mapping": {},
+                "front_html": "<div>{{Pergunta}}</div>",
+                "back_html": "<div>{{Resposta}}</div>",
+                "styling_css": "",
+            }
+        ],
+        "notes": [
+            {
+                "note_type": "Modelo Livre",
+                "template_name": "Modelo Livre",
+                "card_kind": "basic",
+                "source_note_id": "note-1",
+                "fields": {
+                    "Pergunta": "Pergunta original",
+                    "Resposta": "Resposta original",
+                },
+            }
+        ],
+    }
+
+    first = student_client.post("/addon/decks/upload", json=upload_payload)
+    assert first.status_code == 201
+    first_body = first.json()
+    first_item = first_body["items"][0]
+
+    upload_payload["notes"][0]["fields"]["Resposta"] = "Resposta atualizada"
+    second = student_client.post("/addon/decks/upload", json=upload_payload)
+
+    assert second.status_code == 201
+    second_body = second.json()
+    second_item = second_body["items"][0]
+    assert second_body["created_cards"] == 0
+    assert second_body["updated_cards"] == 1
+    assert second_item["status"] == "updated"
+    assert second_item["card_id"] == first_item["card_id"]
+    assert second_item["card_version_id"] != first_item["card_version_id"]
+    assert second_body["latest_release"] == 2
+
+
+def test_addon_upload_allows_same_source_note_with_multiple_templates(
+    session: Session,
+) -> None:
+    student_client = create_bearer_client(session)
+    upload_payload = {
+        "deck_name": "Deck Upload Multi Card Note",
+        "description": "Uma nota Anki gerando dois cards",
+        "source_name": "addon",
+        "publish_release": True,
+        "templates": [
+            {
+                "template_name": "Forward",
+                "note_type": "Vocabulario",
+                "card_kind": "basic",
+                "fields": ["Termo", "Definicao"],
+                "field_mapping": {},
+                "front_html": "<div>{{Termo}}</div>",
+                "back_html": "<div>{{Definicao}}</div>",
+                "styling_css": "",
+            },
+            {
+                "template_name": "Reverse",
+                "note_type": "Vocabulario",
+                "card_kind": "basic",
+                "fields": ["Termo", "Definicao"],
+                "field_mapping": {},
+                "front_html": "<div>{{Definicao}}</div>",
+                "back_html": "<div>{{Termo}}</div>",
+                "styling_css": "",
+            },
+        ],
+        "notes": [
+            {
+                "note_type": "Vocabulario",
+                "template_name": "Forward",
+                "card_kind": "basic",
+                "source_note_id": "same-note",
+                "fields": {
+                    "Termo": "Mandado de seguranca",
+                    "Definicao": "Remedio constitucional",
+                },
+            },
+            {
+                "note_type": "Vocabulario",
+                "template_name": "Reverse",
+                "card_kind": "basic",
+                "source_note_id": "same-note",
+                "fields": {
+                    "Termo": "Mandado de seguranca",
+                    "Definicao": "Remedio constitucional",
+                },
+            },
+        ],
+    }
+
+    response = student_client.post("/addon/decks/upload", json=upload_payload)
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["created_cards"] == 2
+    assert body["reused_cards"] == 0
+    assert {item["status"] for item in body["items"]} == {"created"}
+    assert len({item["card_id"] for item in body["items"]}) == 2

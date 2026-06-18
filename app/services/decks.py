@@ -1,3 +1,5 @@
+import hashlib
+import json
 import math
 import re
 import uuid
@@ -53,7 +55,7 @@ from app.schemas.decks import (
     SubscribableDeckResponse,
     SyncChangeResponse,
 )
-from app.services.cards import CLOZE_PATTERN, calculate_content_hash
+from app.services.cards import CLOZE_PATTERN
 
 
 class DeckService:
@@ -418,6 +420,7 @@ class DeckService:
         items: list[AnkiDeckUploadItemResponse] = []
         created_cards = 0
         reused_cards = 0
+        updated_cards = 0
         try:
             with self.session.begin():
                 deck = self.repository.get_by_name(payload.deck_name)
@@ -449,16 +452,61 @@ class DeckService:
                     )
                 )
 
-                template_map = {
-                    template.note_type.lower(): template
-                    for template in payload.templates
-                }
+                template_map: dict[tuple[str, str], AnkiDeckTemplatePayload] = {}
+                templates_by_note_type: dict[str, list[AnkiDeckTemplatePayload]] = {}
+                for template in payload.templates:
+                    normalized_note_type = self._normalize_upload_key(
+                        template.note_type
+                    )
+                    normalized_template_name = self._normalize_upload_key(
+                        template.template_name
+                    )
+                    template_map[
+                        (normalized_note_type, normalized_template_name)
+                    ] = template
+                    templates_by_note_type.setdefault(
+                        normalized_note_type,
+                        [],
+                    ).append(template)
+
                 for note_index, note in enumerate(payload.notes, start=1):
-                    template = template_map.get(note.note_type.lower())
+                    normalized_note_type = self._normalize_upload_key(note.note_type)
+                    normalized_template_name = self._normalize_upload_key(
+                        note.template_name
+                    )
+                    template = None
+                    if normalized_template_name:
+                        template = template_map.get(
+                            (normalized_note_type, normalized_template_name)
+                        )
+                    if template is None:
+                        candidates = templates_by_note_type.get(
+                            normalized_note_type,
+                            [],
+                        )
+                        if len(candidates) == 1:
+                            template = candidates[0]
+                    if template is None and normalized_template_name:
+                        template = next(
+                            (
+                                item
+                                for item in payload.templates
+                                if self._normalize_upload_key(item.template_name)
+                                == normalized_template_name
+                            ),
+                            None,
+                        )
                     if template is None:
                         raise HTTPException(
                             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                            detail=f"Template not found for note_type {note.note_type}",
+                            detail=(
+                                f"Template not found for note_type {note.note_type}"
+                                + (
+                                    f" and template_name {note.template_name}"
+                                    if note.template_name
+                                    else ""
+                                )
+                            ),
                         )
 
                     note_card_kind = self._parse_card_kind(note.card_kind)
@@ -476,17 +524,26 @@ class DeckService:
                         note.fields,
                         template.field_mapping,
                     )
-                    self._validate_content_for_kind(
+                    content = self._complete_upload_content(
                         note_card_kind,
-                        content["front_text"],
+                        content,
+                        note.fields,
                     )
-                    content_hash = calculate_content_hash(
+                    content_hash = self._upload_content_hash(
                         card_kind=note_card_kind,
-                        **content,
+                        note_type=note.note_type,
+                        template_name=template.template_name,
+                        fields=note.fields,
+                        template=template,
+                        tags=note.tags,
                     )
                     canonical_key = self._canonical_key_for_deck_upload(
                         deck.id,
-                        content_hash,
+                        note_type=note.note_type,
+                        template_name=template.template_name,
+                        content_hash=content_hash,
+                        source_note_id=note.source_note_id,
+                        source_note_guid=note.source_note_guid,
                     )
 
                     card = self.card_repository.get_by_canonical_key(canonical_key)
@@ -508,6 +565,17 @@ class DeckService:
                                 back_text=content["back_text"],
                                 answer_text=content["answer_text"],
                                 explanation_text=content["explanation_text"],
+                                note_type=note.note_type,
+                                template_name=template.template_name,
+                                anki_fields=dict(note.fields),
+                                anki_template=template.model_dump(mode="json"),
+                                anki_tags=list(note.tags),
+                                source_note_id=note.source_note_id,
+                                source_note_guid=note.source_note_guid,
+                                source_deck_path=(
+                                    note.source_deck_path
+                                    or payload.source_deck_path
+                                ),
                                 change_reason="Upload do baralho Anki",
                                 created_by=uploaded_by,
                                 status=CardVersionStatus.PUBLISHED,
@@ -522,9 +590,43 @@ class DeckService:
                             raise RuntimeError(
                                 "Existing card is missing its current version"
                             )
-                        version = card.current_version
-                        reused_cards += 1
-                        item_status = "reused"
+                        if card.current_version.content_hash == content_hash:
+                            version = card.current_version
+                            reused_cards += 1
+                            item_status = "reused"
+                        else:
+                            version = self.card_repository.create_version(
+                                CardVersion(
+                                    card_id=card.id,
+                                    version_number=(
+                                        self.card_repository.next_version_number(
+                                            card.id
+                                        )
+                                    ),
+                                    front_text=content["front_text"],
+                                    back_text=content["back_text"],
+                                    answer_text=content["answer_text"],
+                                    explanation_text=content["explanation_text"],
+                                    note_type=note.note_type,
+                                    template_name=template.template_name,
+                                    anki_fields=dict(note.fields),
+                                    anki_template=template.model_dump(mode="json"),
+                                    anki_tags=list(note.tags),
+                                    source_note_id=note.source_note_id,
+                                    source_note_guid=note.source_note_guid,
+                                    source_deck_path=(
+                                        note.source_deck_path
+                                        or payload.source_deck_path
+                                    ),
+                                    change_reason="Upload atualizado do baralho Anki",
+                                    created_by=uploaded_by,
+                                    status=CardVersionStatus.PUBLISHED,
+                                    content_hash=content_hash,
+                                )
+                            )
+                            card.current_version_id = version.id
+                            updated_cards += 1
+                            item_status = "updated"
 
                     membership = self.repository.get_membership(deck.id, card.id)
                     if membership is None:
@@ -617,6 +719,7 @@ class DeckService:
             total_notes=len(items),
             created_cards=created_cards,
             reused_cards=reused_cards,
+            updated_cards=updated_cards,
             items=items,
         )
 
@@ -856,34 +959,158 @@ class DeckService:
             if source and target
         }
         canonical_fields: dict[str, str] = {}
-        required_fields = ("front_text",)
-        optional_fields = (
+        canonical_names = (
+            "front_text",
             "back_text",
             "answer_text",
             "explanation_text",
         )
-        for canonical_name in (*required_fields, *optional_fields):
+        for canonical_name in canonical_names:
             source_name = reverse_mapping.get(canonical_name, canonical_name)
             raw_value = fields.get(source_name, "")
             value = raw_value.strip() if isinstance(raw_value, str) else ""
-            if not value and canonical_name in required_fields:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                    detail=f"Missing required field for {canonical_name}",
-                )
             canonical_fields[canonical_name] = value
+        if not canonical_fields["front_text"]:
+            canonical_fields["front_text"] = next(
+                (
+                    value.strip()
+                    for value in fields.values()
+                    if isinstance(value, str) and value.strip()
+                ),
+                "",
+            )
+        if not canonical_fields["front_text"]:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Uploaded note has no non-empty fields",
+            )
         canonical_fields.setdefault("back_text", "")
         canonical_fields.setdefault("answer_text", "")
         canonical_fields.setdefault("explanation_text", "")
         return canonical_fields
 
     @staticmethod
+    def _complete_upload_content(
+        card_kind: CardKind,
+        content: dict[str, str],
+        raw_fields: dict[str, str],
+    ) -> dict[str, str]:
+        completed = dict(content)
+        front_text = completed.get("front_text", "").strip()
+
+        if card_kind == CardKind.CLOZE and not CLOZE_PATTERN.search(front_text):
+            cloze_source = next(
+                (
+                    value.strip()
+                    for value in raw_fields.values()
+                    if isinstance(value, str) and CLOZE_PATTERN.search(value)
+                ),
+                "",
+            )
+            if cloze_source:
+                original_front_text = front_text
+                completed["front_text"] = cloze_source
+                front_text = cloze_source
+                if not completed.get("back_text", "").strip():
+                    completed["back_text"] = original_front_text or cloze_source
+                if not completed.get("answer_text", "").strip():
+                    completed["answer_text"] = (
+                        completed["back_text"] or original_front_text or cloze_source
+                    )
+                if not completed.get("explanation_text", "").strip():
+                    completed["explanation_text"] = (
+                        original_front_text
+                        or completed["back_text"]
+                        or completed["answer_text"]
+                        or cloze_source
+                    )
+
+        if not completed.get("back_text", "").strip():
+            completed["back_text"] = (
+                completed.get("answer_text", "").strip()
+                or completed.get("explanation_text", "").strip()
+                or front_text
+            )
+        if not completed.get("answer_text", "").strip():
+            completed["answer_text"] = (
+                completed.get("back_text", "").strip() or front_text
+            )
+        if not completed.get("explanation_text", "").strip():
+            completed["explanation_text"] = (
+                completed.get("back_text", "").strip()
+                or completed.get("answer_text", "").strip()
+                or front_text
+            )
+        return completed
+
+    @staticmethod
+    def _upload_content_hash(
+        *,
+        card_kind: CardKind,
+        note_type: str,
+        template_name: str,
+        fields: dict[str, str],
+        template: AnkiDeckTemplatePayload,
+        tags: list[str],
+    ) -> str:
+        canonical_content = json.dumps(
+            {
+                "card_kind": card_kind.value,
+                "fields": fields,
+                "note_type": note_type,
+                "tags": tags,
+                "template": template.model_dump(mode="json"),
+                "template_name": template_name,
+            },
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        return hashlib.sha256(canonical_content.encode("utf-8")).hexdigest()
+
+    @staticmethod
     def _canonical_key_for_deck_upload(
         deck_id: uuid.UUID,
+        *,
+        note_type: str,
+        template_name: str,
         content_hash: str,
+        source_note_id: str | None = None,
+        source_note_guid: str | None = None,
     ) -> str:
+        source_identity = source_note_guid or source_note_id
+        if source_identity:
+            source_key = re.sub(
+                r"[^a-z0-9]",
+                "",
+                source_identity.lower(),
+            )[:120]
+            template_key = re.sub(
+                r"[^a-z0-9]",
+                "",
+                DeckService._normalize_upload_key(template_name),
+            )[:80]
+            return f"deck-{deck_id.hex}-anki-note-{source_key}-{template_key}"
         sanitized_hash = re.sub(r"[^a-z0-9]", "", content_hash.lower())[:48]
-        return f"deck-{deck_id.hex}-{sanitized_hash}"
+        note_key = re.sub(
+            r"[^a-z0-9]",
+            "",
+            DeckService._normalize_upload_key(note_type),
+        )
+        template_key = re.sub(
+            r"[^a-z0-9]",
+            "",
+            DeckService._normalize_upload_key(template_name),
+        )
+        return f"deck-{deck_id.hex}-{note_key}-{template_key}-{sanitized_hash}"
+
+    @staticmethod
+    def _normalize_upload_key(value: str | None) -> str:
+        if not value:
+            return ""
+        cleaned = re.sub(r"\s*\([^)]*\)\s*$", "", value)
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        return cleaned.lower()
 
     def _require_active_subscription(
         self, user_id: uuid.UUID, deck_id: uuid.UUID
@@ -964,9 +1191,15 @@ class DeckService:
         old_card_version_id: uuid.UUID | None,
     ) -> AnkiSyncChangeResponse:
         fields = None
+        template = None
         new_card_version_id = None
         card_kind = None
         note_type = None
+        template_name = None
+        source_note_id = None
+        source_note_guid = None
+        source_deck_path = None
+        tags = [f"deck::{item.release.deck_id}", f"card::{item.card.public_id}"]
         if action in (ReleaseAction.ADDED, ReleaseAction.UPDATED):
             if item.card_version is None:
                 raise RuntimeError(
@@ -974,13 +1207,23 @@ class DeckService:
                 )
             new_card_version_id = item.card_version.id
             card_kind = item.card.card_kind
-            note_config = self.ANKI_NOTE_TYPES[card_kind]
-            note_type = str(note_config["note_type"])
-            field_mapping = note_config["field_mapping"]
-            fields = {
-                field_name: getattr(item.card_version, source_column)
-                for field_name, source_column in field_mapping.items()
-            }
+            note_type = item.card_version.note_type
+            template_name = item.card_version.template_name
+            template = item.card_version.anki_template or None
+            source_note_id = item.card_version.source_note_id
+            source_note_guid = item.card_version.source_note_guid
+            source_deck_path = item.card_version.source_deck_path
+            if item.card_version.anki_fields:
+                fields = dict(item.card_version.anki_fields)
+                tags = list(item.card_version.anki_tags or []) + tags
+            else:
+                note_config = self.ANKI_NOTE_TYPES[card_kind]
+                note_type = str(note_config["note_type"])
+                field_mapping = note_config["field_mapping"]
+                fields = {
+                    field_name: getattr(item.card_version, source_column)
+                    for field_name, source_column in field_mapping.items()
+                }
 
         return AnkiSyncChangeResponse(
             release_id=item.release_id,
@@ -993,8 +1236,13 @@ class DeckService:
             new_card_version_id=new_card_version_id,
             card_kind=card_kind.value if card_kind is not None else None,
             note_type=note_type,
+            template_name=template_name,
             fields=fields,
-            tags=[f"deck::{item.release.deck_id}", f"card::{item.card.public_id}"],
+            template=template,
+            source_note_id=source_note_id,
+            source_note_guid=source_note_guid,
+            source_deck_path=source_deck_path,
+            tags=list(dict.fromkeys(tags)),
         )
 
     @staticmethod

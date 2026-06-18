@@ -181,7 +181,12 @@ class AnkiSyncChangeResponse(BaseModel):
     new_card_version_id: uuid.UUID | None
     card_kind: str | None = None
     note_type: str | None = None
+    template_name: str | None = None
     fields: dict[str, str] | None = None
+    template: dict[str, Any] | None = None
+    source_note_id: str | None = None
+    source_note_guid: str | None = None
+    source_deck_path: str | None = None
     tags: list[str]
 
 
@@ -220,11 +225,22 @@ class AnkiDeckTemplatePayload(BaseModel):
 
 class AnkiDeckUploadNotePayload(BaseModel):
     note_type: str = Field(min_length=1, max_length=255)
+    template_name: str | None = Field(default=None, max_length=255)
     card_kind: CardKind
     fields: dict[str, str] = Field(default_factory=dict)
     tags: list[str] = Field(default_factory=list)
+    source_note_id: str | None = Field(default=None, max_length=255)
+    source_note_guid: str | None = Field(default=None, max_length=255)
+    source_deck_path: str | None = Field(default=None, max_length=5000)
 
-    @field_validator("note_type", mode="before")
+    @field_validator(
+        "note_type",
+        "template_name",
+        "source_note_id",
+        "source_note_guid",
+        "source_deck_path",
+        mode="before",
+    )
     @classmethod
     def strip_note_type(cls, value: object) -> object:
         return value.strip() if isinstance(value, str) else value
@@ -233,12 +249,19 @@ class AnkiDeckUploadNotePayload(BaseModel):
 class AnkiDeckUploadRequest(BaseModel):
     deck_name: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=5000)
+    source_deck_path: str | None = Field(default=None, max_length=5000)
     source_name: str = Field(default="addon", min_length=1, max_length=100)
     publish_release: bool = True
     templates: list[AnkiDeckTemplatePayload] = Field(min_length=1)
     notes: list[AnkiDeckUploadNotePayload] = Field(min_length=1)
 
-    @field_validator("deck_name", "description", "source_name", mode="before")
+    @field_validator(
+        "deck_name",
+        "description",
+        "source_deck_path",
+        "source_name",
+        mode="before",
+    )
     @classmethod
     def strip_upload_metadata(cls, value: object) -> object:
         return value.strip() if isinstance(value, str) else value
@@ -246,7 +269,7 @@ class AnkiDeckUploadRequest(BaseModel):
 
 class AnkiDeckUploadItemResponse(BaseModel):
     note_index: int
-    status: Literal["created", "reused"]
+    status: Literal["created", "reused", "updated"]
     canonical_key: str
     card_id: uuid.UUID
     public_id: str
@@ -265,6 +288,7 @@ class AnkiDeckUploadResponse(BaseModel):
     total_notes: int
     created_cards: int
     reused_cards: int
+    updated_cards: int = 0
     items: list[AnkiDeckUploadItemResponse]
 
 
