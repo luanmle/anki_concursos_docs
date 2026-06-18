@@ -69,6 +69,11 @@ class CardService:
     def create_card(self, payload: CardCreateRequest) -> CardDetailResponse:
         try:
             with self.session.begin():
+                if payload.discipline_id is None or payload.topic_id is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                        detail="Taxonomy is required for manual card creation",
+                    )
                 self._validate_taxonomy(payload.discipline_id, payload.topic_id)
                 self._validate_content_for_kind(payload.card_kind, payload.front_text)
                 if self.repository.get_by_canonical_key(payload.canonical_key):

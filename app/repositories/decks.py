@@ -7,10 +7,12 @@ from app.models import (
     Card,
     Deck,
     DeckCard,
+    DeckSnapshot,
     DeckSubscription,
     Discipline,
     Release,
     ReleaseItem,
+    Topic,
 )
 from app.models.enums import DeckStatus
 
@@ -21,6 +23,9 @@ class DeckRepository:
 
     def discipline_exists(self, discipline_id: uuid.UUID) -> bool:
         return self.session.get(Discipline, discipline_id) is not None
+
+    def topic_exists(self, topic_id: uuid.UUID) -> bool:
+        return self.session.get(Topic, topic_id) is not None
 
     def get_by_name(self, name: str) -> Deck | None:
         return self.session.scalar(select(Deck).where(Deck.name == name))
@@ -47,17 +52,31 @@ class DeckRepository:
         self.session.flush()
         return deck
 
+    def create_snapshot(self, snapshot: DeckSnapshot) -> DeckSnapshot:
+        self.session.add(snapshot)
+        self.session.flush()
+        return snapshot
+
     def get_by_id(self, deck_id: uuid.UUID, *, for_update: bool = False) -> Deck | None:
         statement = (
             select(Deck)
             .options(
                 selectinload(Deck.cards).joinedload(DeckCard.card),
                 selectinload(Deck.cards).joinedload(DeckCard.card_version),
+                selectinload(Deck.snapshots),
             )
             .where(Deck.id == deck_id)
         )
         if for_update:
             statement = statement.with_for_update(of=Deck)
+        return self.session.scalar(statement)
+
+    def latest_snapshot(self, deck_id: uuid.UUID) -> DeckSnapshot | None:
+        statement = (
+            select(DeckSnapshot)
+            .where(DeckSnapshot.deck_id == deck_id)
+            .order_by(DeckSnapshot.created_at.desc(), DeckSnapshot.id.desc())
+        )
         return self.session.scalar(statement)
 
     def list_decks(

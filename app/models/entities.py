@@ -250,11 +250,11 @@ class Card(TimestampMixin, Base):
         ForeignKey("questions.id", ondelete="RESTRICT"), index=True
     )
     canonical_key: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    discipline_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("disciplines.id", ondelete="RESTRICT"), nullable=False, index=True
+    discipline_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("disciplines.id", ondelete="RESTRICT"), index=True
     )
-    topic_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("topics.id", ondelete="RESTRICT"), nullable=False, index=True
+    topic_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("topics.id", ondelete="RESTRICT"), index=True
     )
     current_version_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey(
@@ -442,6 +442,9 @@ class Deck(TimestampMixin, Base):
     cards: Mapped[list["DeckCard"]] = relationship(
         back_populates="deck", cascade="all, delete-orphan"
     )
+    snapshots: Mapped[list["DeckSnapshot"]] = relationship(
+        back_populates="deck", cascade="all, delete-orphan"
+    )
     releases: Mapped[list["Release"]] = relationship(
         back_populates="deck", cascade="all, delete-orphan"
     )
@@ -467,6 +470,31 @@ class DeckSubscription(TimestampMixin, Base):
 
     __table_args__ = (
         UniqueConstraint("user_id", "deck_id", name="uq_deck_subscription_user_deck"),
+    )
+
+
+class DeckSnapshot(TimestampMixin, Base):
+    __tablename__ = "deck_snapshots"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    deck_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("decks.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    uploaded_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    note_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    payload_json: Mapped[dict[str, Any]] = mapped_column(
+        "payload", JSON, default=dict, nullable=False
+    )
+    release_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("releases.id", ondelete="SET NULL"), index=True
+    )
+
+    deck: Mapped[Deck] = relationship(back_populates="snapshots")
+    release: Mapped["Release | None"] = relationship()
+
+    __table_args__ = (
+        CheckConstraint("note_count >= 0", name="non_negative_note_count"),
     )
 
 

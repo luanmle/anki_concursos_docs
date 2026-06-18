@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.models.enums import DeckStatus, ReleaseAction
+from app.models.enums import CardKind, DeckStatus, ReleaseAction
 
 
 class DeckCreateRequest(BaseModel):
@@ -166,6 +166,7 @@ class AnkiDeckManifestResponse(BaseModel):
     fields: list[str]
     field_mapping: dict[str, str]
     supported_note_types: dict[str, dict[str, Any]]
+    templates: list["AnkiDeckTemplatePayload"] = Field(default_factory=list)
     tags: list[str]
 
 
@@ -193,6 +194,78 @@ class AnkiDeckSyncResponse(BaseModel):
     page: int | None = None
     pages: int | None = None
     total_changes: int | None = None
+
+
+class AnkiDeckTemplatePayload(BaseModel):
+    template_name: str = Field(min_length=1, max_length=255)
+    note_type: str = Field(min_length=1, max_length=255)
+    card_kind: CardKind
+    fields: list[str] = Field(min_length=1)
+    field_mapping: dict[str, str] = Field(default_factory=dict)
+    front_html: str = Field(min_length=1)
+    back_html: str = Field(min_length=1)
+    styling_css: str = Field(default="")
+
+    @field_validator(
+        "template_name",
+        "note_type",
+        "front_html",
+        "back_html",
+        mode="before",
+    )
+    @classmethod
+    def strip_template_strings(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
+class AnkiDeckUploadNotePayload(BaseModel):
+    note_type: str = Field(min_length=1, max_length=255)
+    card_kind: CardKind
+    fields: dict[str, str] = Field(default_factory=dict)
+    tags: list[str] = Field(default_factory=list)
+
+    @field_validator("note_type", mode="before")
+    @classmethod
+    def strip_note_type(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
+class AnkiDeckUploadRequest(BaseModel):
+    deck_name: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=5000)
+    source_name: str = Field(default="addon", min_length=1, max_length=100)
+    publish_release: bool = True
+    templates: list[AnkiDeckTemplatePayload] = Field(min_length=1)
+    notes: list[AnkiDeckUploadNotePayload] = Field(min_length=1)
+
+    @field_validator("deck_name", "description", "source_name", mode="before")
+    @classmethod
+    def strip_upload_metadata(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
+class AnkiDeckUploadItemResponse(BaseModel):
+    note_index: int
+    status: Literal["created", "reused"]
+    canonical_key: str
+    card_id: uuid.UUID
+    public_id: str
+    card_version_id: uuid.UUID
+    note_type: str
+    card_kind: CardKind
+
+
+class AnkiDeckUploadResponse(BaseModel):
+    deck_id: uuid.UUID
+    deck_name: str
+    snapshot_id: uuid.UUID
+    release_id: uuid.UUID | None
+    latest_release: int
+    published: bool
+    total_notes: int
+    created_cards: int
+    reused_cards: int
+    items: list[AnkiDeckUploadItemResponse]
 
 
 class AddonStatusResponse(BaseModel):

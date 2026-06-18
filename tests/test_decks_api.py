@@ -42,6 +42,25 @@ def create_bearer_client(session: Session) -> TestClient:
     return TestClient(app, headers={"Authorization": f"Bearer {token}"})
 
 
+def create_curator_client(session: Session) -> TestClient:
+    user = User(
+        email=f"curator-{uuid.uuid4().hex}@example.com",
+        display_name="Curator",
+        password_hash=hash_password("curator-password"),
+        role=UserRole.ADMIN,
+    )
+    session.add(user)
+    session.commit()
+    token, _expires_in = create_access_token(user)
+
+    def override_get_db():
+        with Session(session.get_bind(), expire_on_commit=False) as request_session:
+            yield request_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    return TestClient(app, headers={"Authorization": f"Bearer {token}"})
+
+
 def create_card(
     client: TestClient,
     discipline: Discipline,
@@ -1160,3 +1179,145 @@ def test_deck_list_is_paginated_and_returns_summaries(
     assert body["items"][0]["name"] == "Deck A"
     assert body["items"][0]["active_card_count"] == 0
     assert "cards" not in body["items"][0]
+
+
+def test_addon_can_upload_full_deck_package_and_publish_release(
+    session: Session,
+) -> None:
+    student_client = create_bearer_client(session)
+    upload_payload = {
+        "deck_name": "Deck Upload Completo",
+        "description": "Baralho completo enviado pelo addon",
+        "source_name": "addon",
+        "publish_release": True,
+        "templates": [
+            {
+                "template_name": "Basic",
+                "note_type": "Anki Concursos Basic",
+                "card_kind": "basic",
+                "fields": [
+                    "Front",
+                    "Back",
+                    "Answer",
+                    "Explanation",
+                ],
+                "field_mapping": {
+                    "Front": "front_text",
+                    "Back": "back_text",
+                    "Answer": "answer_text",
+                    "Explanation": "explanation_text",
+                },
+                "front_html": "<div class=\"front\">{{Front}}</div>",
+                "back_html": "<div class=\"back\">{{Back}}</div>",
+                "styling_css": ".card { font-family: Inter; }",
+            }
+        ],
+        "notes": [
+            {
+                "note_type": "Anki Concursos Basic",
+                "card_kind": "basic",
+                "fields": {
+                    "Front": "Qual é a capital do Brasil?",
+                    "Back": "Brasília.",
+                    "Answer": "Brasília.",
+                    "Explanation": "Capital federal do Brasil.",
+                },
+                "tags": ["geografia", "capital"],
+            }
+        ],
+    }
+
+    response = student_client.post("/addon/decks/upload", json=upload_payload)
+    assert response.status_code == 201
+    body = response.json()
+    assert body["deck_name"] == "Deck Upload Completo"
+    assert body["published"] is True
+    assert body["total_notes"] == 1
+    assert body["created_cards"] == 1
+    assert body["reused_cards"] == 0
+    assert body["latest_release"] == 1
+    assert body["items"][0]["status"] == "created"
+    assert body["items"][0]["note_type"] == "Anki Concursos Basic"
+    assert body["items"][0]["card_kind"] == "basic"
+
+    subscriber_client = create_bearer_client(session)
+    try:
+        assert subscriber_client.post(
+            f"/subscriptions/{body['deck_id']}"
+        ).status_code == 200
+        manifest = subscriber_client.get(
+            f"/addon/decks/{body['deck_id']}/manifest"
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert manifest.status_code == 200
+    manifest_body = manifest.json()
+    assert manifest_body["note_type"] == "Anki Concursos Basic"
+    assert manifest_body["fields"] == [
+        "Front",
+        "Back",
+        "Answer",
+        "Explanation",
+    ]
+    assert manifest_body["templates"][0]["template_name"] == "Basic"
+    assert manifest_body["templates"][0]["styling_css"] == ".card { font-family: Inter; }"
+
+
+def test_addon_upload_reuses_cards_for_identical_content(
+    session: Session,
+) -> None:
+    student_client = create_bearer_client(session)
+    upload_payload = {
+        "deck_name": "Deck Upload Dedup",
+        "description": "Baralho deduplicado",
+        "source_name": "addon",
+        "publish_release": True,
+        "templates": [
+            {
+                "template_name": "Basic",
+                "note_type": "Anki Concursos Basic",
+                "card_kind": "basic",
+                "fields": [
+                    "Front",
+                    "Back",
+                    "Answer",
+                    "Explanation",
+                ],
+                "field_mapping": {
+                    "Front": "front_text",
+                    "Back": "back_text",
+                    "Answer": "answer_text",
+                    "Explanation": "explanation_text",
+                },
+                "front_html": "<div>{{Front}}</div>",
+                "back_html": "<div>{{Back}}</div>",
+                "styling_css": ".card { font-family: Inter; }",
+            }
+        ],
+        "notes": [
+            {
+                "note_type": "Anki Concursos Basic",
+                "card_kind": "basic",
+                "fields": {
+                    "Front": "Qual é a capital do Brasil?",
+                    "Back": "Brasília.",
+                    "Answer": "Brasília.",
+                    "Explanation": "Capital federal do Brasil.",
+                },
+                "tags": ["geografia", "capital"],
+            }
+        ],
+    }
+
+    first = student_client.post("/addon/decks/upload", json=upload_payload)
+    second = student_client.post("/addon/decks/upload", json=upload_payload)
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert first.json()["created_cards"] == 1
+    assert second.json()["created_cards"] == 0
+    assert second.json()["reused_cards"] == 1
+    assert second.json()["published"] is False
+    assert second.json()["latest_release"] == 1
+    assert second.json()["items"][0]["status"] == "reused"

@@ -9,7 +9,11 @@ from app.core.security import require_authenticated_user
 from app.models import User
 from app.repositories import DeckRepository
 from app.schemas import AnkiDeckManifestResponse, AnkiDeckSyncResponse
-from app.schemas.decks import AddonStatusResponse
+from app.schemas.decks import (
+    AddonStatusResponse,
+    AnkiDeckUploadRequest,
+    AnkiDeckUploadResponse,
+)
 from app.services import DeckService
 
 router = APIRouter(prefix="/addon", tags=["addon"])
@@ -58,3 +62,12 @@ def sync_anki_deck(
         page=page,
         page_size=page_size,
     )
+
+
+@router.post("/decks/upload", response_model=AnkiDeckUploadResponse, status_code=201)
+def upload_anki_deck(
+    payload: AnkiDeckUploadRequest,
+    user: User = Depends(require_authenticated_user),
+    service: DeckService = Depends(get_deck_service),
+) -> AnkiDeckUploadResponse:
+    return service.upload_anki_deck(payload, uploaded_by=user.email)

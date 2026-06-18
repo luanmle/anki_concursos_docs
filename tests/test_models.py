@@ -36,7 +36,8 @@ def test_mvp_1_tables_are_declared() -> None:
     assert set(Base.metadata.tables) == {
         "raw_documents", "exams", "questions", "question_alternatives",
         "disciplines", "topics", "cards", "card_versions", "decks",
-        "deck_cards", "deck_subscriptions", "releases", "release_items",
+        "deck_cards", "deck_subscriptions", "deck_snapshots",
+        "releases", "release_items",
         "processing_jobs",
         "card_reports", "review_tasks",
         "users",

@@ -27,8 +27,8 @@ class CardContentInput(BaseModel):
 
 class CardCreateRequest(CardContentInput):
     canonical_key: str = Field(min_length=1, max_length=255)
-    discipline_id: uuid.UUID
-    topic_id: uuid.UUID
+    discipline_id: uuid.UUID | None = None
+    topic_id: uuid.UUID | None = None
     change_reason: str = Field(
         default="Versao inicial",
         min_length=1,
@@ -109,8 +109,8 @@ class CardSummaryResponse(BaseModel):
     canonical_key: str
     card_kind: CardKind
     note_type: str
-    discipline_id: uuid.UUID
-    topic_id: uuid.UUID
+    discipline_id: uuid.UUID | None
+    topic_id: uuid.UUID | None
     status: CardStatus
     current_version: CardVersionResponse | None
     created_at: datetime

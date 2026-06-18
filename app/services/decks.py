@@ -1,4 +1,5 @@
 import math
+import re
 import uuid
 from datetime import UTC, datetime
 
@@ -6,7 +7,16 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
 from app.exporters import CsvExport, ReleaseCsvRow, build_release_csv
-from app.models import Card, Deck, DeckCard, DeckSubscription, Release, ReleaseItem
+from app.models import (
+    Card,
+    CardVersion,
+    Deck,
+    DeckCard,
+    DeckSnapshot,
+    DeckSubscription,
+    Release,
+    ReleaseItem,
+)
 from app.models.enums import (
     CardKind,
     CardStatus,
@@ -14,7 +24,7 @@ from app.models.enums import (
     DeckStatus,
     ReleaseAction,
 )
-from app.repositories import DeckRepository
+from app.repositories import CardRepository, DeckRepository
 from app.schemas import (
     DeckCreateRequest,
     DeckListResponse,
@@ -30,6 +40,10 @@ from app.schemas import (
 from app.schemas.decks import (
     AnkiDeckManifestResponse,
     AnkiDeckSyncResponse,
+    AnkiDeckTemplatePayload,
+    AnkiDeckUploadItemResponse,
+    AnkiDeckUploadRequest,
+    AnkiDeckUploadResponse,
     AnkiSyncChangeResponse,
     DeckCardResponse,
     DeckSummaryResponse,
@@ -39,6 +53,7 @@ from app.schemas.decks import (
     SubscribableDeckResponse,
     SyncChangeResponse,
 )
+from app.services.cards import CLOZE_PATTERN, calculate_content_hash
 
 
 class DeckService:
@@ -73,6 +88,7 @@ class DeckService:
     def __init__(self, repository: DeckRepository) -> None:
         self.repository = repository
         self.session = repository.session
+        self.card_repository = CardRepository(self.session)
 
     def create_deck(self, payload: DeckCreateRequest) -> DeckResponse:
         try:
@@ -306,19 +322,34 @@ class DeckService:
         self, deck_id: uuid.UUID, *, user_id: uuid.UUID
     ) -> AnkiDeckManifestResponse:
         deck = self._require_active_subscription(user_id, deck_id).deck
+        snapshot = self.repository.latest_snapshot(deck.id)
+        templates = self._manifest_templates(snapshot)
+        primary_template = templates[0] if templates else None
         return AnkiDeckManifestResponse(
             deck_id=deck.id,
             name=deck.name,
             description=deck.description,
             latest_release=self.repository.latest_release_number(deck.id),
-            note_type="Anki Concursos Basic",
-            fields=["Front", "Back", "Answer", "Explanation"],
-            field_mapping={
-                "Front": "front_text",
-                "Back": "back_text",
-                "Answer": "answer_text",
-                "Explanation": "explanation_text",
-            },
+            note_type=(
+                primary_template.note_type
+                if primary_template is not None
+                else "Anki Concursos Basic"
+            ),
+            fields=(
+                primary_template.fields
+                if primary_template is not None
+                else ["Front", "Back", "Answer", "Explanation"]
+            ),
+            field_mapping=(
+                primary_template.field_mapping
+                if primary_template is not None
+                else {
+                    "Front": "front_text",
+                    "Back": "back_text",
+                    "Answer": "answer_text",
+                    "Explanation": "explanation_text",
+                }
+            ),
             supported_note_types={
                 kind.value: {
                     "note_type": config["note_type"],
@@ -327,6 +358,7 @@ class DeckService:
                 }
                 for kind, config in self.ANKI_NOTE_TYPES.items()
             },
+            templates=templates,
             tags=[f"deck::{deck.id}"],
         )
 
@@ -372,6 +404,220 @@ class DeckService:
             page=page,
             pages=pages,
             total_changes=total_changes if page is not None else None,
+        )
+
+    def upload_anki_deck(  # noqa: C901 - orchestration across upload, versioning and release
+        self,
+        payload: AnkiDeckUploadRequest,
+        *,
+        uploaded_by: str,
+    ) -> AnkiDeckUploadResponse:
+        deck: Deck | None = None
+        snapshot: DeckSnapshot | None = None
+        release: Release | None = None
+        items: list[AnkiDeckUploadItemResponse] = []
+        created_cards = 0
+        reused_cards = 0
+        try:
+            with self.session.begin():
+                deck = self.repository.get_by_name(payload.deck_name)
+                if deck is None:
+                    deck = self.repository.create(
+                        Deck(
+                            name=payload.deck_name,
+                            discipline_id=None,
+                            description=payload.description,
+                            status=DeckStatus.DRAFT,
+                        )
+                    )
+                else:
+                    if deck.status == DeckStatus.ARCHIVED:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail="Archived decks cannot receive uploads",
+                        )
+                    if payload.description is not None:
+                        deck.description = payload.description
+
+                snapshot = self.repository.create_snapshot(
+                    DeckSnapshot(
+                        deck_id=deck.id,
+                        uploaded_by=uploaded_by,
+                        source_name=payload.source_name,
+                        note_count=len(payload.notes),
+                        payload_json=payload.model_dump(mode="json"),
+                    )
+                )
+
+                template_map = {
+                    template.note_type.lower(): template
+                    for template in payload.templates
+                }
+                for note_index, note in enumerate(payload.notes, start=1):
+                    template = template_map.get(note.note_type.lower())
+                    if template is None:
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                            detail=f"Template not found for note_type {note.note_type}",
+                        )
+
+                    note_card_kind = self._parse_card_kind(note.card_kind)
+                    template_card_kind = self._parse_card_kind(template.card_kind)
+                    if note_card_kind != template_card_kind:
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                            detail=(
+                                "Note card_kind does not match the declared "
+                                f"template for {note.note_type}"
+                            ),
+                        )
+
+                    content = self._map_upload_content(
+                        note.fields,
+                        template.field_mapping,
+                    )
+                    self._validate_content_for_kind(
+                        note_card_kind,
+                        content["front_text"],
+                    )
+                    content_hash = calculate_content_hash(
+                        card_kind=note_card_kind,
+                        **content,
+                    )
+                    canonical_key = self._canonical_key_for_deck_upload(
+                        deck.id,
+                        content_hash,
+                    )
+
+                    card = self.card_repository.get_by_canonical_key(canonical_key)
+                    if card is None:
+                        card = self.card_repository.create_card(
+                        Card(
+                            canonical_key=canonical_key,
+                            card_kind=note_card_kind,
+                            discipline_id=None,
+                            topic_id=None,
+                            status=CardStatus.PUBLISHED,
+                        )
+                    )
+                        version = self.card_repository.create_version(
+                            CardVersion(
+                                card_id=card.id,
+                                version_number=1,
+                                front_text=content["front_text"],
+                                back_text=content["back_text"],
+                                answer_text=content["answer_text"],
+                                explanation_text=content["explanation_text"],
+                                change_reason="Upload do baralho Anki",
+                                created_by=uploaded_by,
+                                status=CardVersionStatus.PUBLISHED,
+                                content_hash=content_hash,
+                            )
+                        )
+                        card.current_version_id = version.id
+                        created_cards += 1
+                        item_status = "created"
+                    else:
+                        if card.current_version is None:
+                            raise RuntimeError(
+                                "Existing card is missing its current version"
+                            )
+                        version = card.current_version
+                        reused_cards += 1
+                        item_status = "reused"
+
+                    membership = self.repository.get_membership(deck.id, card.id)
+                    if membership is None:
+                        self.repository.add_membership(
+                            DeckCard(
+                                deck_id=deck.id,
+                                card_id=card.id,
+                                card_version_id=version.id,
+                            )
+                        )
+                    else:
+                        membership.card_version_id = version.id
+                        membership.removed_at = None
+                        membership.removal_action = None
+                        membership.added_at = datetime.now(UTC)
+
+                    items.append(
+                        AnkiDeckUploadItemResponse(
+                            note_index=note_index,
+                            status=item_status,
+                            canonical_key=canonical_key,
+                            card_id=card.id,
+                            public_id=card.public_id,
+                            card_version_id=version.id,
+                            note_type=template.note_type,
+                            card_kind=note_card_kind.value,
+                        )
+                    )
+
+                self.session.flush()
+                deck = self.repository.get_by_id(deck.id, for_update=True)
+                if deck is None:
+                    raise RuntimeError("Uploaded deck could not be reloaded")
+
+                if payload.publish_release:
+                    previous_state = self._release_state(
+                        self.repository.release_items(deck.id)
+                    )
+                    release_changes = self._release_changes(
+                        previous_state,
+                        deck.cards,
+                    )
+                    if release_changes:
+                        release = self.repository.create_release(
+                            Release(
+                                deck_id=deck.id,
+                                release_number=self.repository.next_release_number(
+                                    deck.id
+                                ),
+                                description=(
+                                    payload.description
+                                    or "Upload completo do baralho Anki"
+                                ),
+                            )
+                        )
+                        self.repository.create_release_items(
+                            [
+                                ReleaseItem(
+                                    release_id=release.id,
+                                    card_id=card_id,
+                                    card_version_id=card_version_id,
+                                    action=action,
+                                )
+                                for card_id, card_version_id, action in sorted(
+                                    release_changes,
+                                    key=lambda change: str(change[0]),
+                                )
+                            ]
+                        )
+                        deck.status = DeckStatus.PUBLISHED
+                        snapshot.release_id = release.id
+                        self.session.flush()
+        except IntegrityError as exc:
+            self.session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Deck upload could not be created due to a data conflict",
+            ) from exc
+
+        assert deck is not None
+        assert snapshot is not None
+        latest_release = self.repository.latest_release_number(deck.id)
+        return AnkiDeckUploadResponse(
+            deck_id=deck.id,
+            deck_name=deck.name,
+            snapshot_id=snapshot.id,
+            release_id=release.id if release is not None else None,
+            latest_release=latest_release,
+            published=release is not None,
+            total_notes=len(items),
+            created_cards=created_cards,
+            reused_cards=reused_cards,
+            items=items,
         )
 
     def add_card(self, deck_id: uuid.UUID, card_id: uuid.UUID) -> DeckResponse:
@@ -561,6 +807,82 @@ class DeckService:
                 f"card::{card.public_id}",
             )
         )
+
+    @staticmethod
+    def _manifest_templates(
+        snapshot: DeckSnapshot | None,
+    ) -> list[AnkiDeckTemplatePayload]:
+        if snapshot is None:
+            return []
+        raw_templates = snapshot.payload_json.get("templates", [])
+        templates: list[AnkiDeckTemplatePayload] = []
+        for raw_template in raw_templates:
+            try:
+                templates.append(AnkiDeckTemplatePayload.model_validate(raw_template))
+            except Exception:
+                continue
+        return templates
+
+    @staticmethod
+    def _parse_card_kind(value: CardKind | str) -> CardKind:
+        if isinstance(value, CardKind):
+            return value
+        normalized = value.strip().lower()
+        if normalized in {"basic", "anki concursos basic"}:
+            return CardKind.BASIC
+        if normalized in {"cloze", "anki concursos cloze"}:
+            return CardKind.CLOZE
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="card_kind must be basic or cloze",
+        )
+
+    @staticmethod
+    def _validate_content_for_kind(card_kind: CardKind, front_text: str) -> None:
+        if card_kind == CardKind.CLOZE and not CLOZE_PATTERN.search(front_text):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Cloze cards must include {{c1::...}} markup in front_text",
+            )
+
+    @staticmethod
+    def _map_upload_content(
+        fields: dict[str, str],
+        field_mapping: dict[str, str],
+    ) -> dict[str, str]:
+        reverse_mapping = {
+            target.strip(): source.strip()
+            for source, target in field_mapping.items()
+            if source and target
+        }
+        canonical_fields = {
+            "front_text": None,
+            "back_text": None,
+            "answer_text": None,
+            "explanation_text": None,
+        }
+        for canonical_name in canonical_fields:
+            source_name = reverse_mapping.get(canonical_name, canonical_name)
+            raw_value = fields.get(source_name, "")
+            value = raw_value.strip() if isinstance(raw_value, str) else ""
+            if not value:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    detail=f"Missing required field for {canonical_name}",
+                )
+            canonical_fields[canonical_name] = value
+        return {
+            key: value if value is not None else ""
+            for key, value in canonical_fields.items()
+        }
+
+    @staticmethod
+    def _canonical_key_for_deck_upload(
+        deck_id: uuid.UUID,
+        content_hash: str,
+    ) -> str:
+        sanitized_hash = re.sub(r"[^a-z0-9]", "", content_hash.lower())[:48]
+        return f"deck-{deck_id.hex}-{sanitized_hash}"
 
     def _require_active_subscription(
         self, user_id: uuid.UUID, deck_id: uuid.UUID
