@@ -1,8 +1,21 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminSuggestionsPage } from './CommunityInterfacePages'
 
 const STORAGE_KEY = 'anki-concursos-suggestions'
+const queryClient = new QueryClient()
+
+vi.mock('../auth/auth-context', () => ({
+  useAuth: () => ({
+    token: null,
+    user: null,
+    loading: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    hasRole: vi.fn(() => true),
+  }),
+}))
 
 describe('AdminSuggestionsPage', () => {
   beforeEach(() => {
@@ -13,7 +26,15 @@ describe('AdminSuggestionsPage', () => {
     cleanup()
   })
 
-  it('marks a suggestion as converted to a new version', () => {
+  function renderPage() {
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <AdminSuggestionsPage />
+      </QueryClientProvider>,
+    )
+  }
+
+  it('marks a suggestion as converted to a new version', async () => {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify([
@@ -30,17 +51,17 @@ describe('AdminSuggestionsPage', () => {
       ]),
     )
 
-    render(<AdminSuggestionsPage />)
+    renderPage()
 
     fireEvent.click(screen.getByRole('button', { name: /converter em nova versão/i }))
 
-    expect(screen.getByText('Convertido em nova versão')).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /converter em nova versão/i }),
-    ).toBeDisabled()
+    await waitFor(() =>
+      expect(screen.getByTitle('converted_to_new_version')).toBeInTheDocument(),
+    )
+    expect(screen.getByRole('button', { name: /converter em nova versão/i })).toBeDisabled()
   })
 
-  it('marks a suggestion as rejected', () => {
+  it('marks a suggestion as rejected', async () => {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify([
@@ -57,11 +78,11 @@ describe('AdminSuggestionsPage', () => {
       ]),
     )
 
-    render(<AdminSuggestionsPage />)
+    renderPage()
 
     fireEvent.click(screen.getByRole('button', { name: /rejeitar/i }))
 
-    expect(screen.getByText('Rejeitado')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByTitle('rejected')).toBeInTheDocument())
     expect(screen.getByRole('button', { name: /rejeitar/i })).toBeDisabled()
   })
 })

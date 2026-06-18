@@ -1902,11 +1902,25 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   --text: #e0e3e5;
   --muted: #c2c6d4;
   --primary: #acc7ff;
+  --on-primary: #002f67;
   --primary-strong: #0056b3;
   --primary-container: #0056b3;
+  --on-primary-container: #bbd0ff;
+  --primary-fixed: #d7e2ff;
+  --on-primary-fixed-variant: #004491;
+  --secondary: #4ae176;
+  --on-secondary: #003915;
+  --secondary-container: #00b954;
+  --tertiary: #ffb95f;
+  --tertiary-container: #7d4e00;
+  --on-tertiary-container: #ffc57f;
+  --surface-tint: #acc7ff;
+  --inverse-primary: #115cb9;
   --success: #4ae176;
   --warning: #ffb95f;
   --danger: #ffb4ab;
+  --error-container: #93000a;
+  --on-error-container: #ffdad6;
   background: var(--background);
 }
 
@@ -1951,9 +1965,10 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   margin: 4px 0 0;
   color: var(--text);
   font-family: "Hanken Grotesk", Inter, sans-serif;
-  font-size: clamp(34px, 4vw, 48px);
-  line-height: 1.06;
-  letter-spacing: -.03em;
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: -0.01em;
+  font-weight: 700;
 }
 
 .ac-hero p,
@@ -2039,15 +2054,17 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   overflow: hidden;
   padding: 24px;
   border: 1px solid var(--outline-variant);
-  border-radius: 16px;
+  border-radius: 0.75rem;
   background: var(--surface-lowest);
-  transition: border-color .16s ease, transform .16s ease, background .16s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: border-color .16s ease, transform .16s ease, background .16s ease, box-shadow .16s ease;
 }
 
 .ac-deck-card:hover {
   transform: translateY(-2px);
   border-color: var(--primary);
   background: #0e1314;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .ac-deck-card-active::before {
@@ -2122,7 +2139,13 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
 }
 
 .ac-button-primary {
-  color: #002f67;
+  color: var(--on-primary-container);
+  background: var(--primary-container);
+  transition: background .16s ease, color .16s ease;
+}
+
+.ac-button-primary:hover {
+  color: var(--on-primary);
   background: var(--primary);
 }
 
@@ -2349,7 +2372,8 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   padding: 0 14px;
 }
 
-.ac-modal-tabs button.active {
+.ac-modal-tabs button.active,
+.ac-comment-tabs button.active {
   color: var(--primary);
   border-color: var(--primary);
   background: var(--surface-lowest);
@@ -2653,6 +2677,13 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
 }
 
 @media (max-width: 720px) {
+  .ac-hero h1,
+  .ac-deck-hero h1,
+  .ac-community-hero h1 {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
   .ac-deck-grid,
   .ac-admin-metrics,
   .ac-admin-actions,

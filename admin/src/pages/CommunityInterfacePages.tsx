@@ -35,6 +35,8 @@ import { StatusBadge } from '../components/ui'
 import type {
   AnkiDeckSync,
   AnkiSyncChange,
+  CardSummary,
+  CardVersion,
   SubscribableDeck,
   SubscribableDeckList,
 } from '../types'
@@ -120,7 +122,7 @@ export function ExplorePage() {
         <SegmentedFilter value={filter} onChange={setFilter} />
       </header>
 
-      <label className="ac-search ac-search-mobile">
+      <label className="ac-search">
         <Search size={18} />
         <input
           value={query}
@@ -370,12 +372,13 @@ function SuggestChangePanel({
   const [sent, setSent] = useState(false)
 
   function submitSuggestion() {
-    const suggestion: StudentSuggestion = {
-      id: crypto.randomUUID(),
-      deckId,
-      publicId: note.public_id,
-      changeType,
-      message,
+      const suggestion: StudentSuggestion = {
+        id: crypto.randomUUID(),
+        deckId,
+        cardId: note.card_id,
+        publicId: note.public_id,
+        changeType,
+        message,
       proposedFields: fields,
       status: 'pending',
       createdAt: new Date().toISOString(),
@@ -442,9 +445,17 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
     'anki-concursos-comments',
     initialComments,
   )
+  const [activeTab, setActiveTab] = useState<'all' | CommentKind>('all')
   const [kind, setKind] = useState<CommentKind>('comment')
   const [body, setBody] = useState('')
   const noteComments = comments.filter((comment) => comment.publicId === publicId)
+
+  const countByKind = (k: CommentKind) => noteComments.filter((c) => c.kind === k).length
+
+  const filteredComments = noteComments.filter((comment) => {
+    if (activeTab === 'all') return true
+    return comment.kind === activeTab
+  })
 
   function addComment() {
     if (!body.trim()) return
@@ -463,11 +474,47 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
     setBody('')
   }
 
+  function handleTabChange(tabKey: 'all' | CommentKind) {
+    setActiveTab(tabKey)
+    if (tabKey !== 'all') {
+      setKind(tabKey)
+    }
+  }
+
+  function handleUpvote(commentId: string) {
+    setComments((prev) =>
+      prev.map((c) => (c.id === commentId ? { ...c, score: c.score + 1 } : c))
+    )
+  }
+
+  const tabOptions: { key: 'all' | CommentKind; label: string; count: number }[] = [
+    { key: 'all', label: 'Todos', count: noteComments.length },
+    { key: 'tip', label: 'Dicas', count: countByKind('tip') },
+    { key: 'mnemonic', label: 'Mnemônicos', count: countByKind('mnemonic') },
+    { key: 'question', label: 'Dúvidas', count: countByKind('question') },
+    { key: 'correction', label: 'Correções', count: countByKind('correction') },
+  ]
+
+  const kindLabels: Record<CommentKind, string> = {
+    comment: 'Comentário',
+    tip: 'Dica',
+    mnemonic: 'Mnemônico',
+    question: 'Dúvida',
+    correction: 'Correção',
+  }
+
   return (
     <div className="ac-comments-panel">
       <div className="ac-comment-tabs">
-        {['Todos', 'Dicas', 'Mnemônicos', 'Dúvidas', 'Correções'].map((tab) => (
-          <button key={tab} type="button">{tab}</button>
+        {tabOptions.map(({ key, label, count }) => (
+          <button
+            key={key}
+            type="button"
+            className={activeTab === key ? 'active' : ''}
+            onClick={() => handleTabChange(key)}
+          >
+            {label} ({count})
+          </button>
         ))}
       </div>
       <div className="ac-new-comment">
@@ -488,16 +535,16 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
         </button>
       </div>
       <div className="ac-comment-list">
-        {noteComments.map((comment) => (
+        {filteredComments.map((comment) => (
           <article key={comment.id}>
             <header>
               <strong>{comment.author}</strong>
-              <span>{comment.kind}</span>
+              <span className="ac-comment-kind-badge">{kindLabels[comment.kind]}</span>
               <small>{formatDate(comment.createdAt)}</small>
             </header>
             <p>{comment.body}</p>
             <footer>
-              <button type="button">
+              <button type="button" onClick={() => handleUpvote(comment.id)}>
                 <ThumbsUp size={15} />
                 Útil ({comment.score})
               </button>
@@ -505,9 +552,9 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
             </footer>
           </article>
         ))}
-        {!noteComments.length && (
+        {!filteredComments.length && (
           <EmptyPanel
-            title="Sem comentários nesta nota"
+            title="Sem comentários nesta categoria"
             description="Seja o primeiro a registrar uma dica ou dúvida."
           />
         )}
@@ -580,21 +627,121 @@ export function AdminDecksPage() {
 }
 
 export function AdminSuggestionsPage() {
+  const { token } = useAuth()
+  const queryClient = useQueryClient()
   const [suggestions, setSuggestions] = useLocalStorageState<StudentSuggestion[]>(
     'anki-concursos-suggestions',
     [],
   )
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   function updateSuggestionStatus(
     suggestionId: string,
     status: StudentSuggestion['status'],
+    extra?: Partial<StudentSuggestion>,
   ) {
     setSuggestions((current) =>
       current.map((item) =>
-        item.id === suggestionId ? { ...item, status } : item,
+        item.id === suggestionId ? { ...item, status, ...extra } : item,
       ),
     )
   }
+
+  const convertSuggestion = useMutation({
+    mutationFn: async (suggestion: StudentSuggestion) => {
+      setError(null)
+      setSuccess(null)
+
+      if (!token) {
+        updateSuggestionStatus(suggestion.id, 'converted_to_new_version')
+        return { cardId: suggestion.cardId ?? null, versionId: null, deckId: suggestion.deckId }
+      }
+
+      const cardId = await resolveSuggestionCardId(suggestion, token)
+      const payload = buildVersionPayload(suggestion)
+      const created = await apiRequest<CardVersion>(
+        `/cards/${cardId}/versions`,
+        {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        },
+        token,
+      )
+
+      await apiRequest(
+        `/cards/${cardId}/versions/${created.card_version_id}/approve`,
+        { method: 'POST' },
+        token,
+      )
+      await apiRequest(
+        `/cards/${cardId}/versions/${created.card_version_id}/publish`,
+        { method: 'POST' },
+        token,
+      )
+
+      await apiRequest(
+        `/decks/${suggestion.deckId}/cards`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ card_id: cardId }),
+        },
+        token,
+      )
+      await apiRequest(
+        `/decks/${suggestion.deckId}/publish-release`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            description: `Sugestão aceita: ${suggestion.changeType}`,
+          }),
+        },
+        token,
+      )
+
+      return { cardId, versionId: created.card_version_id, deckId: suggestion.deckId }
+    },
+    onSuccess: ({ cardId, versionId, deckId }, suggestion) => {
+      updateSuggestionStatus(suggestion.id, 'converted_to_new_version', {
+        resultingCardVersionId: versionId,
+      })
+      queryClient.invalidateQueries({ queryKey: ['cards'] })
+      if (cardId) {
+        queryClient.invalidateQueries({ queryKey: ['card', cardId] })
+      }
+      queryClient.invalidateQueries({ queryKey: ['decks'] })
+      if (deckId) {
+        queryClient.invalidateQueries({ queryKey: ['deck', deckId] })
+      }
+      setSuccess('Sugestão convertida e publicada.')
+    },
+    onError: (mutationError) => {
+      setError(
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'Falha ao processar a sugestão.',
+      )
+    },
+  })
+
+  const rejectSuggestion = useMutation({
+    mutationFn: async (suggestion: StudentSuggestion) => {
+      setError(null)
+      setSuccess(null)
+      updateSuggestionStatus(suggestion.id, 'rejected')
+      return suggestion.id
+    },
+    onSuccess: () => {
+      setSuccess('Sugestão rejeitada.')
+    },
+    onError: (mutationError) => {
+      setError(
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'Falha ao rejeitar a sugestão.',
+      )
+    },
+  })
 
   return (
     <div className="ac-page ac-admin-page">
@@ -603,6 +750,8 @@ export function AdminSuggestionsPage() {
         <h1>Sugestões dos Estudantes</h1>
         <p>Revise propostas enviadas a partir das notas sem editar conteúdo publicado diretamente.</p>
       </header>
+      {error && <div className="ac-warning-box">{error}</div>}
+      {success && <div className="ac-success-box">{success}</div>}
       <div className="ac-suggestion-list">
         {suggestions.map((suggestion) => (
           <article key={suggestion.id}>
@@ -610,6 +759,9 @@ export function AdminSuggestionsPage() {
               <strong>{suggestion.publicId}</strong>
               <span>{suggestion.changeType}</span>
               <StatusBadge value={suggestion.status} />
+              {suggestion.resultingCardVersionId && (
+                <span>v {suggestion.resultingCardVersionId.slice(0, 8)}</span>
+              )}
             </header>
             <p>{suggestion.message || 'Sem comentário adicional.'}</p>
             <footer>
@@ -617,14 +769,14 @@ export function AdminSuggestionsPage() {
               <button
                 type="button"
                 disabled={suggestion.status !== 'pending'}
-                onClick={() => updateSuggestionStatus(suggestion.id, 'converted_to_new_version')}
+                onClick={() => convertSuggestion.mutate(suggestion)}
               >
                 Converter em nova versão
               </button>
               <button
                 type="button"
                 disabled={suggestion.status !== 'pending'}
-                onClick={() => updateSuggestionStatus(suggestion.id, 'rejected')}
+                onClick={() => rejectSuggestion.mutate(suggestion)}
               >
                 Rejeitar
               </button>
@@ -674,6 +826,48 @@ export function CommunityFuturePage() {
   )
 }
 
+async function resolveSuggestionCardId(
+  suggestion: StudentSuggestion,
+  token: string,
+) {
+  if (suggestion.cardId) return suggestion.cardId
+  const card = await apiRequest<CardSummary>(
+    `/cards/public/${encodeURIComponent(suggestion.publicId)}`,
+    {},
+    token,
+  )
+  return card.card_id
+}
+
+function buildVersionPayload(suggestion: StudentSuggestion) {
+  const fields = suggestion.proposedFields
+  const front_text =
+    fields.Front || fields.Text || fields.front_text || fields.question || ''
+  const back_text =
+    fields.Back || fields.Extra || fields.back_text || fields.extra || fields.answer || ''
+  const answer_text =
+    fields.Answer || fields.answer_text || back_text || front_text
+  const explanation_text =
+    fields.Explanation || fields.explanation_text || fields.Extra || back_text
+  const change_reason = suggestion.message.trim()
+    ? `${suggestion.changeType}: ${suggestion.message.trim()}`
+    : suggestion.changeType
+
+  if (!front_text || !back_text || !answer_text || !explanation_text) {
+    throw new Error(
+      'A sugestão não contém campos suficientes para criar uma nova versão.',
+    )
+  }
+
+  return {
+    front_text,
+    back_text,
+    answer_text,
+    explanation_text,
+    change_reason,
+  }
+}
+
 function DeckCard({ deck }: { deck: SubscribableDeck }) {
   return (
     <article className={`ac-deck-card ${deck.subscribed ? 'ac-deck-card-active' : ''}`}>
@@ -703,7 +897,8 @@ function SubscriptionButton({ deck }: { deck: SubscribableDeck }) {
   const { token } = useAuth()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const mutation = useMutation({
+
+  const subscribeMutation = useMutation({
     mutationFn: () => apiRequest(`/subscriptions/${deck.deck_id}`, { method: 'POST' }, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['community-decks'] })
@@ -712,12 +907,34 @@ function SubscriptionButton({ deck }: { deck: SubscribableDeck }) {
     },
   })
 
+  const unsubscribeMutation = useMutation({
+    mutationFn: () => apiRequest(`/subscriptions/${deck.deck_id}`, { method: 'DELETE' }, token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['community-decks'] })
+      queryClient.invalidateQueries({ queryKey: ['deck-subscriptions'] })
+    },
+  })
+
+  if (deck.subscribed) {
+    return (
+      <button
+        className="ac-button ac-button-secondary"
+        type="button"
+        disabled={unsubscribeMutation.isPending}
+        onClick={() => unsubscribeMutation.mutate()}
+      >
+        <Check size={18} className="text-secondary" />
+        Desinscrever
+      </button>
+    )
+  }
+
   return (
     <button
-      className="ac-button ac-button-secondary"
+      className="ac-button ac-button-primary"
       type="button"
-      disabled={mutation.isPending}
-      onClick={() => mutation.mutate()}
+      disabled={subscribeMutation.isPending}
+      onClick={() => subscribeMutation.mutate()}
     >
       <Plus size={18} />
       Inscrever-se
