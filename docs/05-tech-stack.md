@@ -1,29 +1,30 @@
-# Stack Técnica
+# Stack Tecnica
 
 ## Objetivo
 
-Manter um núcleo relacional, auditável e simples para versionamento e
-distribuição de flashcards.
+Manter um nucleo relacional, auditavel e simples para versionamento e
+distribuicao de flashcards.
 
-## Stack principal
+## Stack Principal
 
-- PostgreSQL 17;
-- Python 3.12;
-- FastAPI;
-- SQLAlchemy 2;
-- Alembic;
-- pytest;
-- Docker e Docker Compose.
-- Heroku Container Runtime e Heroku Postgres;
-- GitHub Actions;
-- Ruff e pytest-cov.
+- PostgreSQL 17
+- Python 3.12
+- FastAPI
+- SQLAlchemy 2
+- Alembic
+- pytest
+- Docker e Docker Compose
+- Heroku Container Runtime e Heroku Postgres
+- GitHub Actions
+- Ruff e pytest-cov
+- Honeybadger para observabilidade do backend
 
-## Banco de dados
+## Banco De Dados
 
-PostgreSQL é a fonte de verdade para:
+PostgreSQL e a fonte de verdade para:
 
-- identidade dos cartões;
-- histórico de versões;
+- identidade dos cartoes;
+- historico de versoes;
 - taxonomia;
 - decks;
 - releases;
@@ -32,17 +33,16 @@ PostgreSQL é a fonte de verdade para:
 
 ## Backend
 
-FastAPI deve expor APIs administrativas e de distribuição usando:
+FastAPI expoe APIs administrativas e de distribuicao usando:
 
 ```text
-Route → Service → Repository → Model
+Route -> Service -> Repository -> Model
 ```
 
-Endpoints administrativos usam Bearer tokens HMAC-SHA256 com expiração.
-Usuários e papéis são persistidos em `users`. Senhas usam
-PBKDF2-HMAC-SHA256 com salt individual e não dependem de serviço externo.
+Endpoints administrativos usam Bearer tokens. Usuarios e papeis sao
+persistidos em `users`. Senhas usam PBKDF2-HMAC-SHA256 com salt individual.
 
-Papéis iniciais:
+Papeis iniciais:
 
 ```text
 admin
@@ -51,66 +51,75 @@ reviewer
 student
 ```
 
-`X-Admin-API-Key` é compatibilidade temporária para desenvolvimento e testes.
-`ALLOW_LEGACY_ADMIN_API_KEY` deve ser `false` em produção.
+`X-Admin-API-Key` e compatibilidade temporaria para desenvolvimento e testes.
+`ALLOW_LEGACY_ADMIN_API_KEY` deve ser `false` em producao.
 
-## Operação
+## Add-on E Frontend
+
+O add-on do Anki e um cliente separado que:
+
+- envia baralhos completos;
+- sincroniza decks assinados;
+- preserva templates e campos nativos;
+- nao acessa o banco diretamente;
+- nao substitui o backend como fonte de verdade.
+
+O frontend administrativo vive em `admin/` e e publicado em app Heroku
+separado.
+
+## Operacao
 
 - logs estruturados em JSON para stdout;
 - `X-Request-ID` propagado em cada resposta;
 - `/health` para liveness;
 - `/ready` para readiness com consulta ao PostgreSQL;
-- CORS explícito por `CORS_ORIGINS`;
-- Swagger e OpenAPI desabilitados por padrão em produção;
+- CORS explicito por `CORS_ORIGINS`;
+- Swagger e OpenAPI desabilitados por padrao em producao;
 - migrations executadas por `python -m app.operations.predeploy`;
-- advisory lock PostgreSQL serializa execuções concorrentes de migration;
-- o Alembic reutiliza a mesma conexão que mantém o advisory lock;
+- advisory lock PostgreSQL serializa execucoes concorrentes de migration;
+- o Alembic reutiliza a mesma conexao que mantem o advisory lock;
 - release phase do Heroku executa migrations, seed e bootstrap;
 - processo web escuta exclusivamente na porta `$PORT`;
-- pool SQLAlchemy é configurável por ambiente;
-- produção exige TLS PostgreSQL por `DATABASE_SSLMODE`;
+- pool SQLAlchemy e configuravel por ambiente;
+- producao exige TLS PostgreSQL por `DATABASE_SSLMODE`;
 - requests possuem limite global de corpo;
-- rate limit em memória possui limite de chaves e confiança explícita no proxy;
+- rate limit em memoria possui limite de chaves e confianca explicita no proxy;
 - backup e restore seguem `docs/11-production-operations.md`.
 
-## Qualidade automatizada
+## Qualidade Automatizada
 
 O CI executa:
 
 ```text
 Ruff com C901 e limite de complexidade 12
 compileall
-pytest com cobertura mínima de 80%
+pytest com cobertura minima de 80%
 PostgreSQL 17 para migrations, constraints e triggers
 Alembic offline SQL
 ```
 
-As versões diretas validadas são fixadas em `constraints.txt`.
+As versoes diretas validadas sao fixadas em `constraints.txt`.
 
-## Exportação CSV
+## Exportacao CSV
 
-Usar inicialmente a biblioteca padrão `csv` do Python. Não adicionar bibliotecas
-de processamento tabular sem necessidade real.
+Usar inicialmente a biblioteca padrao `csv` do Python. Nao adicionar
+bibliotecas de processamento tabular sem necessidade real.
 
-O MVP 4 gera arquivos sob demanda em `app/exporters`, usando `csv`,
-`io.StringIO` e `hashlib` da biblioteca padrão. O resultado é retornado
-diretamente enquanto o volume esperado for pequeno.
-
-Streaming, jobs e storage externo só devem ser introduzidos quando houver
-necessidade comprovada de arquivos grandes, retenção ou distribuição.
+O CSV continua sendo gerado por release. Streaming, jobs e storage externo
+sao introduzidos apenas quando houver necessidade comprovada.
 
 ## Redis
 
-Redis existe no ambiente atual, mas não é dependência funcional do MVP.
-RQ ou outro worker só deve ser adicionado quando métricas demonstrarem que
-publicação ou exportação não podem ocorrer de forma síncrona.
+Redis existe no ambiente atual, mas nao e dependencia funcional do MVP.
+RQ ou outro worker so deve ser adicionado quando metricas demonstrarem que
+publicacao ou exportacao nao podem ocorrer de forma sincronica.
 
-## Fora da stack
+## Fora Da Stack
 
 - ferramentas de PDF e OCR;
 - `pgvector`;
 - LLMs, embeddings e RAG;
 - Prefect ou Airflow;
 - Kubernetes;
-- microserviços;
-- integração direta com arquivos internos do Anki.
+- microservicos;
+- integracao direta com arquivos internos do Anki.

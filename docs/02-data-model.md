@@ -1,32 +1,23 @@
-# Modelo de Dados
+# Modelo De Dados
 
-## Princípios
+## Principios
 
-1. `cards` representa identidade estável.
-2. `card_versions` representa conteúdo imutável.
-3. Alterações pedagógicas criam novas versões.
-4. Releases são publicações imutáveis.
-5. CSV é uma projeção de uma release.
-6. Histórico publicado nunca é apagado.
+1. `cards` representa identidade estavel.
+2. `card_versions` representa conteudo imutavel.
+3. `decks` agrupam cartoes publicados.
+4. `releases` sao imutaveis.
+5. `card_reports` e `review_tasks` preservam curadoria auditavel.
+6. O add-on trabalha com deck completo e templates nativos do Anki.
 
-## Acesso administrativo
-
-### users
+## Usuarios
 
 ```text
-id
-email
-display_name
-password_hash
-role
-is_active
-credential_version
-last_login_at
-created_at
-updated_at
+users
+id, email, display_name, password_hash, role, is_active, credential_version,
+last_login_at, created_at, updated_at
 ```
 
-Papéis:
+Roles:
 
 ```text
 admin
@@ -35,257 +26,64 @@ reviewer
 student
 ```
 
-Regras:
+`student` autentica, assina decks e sincroniza o add-on.
 
-- `email` é único e normalizado para minúsculas pela API;
-- senha nunca é armazenada em texto puro;
-- `password_hash` usa PBKDF2-HMAC-SHA256 com salt individual;
-- usuário inativo não pode autenticar nem continuar usando tokens;
-- alterações de senha, papel ou ativação incrementam `credential_version` e
-  revogam tokens emitidos anteriormente;
-- a autorização consulta o papel atual no banco, não apenas o papel no token;
-- `admin` gerencia usuários e possui todas as permissões;
-- `curator` cadastra, consulta e cria versões e decks;
-- `reviewer` aprova, publica, cria releases e revisa reports.
-- `student` acessa o add-on, assina decks publicados e sincroniza cartoes;
-  nao possui permissao administrativa.
-
-## Núcleo
-
-### disciplines
+## Taxonomia
 
 ```text
-id
-name
-parent_id
-created_at
-updated_at
+disciplines
+topics
 ```
 
-### topics
+Taxonomia segue util para organizacao interna e para cards manuais.
+
+## Cartoes
 
 ```text
-id
-discipline_id
-name
-parent_id
-created_at
-updated_at
+cards
+id, public_id, canonical_key, discipline_id, topic_id, current_version_id,
+status, card_kind, created_at, updated_at
 ```
 
-### cards
-
 ```text
-id
-public_id
-origin_question_id
-canonical_key
-discipline_id
-topic_id
-current_version_id
-status
-card_kind
-created_at
-updated_at
+card_versions
+id, card_id, version_number, front_text, back_text, answer_text,
+explanation_text, change_reason, created_by, status, content_hash,
+note_type, template_name, anki_fields, anki_template, anki_tags,
+source_note_id, source_note_guid, source_deck_path, created_at, updated_at
 ```
 
-`origin_question_id` é legado e opcional. A identidade do cartão não depende
-de documento ou questão.
+O backend preserva os campos nativos do Anki para upload e sync de decks
+completos.
 
-`public_id` usa o formato `AC-` seguido de 32 caracteres hexadecimais
-maiúsculos. Ele é único, imutável, pesquisável e preservado entre versões.
-
-`card_kind` define o modelo pedagogico do cartao. Valores oficiais iniciais:
-
-- `basic`: mapeado para o note type `Anki Concursos Basic`.
-- `cloze`: mapeado para o note type `Anki Concursos Cloze`.
-
-Cartoes existentes assumem `basic`. O tipo pertence ao `card_id` estavel; novas
-versoes preservam o mesmo `card_kind`.
-
-### card_versions
+## Decks E Releases
 
 ```text
-id
-card_id
-version_number
-front_text
-back_text
-answer_text
-explanation_text
-change_reason
-created_by
-status
-content_hash
-created_at
-updated_at
+decks
+deck_cards
+deck_subscriptions
+releases
+release_items
+deck_snapshots
 ```
 
 Regras:
 
-- `UNIQUE(card_id, version_number)`;
-- versão publicada é imutável;
-- `cards.current_version_id` deve pertencer ao mesmo cartão;
-- conteúdo exportado deve vir da versão registrada na release.
-
-### decks
-
-```text
-id
-name
-discipline_id
-description
-status
-created_at
-updated_at
-```
-
-### deck_cards
-
-```text
-id
-deck_id
-card_id
-public_id
-card_version_id
-added_at
-removed_at
-removal_action
-```
-
-`card_version_id` deve pertencer ao mesmo `card_id`.
-
-Quando `removed_at` estiver preenchido, `removal_action` deve ser `removed` ou
-`deprecated`. A depreciação registrada aqui é específica da distribuição no
-deck.
-
-### deck_subscriptions
-
-```text
-id
-user_id
-deck_id
-unsubscribed_at
-created_at
-updated_at
-```
-
-Representa a assinatura de um usuario autenticado em um deck publicado.
-
-Regras:
-
-- `UNIQUE(user_id, deck_id)`;
-- apenas decks publicados devem ser assinados;
-- cancelamento preenche `unsubscribed_at` em vez de apagar o historico;
-- o add-on do Anki so pode consultar manifesto e sync de decks com assinatura
-  ativa.
-
-### releases
-
-```text
-id
-deck_id
-release_number
-published_at
-description
-created_at
-updated_at
-```
-
-### release_items
-
-```text
-id
-release_id
-card_id
-card_version_id
-action
-created_at
-updated_at
-```
-
-Ações:
-
-```text
-added
-updated
-removed
-deprecated
-```
-
-`card_version_id`, quando informado, deve pertencer ao mesmo `card_id`.
-
-Releases e seus itens são imutáveis após a criação.
+- deck e release sao as unidades de distribuicao;
+- assinatura e por deck;
+- release e imutavel;
+- `deck_cards.card_version_id` sempre aponta para a versao atual ativa;
+- uploads do add-on criam snapshot do pacote completo;
+- `discipline_id` e `topic_id` continuam opcionais no fluxo de upload do deck.
 
 ## Curadoria
 
-### card_reports
-
 ```text
-id
-card_id
-card_version_id
-reporter_reference
-report_type
-message
-status
-created_at
-updated_at
+card_reports
+review_tasks
 ```
 
-Tipos:
-
-```text
-typo
-wrong_answer
-outdated_law
-bad_explanation
-classification_error
-duplicate_card
-suggestion
-```
-
-Status:
-
-```text
-open
-in_review
-approved
-rejected
-resolved
-duplicate
-```
-
-Regras:
-
-- report sempre aponta para `card_id` e `card_version_id`;
-- a versão deve pertencer ao mesmo cartão;
-- `reporter_reference` é uma referência opcional informada pelo cliente e não
-  representa identidade autenticada;
-- cartão, versão, referência, tipo e mensagem do report são imutáveis;
-- status terminal não pode ser reaberto;
-- reports não podem ser apagados;
-- o envio público aceita somente uma versão publicada.
-
-### review_tasks
-
-```text
-id
-report_id
-status
-assigned_to
-decision
-admin_comment
-evidence_reviewed
-resulting_card_version_id
-reviewed_at
-created_at
-updated_at
-```
-
-Existe uma tarefa por report.
-
-Decisões terminais do MVP 6:
+Decisoes atuais:
 
 ```text
 rejected
@@ -293,96 +91,16 @@ duplicate
 converted_to_new_version
 ```
 
-Regras:
-
-- decisão concluída exige responsável, comentário e data;
-- `outdated_law` convertido exige `evidence_reviewed = true`;
-- `converted_to_new_version` exige `resulting_card_version_id`;
-- a versão resultante deve pertencer ao cartão reportado;
-- rejeição e duplicidade não podem gerar versão;
-- tarefas concluídas são imutáveis;
-- tarefas de revisão não podem ser apagadas.
-
-`quality_checks` permanece como extensão futura.
-
-## Evidências Futuras
+## Operacao E Auditoria
 
 ```text
-knowledge_sources
-knowledge_chunks
-card_evidence
+processing_jobs
 ```
 
-Evidências pertencem a uma `card_version`, pois a fundamentação pode mudar
-entre versões.
+Usado para rastrear operacoes criticas, publicacao e exportacao quando
+necessario.
 
-## Jobs
+## Legado
 
-`processing_jobs` pode registrar publicação ou exportação:
-
-```text
-id
-job_type
-entity_type
-entity_id
-status
-started_at
-finished_at
-error_message
-input_snapshot
-output_snapshot
-created_at
-updated_at
-```
-
-Filas assíncronas não são obrigatórias no primeiro MVP.
-
-## Exportações CSV
-
-O CSV deve ser derivado de uma release e incluir:
-
-```text
-card_id
-card_version_id
-deck_id
-front_text
-back_text
-answer_text
-explanation_text
-tags
-```
-
-Uma futura tabela de auditoria pode registrar:
-
-```text
-release_exports
-- id
-- release_id
-- format
-- delimiter
-- content_hash
-- row_count
-- created_by
-- created_at
-```
-
-O conteúdo do CSV não deve ser duplicado no banco como fonte primária.
-
-## Entidades Legadas
-
-As tabelas abaixo existem na migration inicial, mas estão fora do escopo ativo:
-
-```text
-raw_documents
-exams
-questions
-question_alternatives
-```
-
-Não criar novas dependências com elas. Sua remoção exige migration própria e
-decisão explícita sobre compatibilidade.
-
-## Extensões
-
-Campos adicionais e templates devem seguir
-`docs/09-future-card-extensions.md`.
+Tabelas antigas de documentos e questoes continuam fora do fluxo principal.
+Nao devem ser reintroduzidas como dependencia de produto.

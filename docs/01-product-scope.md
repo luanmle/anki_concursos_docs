@@ -1,145 +1,91 @@
 # Escopo do Produto
 
-## Visão geral
+## Visao Geral
 
-O produto é uma plataforma de dados versionados para flashcards de concursos
-públicos. Seu foco é armazenar, revisar, versionar e distribuir cartões para
-uso no Anki.
+Anki Concursos e uma plataforma de flashcards versionados para concursos
+publicos. O produto combina:
 
-## Responsabilidades
+- backend FastAPI com versionamento, releases e sync;
+- painel administrativo em React;
+- add-on do Anki para sincronizacao e upload de baralhos completos;
+- area futura de community e comentarios por nota.
 
-### Catálogo de flashcards
-
-Cada cartão possui identidade estável, taxonomia controlada, versão atual e
-histórico completo.
-
-Além do UUID interno, cada cartão possui um `public_id` único e imutável,
-visível ao usuário e pesquisável na plataforma.
-
-### Versionamento
-
-Alterações pedagógicas criam novas versões. Versões publicadas são imutáveis e
-permanecem disponíveis para auditoria.
-
-### Curadoria
-
-Cartões podem ser cadastrados manualmente ou importados por uma integração.
-Todo conteúdo passa por validação e revisão antes da publicação.
-
-Usuários podem reportar uma versão publicada. Cada report gera uma tarefa de
-revisão administrativa. A decisão é auditável e pode:
+## Unidade Principal Do Produto
 
 ```text
-rejected
-duplicate
-converted_to_new_version
+card_id           identidade estavel
+card_version_id   conteudo imutavel
+deck_id           unidade de distribuicao
+release_id        pacote publicado
+public_id         identificador pesquisavel
 ```
 
-Uma conversão cria uma nova versão em `needs_review`. Ela não altera a versão
-reportada, não muda automaticamente `current_version_id` e não atualiza decks.
-
-### Decks e releases
-
-Cartões publicados são organizados em decks. Cada publicação gera uma release
-imutável contendo ações explícitas:
+## Fluxo Atual
 
 ```text
-added
-updated
-removed
-deprecated
+cartao/nota -> nova versao -> revisao -> publicacao
+deck -> release -> exportacao CSV ou sync do add-on
+upload do add-on -> deck completo com templates, fields, html e css
 ```
 
-### Exportação para Anki
+## O Que O Produto Faz
 
-Uma release pode ser exportada em CSV. A exportação deve incluir identificadores
-estáveis para permitir rastreamento e futuras atualizações:
+- armazena cartoes e versoes imutaveis;
+- organiza cartoes em decks;
+- publica releases deterministicas;
+- exporta CSV por release;
+- sincroniza decks com o Anki;
+- recebe upload de baralho completo do add-on;
+- registra reports e revisao editorial;
+- expoe painel administrativo;
+- envia erros e eventos criticos ao Honeybadger no backend.
+
+## Papéis
 
 ```text
-card_id
-public_id
-card_version_id
-deck_id
-front_text
-back_text
-answer_text
-explanation_text
-tags
+admin
+curator
+reviewer
+student
 ```
 
-O formato exato poderá ser configurável, mas a identidade nunca deve depender
-do texto do cartão.
+- `admin`: acesso total e administracao de usuarios.
+- `curator`: cria cartoes, versoes e compoe decks.
+- `reviewer`: aprova, publica, revisa reports e releases.
+- `student`: assina decks, sincroniza e interage com a experiencia de estudo.
 
-### Sincronização incremental
+## Experiencia Do Estudante
 
-Clientes autenticados podem listar releases e consultar somente os deltas
-posteriores à última release aplicada localmente. A sincronização preserva:
+O estudante deve ver:
 
-```text
-card_id
-public_id
-old_card_version_id
-new_card_version_id
-action
-release_number
-```
+- Explore;
+- Meus Baralhos;
+- detalhe de deck;
+- preview de nota;
+- sugestao de mudanca;
+- comentarios futuros.
 
-As mudanças são aplicadas sequencialmente. O sistema não acessa o banco interno
-do Anki e não armazena o progresso de revisão do usuário.
+O estudante nao deve ver:
 
-### Assinaturas de decks
+- importacao CSV;
+- cards/new;
+- filtros editoriais internos;
+- operacoes administrativas.
 
-O produto passa a tratar decks publicados como unidade principal de distribuicao.
-Um usuario autenticado pode assinar um deck e o add-on do Anki pode consultar:
+## Fora Do Escopo Imediato
 
-```text
-GET /addon/decks/{deck_id}/manifest
-GET /addon/decks/{deck_id}/sync?since_release=0
-```
-
-O manifesto descreve o note type e os campos esperados pelo Anki. O sync do
-add-on entrega snapshot inicial ou deltas posteriores, sempre preservando
-`card_id`, `public_id` e `card_version_id`.
-
-Endpoint conceitual:
-
-```text
-GET /cards/public/{public_id}
-```
-
-A consulta pública retorna apenas cartões publicados. Rascunhos e versões em
-revisão exigem acesso administrativo.
-
-### Interface administrativa
-
-Uma interface administrativa simples será construída depois da preparação do
-backend para produção. Seu objetivo será permitir:
-
-- adicionar cartões;
-- consultar cartões e seu histórico;
-- modificar conteúdo por meio de uma nova versão;
-- aprovar e publicar versões;
-- organizar cartões em decks;
-- publicar releases;
-- baixar o CSV para importação no Anki.
-
-A interface consumirá exclusivamente a API. Ela não acessará o PostgreSQL
-diretamente e não permitirá edição de uma versão publicada.
-
-## Fora do escopo
-
-- processamento de PDFs;
 - OCR;
-- extração de provas ou questões;
-- geração de flashcards por IA;
-- embeddings e RAG;
-- sincronização direta com o banco interno do Anki;
-- agendamento de revisão ou progresso do estudante;
-- aplicativo móvel.
-- edição colaborativa em tempo real;
-- construtor visual avançado de templates do Anki na primeira interface.
+- PDFs;
+- geracao por IA;
+- RAG;
+- aplicativo movel;
+- edicao direta de versao publicada;
+- sincronizacao direta com o banco do Anki.
 
-## Integrações futuras
+## Canais E Integrações
 
-Um gerador externo ou add-on do Anki poderá consumir APIs autenticadas. Esses
-clientes nunca acessam diretamente o banco nem alteram versões publicadas.
+- backend principal: FastAPI;
+- frontend administrativo: React + Vite;
+- add-on Anki: upload e sync de decks assinados;
+- observabilidade: Honeybadger no backend;
+- deploy: backend e frontend em apps Heroku separados.

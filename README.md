@@ -223,6 +223,22 @@ Reports podem ser enviados sem a chave administrativa, mas somente para uma
 versão publicada. Listagem e decisões de curadoria exigem
 um usuário com papel `reviewer` ou `admin`.
 
+## Observabilidade
+
+O backend integra Honeybadger de forma opcional por meio da variável de
+ambiente `HONEYBADGER_API_KEY`.
+
+Quando a variável está definida, a aplicação:
+
+- inicializa o SDK no startup;
+- captura exceções não tratadas do FastAPI;
+- notifica manualmente falhas em upload de `.apkg`, importação CSV,
+  sincronização de baralhos e operações críticas de banco;
+- envia contexto útil, como `request_id`, `endpoint`, `method`, `deck_id` e
+  `card_id`, sem expor dados sensíveis.
+
+Em desenvolvimento local, a variável pode permanecer vazia.
+
 Operação no Heroku, PostgreSQL real, backup e restore estão descritos em
 `docs/11-production-operations.md`.
 

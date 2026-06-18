@@ -272,3 +272,18 @@ heroku releases:rollback <release> -a <app>
 Rollback da aplicação não desfaz automaticamente migrations. Downgrade de banco
 exige análise específica, compatibilidade com a versão anterior e backup
 confirmado.
+
+## Observabilidade
+
+O backend integra Honeybadger por `HONEYBADGER_API_KEY`.
+
+Regras:
+
+- configurar a variável em staging e produção;
+- manter vazia em desenvolvimento local se não houver conta de teste;
+- o SDK inicializa no startup do backend;
+- o predeploy também notifica falhas criticas;
+- erros monitorados incluem upload de `.apkg`, importacao CSV, sync e
+  operações de banco;
+- contexto enviado deve incluir `request_id`, rota e ids relevantes sem
+  expor tokens ou payloads completos.
