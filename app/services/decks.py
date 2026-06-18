@@ -856,12 +856,12 @@ class DeckService:
             if source and target
         }
         canonical_fields: dict[str, str] = {}
-        required_fields = (
-            "front_text",
+        required_fields = ("front_text",)
+        optional_fields = (
             "back_text",
             "answer_text",
+            "explanation_text",
         )
-        optional_fields = ("explanation_text",)
         for canonical_name in (*required_fields, *optional_fields):
             source_name = reverse_mapping.get(canonical_name, canonical_name)
             raw_value = fields.get(source_name, "")
@@ -872,6 +872,8 @@ class DeckService:
                     detail=f"Missing required field for {canonical_name}",
                 )
             canonical_fields[canonical_name] = value
+        canonical_fields.setdefault("back_text", "")
+        canonical_fields.setdefault("answer_text", "")
         canonical_fields.setdefault("explanation_text", "")
         return canonical_fields
 

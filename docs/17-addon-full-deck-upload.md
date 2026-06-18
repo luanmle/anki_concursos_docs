@@ -60,6 +60,10 @@ O payload deve conter:
 - lista de templates;
 - lista de notas.
 
+O add-on tambem deve manter um mapeamento explicito por note type na sua
+configuracao local (`upload_field_mappings`). O pacote nao deve depender de
+heuristica para descobrir nomes de campo.
+
 ### Exemplo de payload
 
 ```json
@@ -130,6 +134,9 @@ Campos obrigatorios:
 
 `styling_css` e aceito para preservar o design do cartao.
 
+O `field_mapping` precisa ser declarado explicitamente no add-on. O upload nao
+faz inferencia por nome, ordem ou conteudo de campo.
+
 ### `notes`
 
 Cada item de `notes` representa uma nota do baralho.
@@ -164,16 +171,17 @@ Exemplo de mapeamento:
 }
 ```
 
-O add-on deve garantir que cada nota tenha os campos esperados pelo template.
-Se um campo obrigatorio estiver faltando, o backend rejeita o upload.
+O add-on deve enviar apenas os campos que estiverem definidos no
+`field_mapping` explicito. Campos nao mapeados nao precisam existir no pacote e
+nao sao inferidos.
 
 Importante:
 
 - o backend nao assume que o campo cloze esteja em uma posicao fixa;
-- o backend usa o `field_mapping` do template para descobrir qual campo preenche
-  `front_text`;
+- o backend usa o `field_mapping` informado pelo add-on para descobrir qual
+  campo preenche `front_text`;
 - o mesmo deck pode conter varios templates com campos diferentes;
-- cada `note_type` deve ser mapeado pelo template correspondente.
+- cada `note_type` deve ter um mapeamento explicito no add-on.
 - `explanation_text` e opcional e pode ficar vazio se o modelo de nota nao
   possuir um campo equivalente;
 - o importador nao bloqueia o upload apenas porque nao existe explicacao.
@@ -187,7 +195,8 @@ O upload suporta inicialmente:
 
 ### Basic
 
-Use quando a nota tiver frente, verso, resposta e explicacao.
+Use quando a nota tiver um campo de frente mapeado e, opcionalmente, campos de
+verso, resposta e explicacao.
 
 ### Cloze
 
@@ -199,11 +208,12 @@ O campo mapeado para `front_text` deve conter a marcação cloze:
 {{c1::...}}
 ```
 
-Se o cloze vier em um campo chamado `Cloze`, o template deve mapear esse
-campo para `front_text`. Se vier em outro campo, o add-on deve mapear esse
-campo corretamente no `field_mapping`.
+Se o cloze vier em um campo chamado `Cloze`, o add-on deve mapear esse campo
+para `front_text`. Se vier em outro campo, o add-on deve declarar esse campo no
+`field_mapping`.
 
-Se a nota cloze nao tiver um campo de explicacao, o upload continua valido.
+Se a nota cloze nao tiver um campo de explicacao, resposta ou verso, o upload
+continua valido desde que o `field_mapping` explicito esteja coerente.
 
 ## Taxonomy
 
@@ -305,10 +315,10 @@ ambientes:
 
 Antes de enviar o pacote, o add-on deve validar:
 
-- se existe template para cada `note_type`;
-- se os campos esperados estao presentes;
+- se existe mapeamento explicito para cada `note_type`;
+- se os campos fonte existem na nota local;
 - se `card_kind` bate com o template;
-- se cloze possui markup `{{c1::...}}`.
+- se cloze possui markup `{{c1::...}}` no campo mapeado para `front_text`.
 
 ### 3. Envio Em Lote
 
