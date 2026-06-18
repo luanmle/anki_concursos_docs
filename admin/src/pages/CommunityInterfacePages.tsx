@@ -31,6 +31,7 @@ import {
 } from '../data/communityData'
 import { useLocalStorageState } from '../hooks/useLocalStorageState'
 import { formatDate } from '../lib/presentation'
+import { StatusBadge } from '../components/ui'
 import type {
   AnkiDeckSync,
   AnkiSyncChange,
@@ -520,6 +521,7 @@ export function AdminDashboardPage() {
     'anki-concursos-suggestions',
     [],
   )
+  const pendingSuggestions = suggestions.filter((item) => item.status === 'pending')
   return (
     <div className="ac-page ac-admin-page">
       <header className="ac-hero">
@@ -529,7 +531,7 @@ export function AdminDashboardPage() {
       </header>
       <section className="ac-admin-metrics">
         <MetricCard label="Baralhos publicados" value="12" />
-        <MetricCard label="Sugestões pendentes" value={String(suggestions.length)} />
+        <MetricCard label="Sugestões pendentes" value={String(pendingSuggestions.length)} />
         <MetricCard label="Versões em revisão" value="25" />
         <MetricCard label="Releases pendentes" value="3" />
       </section>
@@ -582,6 +584,18 @@ export function AdminSuggestionsPage() {
     'anki-concursos-suggestions',
     [],
   )
+
+  function updateSuggestionStatus(
+    suggestionId: string,
+    status: StudentSuggestion['status'],
+  ) {
+    setSuggestions((current) =>
+      current.map((item) =>
+        item.id === suggestionId ? { ...item, status } : item,
+      ),
+    )
+  }
+
   return (
     <div className="ac-page ac-admin-page">
       <header className="ac-hero">
@@ -595,31 +609,22 @@ export function AdminSuggestionsPage() {
             <header>
               <strong>{suggestion.publicId}</strong>
               <span>{suggestion.changeType}</span>
+              <StatusBadge value={suggestion.status} />
             </header>
             <p>{suggestion.message || 'Sem comentário adicional.'}</p>
             <footer>
               <small>{formatDate(suggestion.createdAt)}</small>
               <button
                 type="button"
-                onClick={() =>
-                  setSuggestions(
-                    suggestions.map((item) =>
-                      item.id === suggestion.id ? { ...item, status: 'converted' } : item,
-                    ),
-                  )
-                }
+                disabled={suggestion.status !== 'pending'}
+                onClick={() => updateSuggestionStatus(suggestion.id, 'converted_to_new_version')}
               >
                 Converter em nova versão
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  setSuggestions(
-                    suggestions.map((item) =>
-                      item.id === suggestion.id ? { ...item, status: 'rejected' } : item,
-                    ),
-                  )
-                }
+                disabled={suggestion.status !== 'pending'}
+                onClick={() => updateSuggestionStatus(suggestion.id, 'rejected')}
               >
                 Rejeitar
               </button>

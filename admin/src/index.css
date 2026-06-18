@@ -898,7 +898,7 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   letter-spacing: .05em;
   text-transform: uppercase;
 }
-.status-published, .status-approved, .status-completed, .status-active, .status-admin, .status-created, .status-ready, .status-subscribed {
+.status-published, .status-approved, .status-completed, .status-active, .status-admin, .status-created, .status-ready, .status-subscribed, .status-converted_to_new_version {
   color: #6ee7b7;
   border-color: #047857;
   background: var(--success-container);

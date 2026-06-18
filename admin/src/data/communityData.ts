@@ -19,7 +19,7 @@ export interface StudentSuggestion {
   changeType: string
   message: string
   proposedFields: Record<string, string>
-  status: 'pending' | 'converted' | 'rejected'
+  status: 'pending' | 'converted_to_new_version' | 'rejected'
   createdAt: string
 }
 
