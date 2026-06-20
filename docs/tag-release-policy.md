@@ -101,6 +101,10 @@ v0.2.0
 - Docs/Policy: política de branches e tags formalizada.
 ```
 
+Marco atual deste projeto:
+
+- [docs/releases/v0.1.0.md](docs/releases/v0.1.0.md)
+
 ## Observações
 
 - A tag deve sempre corresponder a um estado que possa ser reconstruído a
