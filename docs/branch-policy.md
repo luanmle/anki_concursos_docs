@@ -36,6 +36,10 @@ desenvolvimento, distribuicao e ambientes.
 4. Novas branches devem seguir a convenção oficial.
 5. Mudancas no frontend administrativo devem ser publicadas por `admin-deploy`.
 6. Mudancas no backend devem seguir o fluxo de `main`.
+7. O GitHub Actions publica `admin-deploy` quando houver push em `main`
+   tocando `admin/**`.
+8. O app Heroku do backend acompanha `main`; o app Heroku do admin acompanha
+   `admin-deploy`.
 
 ## Exemplos
 
@@ -54,3 +58,5 @@ design/ank-5-design-system-tokens
   tal.
 - Se uma branch nao se encaixar nas categorias acima, ela deve ser tratada
   como excecao e revisada antes de virar padrao.
+- O workflow `.github/workflows/publish-admin-deploy.yml` e a fonte de verdade
+  para gerar a branch de distribuicao do frontend.
