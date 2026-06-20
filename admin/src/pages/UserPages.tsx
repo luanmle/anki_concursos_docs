@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, KeyRound, Save, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Key as KeyRound, FloppyDisk as Save, ShieldCheck } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'

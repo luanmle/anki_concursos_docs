@@ -1,15 +1,15 @@
 import {
   ArrowRight,
-  BookOpenCheck,
-  ClipboardList,
-  CircleCheck,
+  BookOpen as BookOpenCheck,
+  ClipboardText as ClipboardList,
+  CheckCircle as CircleCheck,
   Database,
-  FileWarning,
+  WarningCircle as FileWarning,
   GitBranch,
-  Library,
+  Books as Library,
   UserPlus,
   Users,
-} from 'lucide-react'
+} from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'

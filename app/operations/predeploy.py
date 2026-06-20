@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from app.core.config import get_settings
 from app.core.database import SessionLocal, engine
+from app.core.honeybadger import configure_honeybadger, notify_exception
 from app.core.logging import configure_logging
 from app.core.security import hash_password
 from app.models import User
@@ -62,11 +63,20 @@ def bootstrap_admin() -> None:
 def main() -> None:
     settings = get_settings()
     configure_logging(settings.log_level)
-    run_migrations()
-    with SessionLocal() as session:
-        seed_taxonomy(session)
-    bootstrap_admin()
-    logger.info("predeploy_completed")
+    configure_honeybadger(settings)
+    try:
+        run_migrations()
+        with SessionLocal() as session:
+            seed_taxonomy(session)
+        bootstrap_admin()
+        logger.info("predeploy_completed")
+    except Exception as exc:
+        notify_exception(
+            exc,
+            context={"operation": "predeploy"},
+            tags=["deploy", "predeploy"],
+        )
+        raise
 
 
 if __name__ == "__main__":

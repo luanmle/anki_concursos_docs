@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
+from app.core.honeybadger import notify_exception
 from app.exporters import CsvExport, ReleaseCsvRow, build_release_csv
 from app.models import (
     Card,
@@ -265,60 +266,72 @@ class DeckService:
         *,
         since_release: int,
     ) -> DeckSyncResponse:
-        if not self.repository.deck_exists(deck_id):
-            self._raise_deck_not_found()
+        try:
+            if not self.repository.deck_exists(deck_id):
+                self._raise_deck_not_found()
 
-        latest_release = self.repository.latest_release_number(deck_id)
-        if since_release > 0 and not self.repository.release_number_exists(
-            deck_id, since_release
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Release number not found in this deck",
-            )
-
-        state: dict[uuid.UUID, uuid.UUID] = {}
-        changes: list[SyncChangeResponse] = []
-        for item in self.repository.release_items_through(
-            deck_id, latest_release
-        ):
-            old_version_id = state.get(item.card_id)
-            new_version_id = item.card_version_id
-            if item.release.release_number > since_release:
-                changes.append(
-                    SyncChangeResponse(
-                        release_id=item.release_id,
-                        release_number=item.release.release_number,
-                        published_at=self._as_utc(item.release.published_at),
-                        action=item.action,
-                        card_id=item.card_id,
-                        public_id=item.card.public_id,
-                        old_card_version_id=old_version_id,
-                        new_card_version_id=(
-                            new_version_id
-                            if item.action
-                            in (ReleaseAction.ADDED, ReleaseAction.UPDATED)
-                            else None
-                        ),
-                    )
+            latest_release = self.repository.latest_release_number(deck_id)
+            if since_release > 0 and not self.repository.release_number_exists(
+                deck_id, since_release
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Release number not found in this deck",
                 )
 
-            if item.action in (ReleaseAction.ADDED, ReleaseAction.UPDATED):
-                if new_version_id is None:
-                    raise RuntimeError(
-                        "Release item is missing its published card version"
+            state: dict[uuid.UUID, uuid.UUID] = {}
+            changes: list[SyncChangeResponse] = []
+            for item in self.repository.release_items_through(
+                deck_id, latest_release
+            ):
+                old_version_id = state.get(item.card_id)
+                new_version_id = item.card_version_id
+                if item.release.release_number > since_release:
+                    changes.append(
+                        SyncChangeResponse(
+                            release_id=item.release_id,
+                            release_number=item.release.release_number,
+                            published_at=self._as_utc(item.release.published_at),
+                            action=item.action,
+                            card_id=item.card_id,
+                            public_id=item.card.public_id,
+                            old_card_version_id=old_version_id,
+                            new_card_version_id=(
+                                new_version_id
+                                if item.action
+                                in (ReleaseAction.ADDED, ReleaseAction.UPDATED)
+                                else None
+                            ),
+                        )
                     )
-                state[item.card_id] = new_version_id
-            else:
-                state.pop(item.card_id, None)
 
-        return DeckSyncResponse(
-            deck_id=deck_id,
-            from_release=since_release,
-            to_release=latest_release,
-            has_changes=bool(changes),
-            changes=changes,
-        )
+                if item.action in (ReleaseAction.ADDED, ReleaseAction.UPDATED):
+                    if new_version_id is None:
+                        raise RuntimeError(
+                            "Release item is missing its published card version"
+                        )
+                    state[item.card_id] = new_version_id
+                else:
+                    state.pop(item.card_id, None)
+
+            return DeckSyncResponse(
+                deck_id=deck_id,
+                from_release=since_release,
+                to_release=latest_release,
+                has_changes=bool(changes),
+                changes=changes,
+            )
+        except Exception as exc:
+            notify_exception(
+                exc,
+                context={
+                    "operation": "sync",
+                    "deck_id": str(deck_id),
+                    "since_release": since_release,
+                },
+                tags=["deck", "sync"],
+            )
+            raise
 
     def anki_manifest(
         self, deck_id: uuid.UUID, *, user_id: uuid.UUID
@@ -373,40 +386,57 @@ class DeckService:
         page: int | None = None,
         page_size: int | None = None,
     ) -> AnkiDeckSyncResponse:
-        self._require_active_subscription(user_id, deck_id)
-        latest_release = self.repository.latest_release_number(deck_id)
-        if since_release > 0 and not self.repository.release_number_exists(
-            deck_id, since_release
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Release number not found in this deck",
+        try:
+            self._require_active_subscription(user_id, deck_id)
+            latest_release = self.repository.latest_release_number(deck_id)
+            if since_release > 0 and not self.repository.release_number_exists(
+                deck_id, since_release
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Release number not found in this deck",
+                )
+
+            if since_release == 0:
+                changes = self._anki_snapshot_changes(deck_id, latest_release)
+            else:
+                changes = self._anki_delta_changes(
+                    deck_id, latest_release, since_release
+                )
+
+            total_changes = len(changes)
+            pages = None
+            if page is not None or page_size is not None:
+                page = page or 1
+                page_size = page_size or 500
+                pages = math.ceil(total_changes / page_size) if total_changes else 0
+                start = (page - 1) * page_size
+                changes = changes[start : start + page_size]
+
+            return AnkiDeckSyncResponse(
+                deck_id=deck_id,
+                from_release=since_release,
+                to_release=latest_release,
+                has_changes=total_changes > 0,
+                changes=changes,
+                page=page,
+                pages=pages,
+                total_changes=total_changes if page is not None else None,
             )
-
-        if since_release == 0:
-            changes = self._anki_snapshot_changes(deck_id, latest_release)
-        else:
-            changes = self._anki_delta_changes(deck_id, latest_release, since_release)
-
-        total_changes = len(changes)
-        pages = None
-        if page is not None or page_size is not None:
-            page = page or 1
-            page_size = page_size or 500
-            pages = math.ceil(total_changes / page_size) if total_changes else 0
-            start = (page - 1) * page_size
-            changes = changes[start : start + page_size]
-
-        return AnkiDeckSyncResponse(
-            deck_id=deck_id,
-            from_release=since_release,
-            to_release=latest_release,
-            has_changes=total_changes > 0,
-            changes=changes,
-            page=page,
-            pages=pages,
-            total_changes=total_changes if page is not None else None,
-        )
+        except Exception as exc:
+            notify_exception(
+                exc,
+                context={
+                    "operation": "anki_sync",
+                    "deck_id": str(deck_id),
+                    "since_release": since_release,
+                    "page": page,
+                    "page_size": page_size,
+                    "user_id": str(user_id),
+                },
+                tags=["addon", "sync"],
+            )
+            raise
 
     def upload_anki_deck(  # noqa: C901 - orchestration across upload, versioning and release
         self,
@@ -701,10 +731,34 @@ class DeckService:
                         self.session.flush()
         except IntegrityError as exc:
             self.session.rollback()
+            notify_exception(
+                exc,
+                context={
+                    "operation": "upload_anki_deck",
+                    "deck_name": payload.deck_name,
+                    "uploaded_by": uploaded_by,
+                    "source_name": payload.source_name,
+                },
+                tags=["addon", "upload", "database"],
+            )
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Deck upload could not be created due to a data conflict",
             ) from exc
+        except Exception as exc:
+            self.session.rollback()
+            notify_exception(
+                exc,
+                context={
+                    "operation": "upload_anki_deck",
+                    "deck_name": payload.deck_name,
+                    "uploaded_by": uploaded_by,
+                    "source_name": payload.source_name,
+                    "notes": len(payload.notes),
+                },
+                tags=["addon", "upload"],
+            )
+            raise
 
         assert deck is not None
         assert snapshot is not None
@@ -798,47 +852,59 @@ class DeckService:
     def publish_release(
         self, deck_id: uuid.UUID, payload: ReleasePublishRequest
     ) -> ReleaseResponse:
-        with self.session.begin():
-            deck = self.repository.get_by_id(deck_id, for_update=True)
-            if deck is None:
-                self._raise_deck_not_found()
+        try:
+            with self.session.begin():
+                deck = self.repository.get_by_id(deck_id, for_update=True)
+                if deck is None:
+                    self._raise_deck_not_found()
 
-            previous_state = self._release_state(
-                self.repository.release_items(deck.id)
-            )
-            release_changes = self._release_changes(
-                previous_state,
-                deck.cards,
-            )
-
-            if not release_changes:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Deck has no unpublished changes",
+                previous_state = self._release_state(
+                    self.repository.release_items(deck.id)
+                )
+                release_changes = self._release_changes(
+                    previous_state,
+                    deck.cards,
                 )
 
-            release = self.repository.create_release(
-                Release(
-                    deck_id=deck.id,
-                    release_number=self.repository.next_release_number(deck.id),
-                    description=payload.description,
+                if not release_changes:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="Deck has no unpublished changes",
+                    )
+
+                release = self.repository.create_release(
+                    Release(
+                        deck_id=deck.id,
+                        release_number=self.repository.next_release_number(deck.id),
+                        description=payload.description,
+                    )
                 )
+                self.repository.create_release_items(
+                    [
+                        ReleaseItem(
+                            release_id=release.id,
+                            card_id=card_id,
+                            card_version_id=card_version_id,
+                            action=action,
+                        )
+                        for card_id, card_version_id, action in sorted(
+                            release_changes, key=lambda change: str(change[0])
+                        )
+                    ]
+                )
+                deck.status = DeckStatus.PUBLISHED
+                self.session.flush()
+        except Exception as exc:
+            notify_exception(
+                exc,
+                context={
+                    "operation": "publish_release",
+                    "deck_id": str(deck_id),
+                    "description": payload.description,
+                },
+                tags=["deck", "release"],
             )
-            self.repository.create_release_items(
-                [
-                    ReleaseItem(
-                        release_id=release.id,
-                        card_id=card_id,
-                        card_version_id=card_version_id,
-                        action=action,
-                    )
-                    for card_id, card_version_id, action in sorted(
-                        release_changes, key=lambda change: str(change[0])
-                    )
-                ]
-            )
-            deck.status = DeckStatus.PUBLISHED
-            self.session.flush()
+            raise
 
         stored_release = self.repository.get_release(release.id)
         if stored_release is None:

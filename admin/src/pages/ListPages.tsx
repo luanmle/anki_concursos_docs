@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import {
-  ChevronLeft,
-  ChevronRight,
-  Filter,
+  CaretLeft as ChevronLeft,
+  CaretRight as ChevronRight,
+  Funnel as Filter,
   Plus,
-  RefreshCw,
-  Search,
-  Upload,
-} from 'lucide-react'
+  ArrowClockwise as RefreshCw,
+  MagnifyingGlass as Search,
+  UploadSimple as Upload,
+} from '@phosphor-icons/react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, apiRequest } from '../api/client'

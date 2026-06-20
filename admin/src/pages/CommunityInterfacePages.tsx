@@ -1,21 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight,
-  BookOpen,
+  Book as BookOpen,
   Check,
-  Clock3,
+  Clock as Clock3,
   Copy,
   Flag,
   Lightbulb,
-  MessageSquare,
+  ChatText as MessageSquare,
   Plus,
-  Search,
-  Share2,
+  MagnifyingGlass as Search,
+  ShareNetwork as Share2,
   ShieldCheck,
-  Sparkles,
+  Sparkle as Sparkles,
   ThumbsUp,
   X,
-} from 'lucide-react'
+} from '@phosphor-icons/react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { apiRequest } from '../api/client'

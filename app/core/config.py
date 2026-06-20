@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     admin_api_key: str = "development-admin-key"
     allow_legacy_admin_api_key: bool = True
     auth_secret_key: str = DEVELOPMENT_AUTH_SECRET
+    honeybadger_api_key: str | None = None
     access_token_expire_minutes: int = Field(default=60, ge=1)
     refresh_token_expire_days: int = Field(default=30, ge=1)
     addon_api_version: str = "1"

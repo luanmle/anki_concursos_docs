@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowRight, BookOpenCheck, ShieldCheck } from 'lucide-react'
+import { ArrowRight, BookOpenText as BookOpenCheck, ShieldCheck } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
