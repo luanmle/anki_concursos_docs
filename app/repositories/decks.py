@@ -59,6 +59,15 @@ class DeckRepository:
         self.session.flush()
         return snapshot
 
+    def list_templates(self, deck_id: uuid.UUID) -> list[DeckTemplate]:
+        statement = (
+            select(DeckTemplate)
+            .options(selectinload(DeckTemplate.current_version))
+            .where(DeckTemplate.deck_id == deck_id)
+            .order_by(DeckTemplate.template_name, DeckTemplate.id)
+        )
+        return list(self.session.scalars(statement).all())
+
     def get_template_by_key(self, deck_id: uuid.UUID, template_key: str) -> DeckTemplate | None:
         return self.session.scalar(
             select(DeckTemplate).where(

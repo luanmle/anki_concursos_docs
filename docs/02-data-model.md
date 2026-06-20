@@ -8,6 +8,8 @@
 4. `releases` sao imutaveis.
 5. `card_reports` e `review_tasks` preservam curadoria auditavel.
 6. O add-on trabalha com deck completo e templates nativos do Anki.
+7. Templates do deck sao versionados em tabelas proprias para permitir sync
+   incremental de estrutura.
 
 ## Usuarios
 
@@ -65,6 +67,8 @@ deck_subscriptions
 releases
 release_items
 deck_snapshots
+deck_templates
+deck_template_versions
 ```
 
 Regras:
@@ -75,6 +79,24 @@ Regras:
 - `deck_cards.card_version_id` sempre aponta para a versao atual ativa;
 - uploads do add-on criam snapshot do pacote completo;
 - `discipline_id` e `topic_id` continuam opcionais no fluxo de upload do deck.
+
+### Templates Do Deck
+
+```text
+deck_templates
+id, deck_id, template_key, template_name, note_type, card_kind,
+current_version_id, created_at, updated_at
+```
+
+```text
+deck_template_versions
+id, deck_template_id, version_number, fields, field_mapping, front_html,
+back_html, styling_css, content_hash, status, created_by, created_at,
+updated_at
+```
+
+`deck_templates.current_version_id` aponta para a versao ativa do template.
+O manifesto do add-on le a versao corrente do banco como fonte primaria.
 
 ## Curadoria
 

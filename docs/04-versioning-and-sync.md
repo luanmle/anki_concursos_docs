@@ -49,6 +49,17 @@ O add-on agora trabalha com pacote nativo:
 - `source_note_guid`;
 - `source_deck_path`.
 
+O manifesto passa a ser montado a partir de `deck_templates` e
+`deck_template_versions` quando essas tabelas existem para o deck. O snapshot
+bruto continua como fallback de compatibilidade.
+
+Isso aproxima o fluxo do que o Anki faz com note types e templates:
+
+- identidade do deck continua separada da estrutura do card;
+- a estrutura do template tem versao propria;
+- o cliente recebe a forma atual da definicao antes de aplicar deltas de
+  conteudo.
+
 ## Upload Do Add-on
 
 ```text
@@ -56,7 +67,8 @@ POST /addon/decks/upload
 ```
 
 O upload preserva templates, html, css e campos do Anki. O backend gera
-identificadores internos e snapshot do pacote, sem exigir schema unico.
+identificadores internos, snapshot do pacote e versao persistida do template,
+sem exigir schema unico.
 
 ## Curadoria
 

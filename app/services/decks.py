@@ -339,8 +339,10 @@ class DeckService:
         self, deck_id: uuid.UUID, *, user_id: uuid.UUID
     ) -> AnkiDeckManifestResponse:
         deck = self._require_active_subscription(user_id, deck_id).deck
-        snapshot = self.repository.latest_snapshot(deck.id)
-        templates = self._manifest_templates(snapshot)
+        templates = self._manifest_templates_from_db(deck.id)
+        if not templates:
+            snapshot = self.repository.latest_snapshot(deck.id)
+            templates = self._manifest_templates(snapshot)
         primary_template = templates[0] if templates else None
         return AnkiDeckManifestResponse(
             deck_id=deck.id,
@@ -1043,6 +1045,29 @@ class DeckService:
                 templates.append(AnkiDeckTemplatePayload.model_validate(raw_template))
             except Exception:
                 continue
+        return templates
+
+    def _manifest_templates_from_db(
+        self,
+        deck_id: uuid.UUID,
+    ) -> list[AnkiDeckTemplatePayload]:
+        templates: list[AnkiDeckTemplatePayload] = []
+        for deck_template in self.repository.list_templates(deck_id):
+            current_version = deck_template.current_version
+            if current_version is None:
+                continue
+            templates.append(
+                AnkiDeckTemplatePayload(
+                    template_name=deck_template.template_name,
+                    note_type=deck_template.note_type,
+                    card_kind=deck_template.card_kind,
+                    fields=list(current_version.fields),
+                    field_mapping=dict(current_version.field_mapping),
+                    front_html=current_version.front_html,
+                    back_html=current_version.back_html,
+                    styling_css=current_version.styling_css,
+                )
+            )
         return templates
 
     @staticmethod
