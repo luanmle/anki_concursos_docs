@@ -1,10 +1,30 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AdminSuggestionsPage } from './CommunityInterfacePages'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { AdminSuggestionsPage, DeckPage } from './CommunityInterfacePages'
+import { fallbackDecks, fallbackNotes } from '../data/communityData'
 
 const STORAGE_KEY = 'anki-concursos-suggestions'
-const queryClient = new QueryClient()
+const createTestQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  })
+
+vi.mock('../api/client', () => ({
+  apiRequest: vi.fn(async (path: string) => {
+    if (path.includes('/subscriptions/decks')) {
+      return { items: fallbackDecks }
+    }
+    if (path.includes('/addon/decks/')) {
+      return { changes: fallbackNotes }
+    }
+    throw new Error(`Unexpected request: ${path}`)
+  }),
+}))
 
 vi.mock('../auth/auth-context', () => ({
   useAuth: () => ({
@@ -28,7 +48,7 @@ describe('AdminSuggestionsPage', () => {
 
   function renderPage() {
     return render(
-      <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={createTestQueryClient()}>
         <AdminSuggestionsPage />
       </QueryClientProvider>,
     )
@@ -84,5 +104,36 @@ describe('AdminSuggestionsPage', () => {
 
     await waitFor(() => expect(screen.getByTitle('rejected')).toBeInTheDocument())
     expect(screen.getByRole('button', { name: /rejeitar/i })).toBeDisabled()
+  })
+})
+
+describe('DeckPage comments panel', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('shows a unified comment entry and chronological feed without filters', async () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={['/deck/demo-constitucional']}>
+          <Routes>
+            <Route path="/deck/:deckId" element={<DeckPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: /Qual remédio constitucional protege a liberdade de locomoção\?/i }))
+    fireEvent.click(screen.getByRole('button', { name: /mostrar comentários/i }))
+
+    expect(screen.getByPlaceholderText(/escreva um comentário sobre esta nota/i)).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /todos/i })).not.toBeInTheDocument()
+    expect(screen.getByText(/Mariana S\./i)).toBeInTheDocument()
+    expect(screen.getByText(/Joao P\./i)).toBeInTheDocument()
   })
 })

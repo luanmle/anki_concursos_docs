@@ -25,6 +25,7 @@ import {
   AdminDecksPage,
   AdminSuggestionsPage,
   CommunityFuturePage,
+  CommunitySuggestionHistoryPage,
   DeckPage,
   ExplorePage,
   MyDecksPage,
@@ -85,6 +86,7 @@ function AppRoutes() {
         <Route index element={<ExplorePage />} />
         <Route path="my-decks" element={<MyDecksPage />} />
         <Route path="deck/:deckId" element={<DeckPage />} />
+        <Route path="deck/:deckId/suggestions" element={<CommunitySuggestionHistoryPage />} />
         <Route path="community" element={<CommunityFuturePage />} />
         <Route
           path="admin"

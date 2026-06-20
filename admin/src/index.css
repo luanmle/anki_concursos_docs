@@ -2315,7 +2315,6 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
 
 .ac-modal-actions button,
 .ac-modal-tabs button,
-.ac-comment-tabs button,
 .ac-markdown-toolbar button {
   min-height: 36px;
   border: 1px solid var(--outline-variant);
@@ -2338,8 +2337,7 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   padding: 0 14px;
 }
 
-.ac-modal-tabs button.active,
-.ac-comment-tabs button.active {
+.ac-modal-tabs button.active {
   color: var(--primary);
   border-color: var(--primary);
   background: var(--surface-lowest);
@@ -2352,6 +2350,10 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   gap: 16px;
   overflow: auto;
   padding: 22px;
+}
+
+.ac-comments-panel {
+  gap: 18px;
 }
 
 .ac-note-fields article {
@@ -2380,6 +2382,22 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   white-space: pre-wrap;
 }
 
+.ac-note-comments-toggle {
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+}
+
+.ac-note-comments-toggle .ac-button {
+  min-width: 220px;
+}
+
+.ac-note-comments-inline {
+  display: grid;
+  gap: 18px;
+  padding-top: 4px;
+}
+
 .ac-field {
   display: grid;
   gap: 8px;
@@ -2388,7 +2406,6 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
 .ac-field input,
 .ac-field select,
 .ac-field textarea,
-.ac-new-comment select,
 .ac-new-comment textarea {
   width: 100%;
   border: 1px solid var(--outline-variant);
@@ -2398,16 +2415,22 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
 }
 
 .ac-field select,
-.ac-new-comment select {
-  height: 44px;
-  padding: 0 12px;
-}
-
-.ac-field textarea,
 .ac-new-comment textarea {
-  min-height: 92px;
   padding: 12px;
   resize: vertical;
+}
+
+.ac-new-comment {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 16px;
+  background: var(--surface-lowest);
+}
+
+.ac-new-comment textarea {
+  min-height: 112px;
 }
 
 .ac-warning-box,
@@ -2432,8 +2455,7 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   background: rgba(0, 185, 84, .16);
 }
 
-.ac-markdown-toolbar,
-.ac-comment-tabs {
+.ac-markdown-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -2448,15 +2470,6 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-}
-
-.ac-new-comment {
-  display: grid;
-  gap: 10px;
-  padding: 16px;
-  border: 1px solid var(--outline-variant);
-  border-radius: 14px;
-  background: var(--surface-lowest);
 }
 
 .ac-comment-list {
@@ -2486,6 +2499,14 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
 
 .ac-comment-list header span,
 .ac-suggestion-list header span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--primary);
+  background: var(--surface-low);
+  font-size: 11px;
+}
+
+.ac-comment-kind-badge {
   padding: 4px 8px;
   border-radius: 999px;
   color: var(--primary);
@@ -2628,11 +2649,212 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
 .ac-skeleton-card b:nth-child(4) { width: 60%; }
 .ac-skeleton-card strong { width: 100%; height: 44px; margin-top: auto; }
 
+.ac-suggestion-history-page {
+  display: grid;
+  gap: 24px;
+}
+
+.ac-suggestion-history-hero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 28px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(59, 130, 246, .12), transparent 20rem),
+    var(--surface-lowest);
+}
+
+.ac-suggestion-history-hero h1 {
+  margin: 4px 0 8px;
+  font-size: 32px;
+  line-height: 1.1;
+}
+
+.ac-suggestion-history-hero p {
+  max-width: 780px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.ac-suggestion-history-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.ac-suggestion-history-list {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.ac-suggestion-history-list button {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--surface-lowest);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ac-suggestion-history-list button span,
+.ac-suggestion-history-list button small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ac-suggestion-history-list button strong {
+  font-size: 15px;
+}
+
+.ac-suggestion-history-list button.active {
+  border-color: var(--primary);
+  background: rgba(30, 58, 95, .55);
+}
+
+.ac-suggestion-history-detail {
+  display: grid;
+  gap: 18px;
+}
+
+.ac-suggestion-history-card,
+.ac-discussion-panel {
+  padding: 22px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 18px;
+  background: var(--surface-lowest);
+}
+
+.ac-suggestion-history-card-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ac-suggestion-history-card h2,
+.ac-discussion-panel h2 {
+  margin: 4px 0 0;
+}
+
+.ac-suggestion-metadata {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.ac-suggestion-metadata div {
+  padding: 14px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 12px;
+  background: var(--surface-low);
+}
+
+.ac-suggestion-metadata dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.ac-suggestion-metadata dd {
+  margin: 8px 0 0;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.ac-suggestion-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ac-suggestion-comparison article {
+  padding: 18px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(34, 37, 45, .95), rgba(20, 23, 32, .95));
+}
+
+.ac-suggestion-comparison span,
+.ac-discussion-form span {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.ac-suggestion-comparison p,
+.ac-discussion-list p {
+  margin: 0;
+  color: var(--text-body);
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.ac-discussion-list {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ac-discussion-list article {
+  padding: 16px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 14px;
+  background: var(--surface-lowest);
+}
+
+.ac-discussion-list header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.ac-discussion-list header small {
+  color: var(--muted);
+}
+
+.ac-discussion-form {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ac-discussion-form textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 12px;
+  color: var(--text);
+  background: var(--surface-lowest);
+  resize: vertical;
+}
+
+.ac-deck-actions .ac-button {
+  width: 100%;
+}
+
 @media (max-width: 1080px) {
   .ac-deck-grid,
   .ac-admin-metrics,
   .ac-admin-actions,
-  .ac-community-grid {
+  .ac-community-grid,
+  .ac-suggestion-history-layout {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2654,8 +2876,16 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   .ac-admin-metrics,
   .ac-admin-actions,
   .ac-community-grid,
-  .ac-suggestion-fields {
+  .ac-suggestion-fields,
+  .ac-suggestion-metadata,
+  .ac-suggestion-comparison,
+  .ac-suggestion-history-layout {
     grid-template-columns: 1fr;
+  }
+
+  .ac-suggestion-history-hero {
+    align-items: start;
+    flex-direction: column;
   }
 
   .ac-search-mobile {
