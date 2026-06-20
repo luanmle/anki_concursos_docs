@@ -135,6 +135,23 @@ O workflow `.github/workflows/publish-admin-deploy.yml`:
 `admin-deploy` é um artefato de distribuição. Nunca editar ou fazer merge
 manual nessa branch.
 
+### Convenção de branches e pipeline
+
+O repositorio segue esta separacao operacional:
+
+```text
+main         -> backend FastAPI e documentação/pipeline do backend
+admin-deploy -> frontend administrativo publicado no Heroku do admin
+feat/*       -> features
+fix/*        -> correções
+docs/*       -> documentação
+design/*     -> UI, design system e especificação visual
+codex/*      -> uso temporário por agente
+```
+
+O Heroku do backend deve acompanhar `main`. O Heroku do frontend deve
+acompanhar `admin-deploy`.
+
 Configuração do app frontend:
 
 ```bash
