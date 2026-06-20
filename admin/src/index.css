@@ -2719,9 +2719,50 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   gap: 6px;
 }
 
+.ac-markdown-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.ac-markdown-toolbar {
+  padding: 10px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 14px 14px 0 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent), var(--surface-low);
+}
+
 .ac-markdown-toolbar button,
 .ac-comment-tabs button {
   padding: 0 12px;
+}
+
+.ac-markdown-toolbar button {
+  min-width: 38px;
+}
+
+.ac-markdown-textarea {
+  min-height: 360px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Consolas, monospace);
+  line-height: 1.7;
+}
+
+.ac-markdown-preview {
+  padding: 14px 16px;
+  border: 1px dashed var(--outline-variant);
+  border-radius: 12px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.02);
+  white-space: pre-wrap;
+  line-height: 1.65;
+}
+
+.ac-help-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .ac-suggestion-fields {

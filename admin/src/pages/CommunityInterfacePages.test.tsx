@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+﻿import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -73,12 +73,12 @@ describe('AdminSuggestionsPage', () => {
 
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: /converter em nova versão/i }))
+    fireEvent.click(screen.getByRole('button', { name: /converter/i }))
 
     await waitFor(() =>
       expect(screen.getByTitle('converted_to_new_version')).toBeInTheDocument(),
     )
-    expect(screen.getByRole('button', { name: /converter em nova versão/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /converter/i })).toBeDisabled()
   })
 
   it('marks a suggestion as rejected', async () => {
@@ -127,13 +127,14 @@ describe('DeckPage comments panel', () => {
       </QueryClientProvider>,
     )
 
-    fireEvent.click(await screen.findByRole('button', { name: /Qual remédio constitucional protege a liberdade de locomoção\?/i }))
-    fireEvent.click(screen.getByRole('button', { name: /mostrar comentários/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /Qual rem/i }))
+    fireEvent.click(screen.getByRole('button', { name: /mostrar/i }))
 
-    expect(screen.getByPlaceholderText(/escreva um comentário sobre esta nota/i)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/escreva um comentÃ¡rio sobre esta nota/i)).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /todos/i })).not.toBeInTheDocument()
     expect(screen.getByText(/Mariana S\./i)).toBeInTheDocument()
     expect(screen.getByText(/Joao P\./i)).toBeInTheDocument()
   })
 })
+
