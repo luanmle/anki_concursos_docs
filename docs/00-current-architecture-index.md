@@ -13,6 +13,8 @@
 - `16-simplified-product-flow-and-community-roadmap.md`
 - `17-addon-full-deck-upload.md`
 - `18-honeybadger-observability.md`
+- `branch-policy.md`
+- `tag-release-policy.md`
 
 ## Removidos Por Não Fazerem Mais Sentido No Fluxo Atual
 
@@ -28,3 +30,5 @@ para evitar conflito com o contrato atual do produto.
    experiência de estudante.
 5. `17-addon-full-deck-upload.md` para a integração Anki -> plataforma.
 6. `18-honeybadger-observability.md` para monitoramento no backend.
+7. `branch-policy.md` para convenções de branches e deploy.
+8. `tag-release-policy.md` para tags e releases.
