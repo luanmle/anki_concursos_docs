@@ -40,6 +40,8 @@ desenvolvimento, distribuicao e ambientes.
    tocando `admin/**`.
 8. O app Heroku do backend acompanha `main`; o app Heroku do admin acompanha
    `admin-deploy`.
+9. O workflow `frontend-admin-deploy.yml` valida o frontend publicado na
+   raiz de `admin-deploy` sem executar o CI completo do backend.
 
 ## Exemplos
 
