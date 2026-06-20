@@ -71,3 +71,10 @@ Use this skill to turn local repository changes into the correct GitHub action f
 - [docs/tag-release-policy.md](../../../../docs/tag-release-policy.md)
 - [docs/11-production-operations.md](../../../../docs/11-production-operations.md)
 - [README.md](../../../../README.md)
+
+## Interface Metadata
+
+This skill provides dual interface metadata under `agents/`:
+
+- `agents/openai.yaml` for OpenAI-compatible harnesses
+- `agents/claude.yaml` for Claude Code-compatible harnesses
