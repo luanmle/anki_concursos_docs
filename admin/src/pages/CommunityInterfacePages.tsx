@@ -18,17 +18,22 @@ import {
 } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { apiRequest } from '../api/client'
+import { ApiError, apiRequest } from '../api/client'
 import { useAuth } from '../auth/auth-context'
 import {
-  changeTypes,
   fallbackDecks,
   fallbackNotes,
+  changeTypes,
   initialComments,
   type CommentKind,
   type StudentComment,
   type StudentSuggestion,
 } from '../data/communityData'
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+} from '../components/ui'
 import { useLocalStorageState } from '../hooks/useLocalStorageState'
 import { formatDate } from '../lib/presentation'
 import { StatusBadge } from '../components/ui'
@@ -239,6 +244,10 @@ export function DeckPage() {
             <Share2 size={17} />
             Compartilhar
           </button>
+          <Link className="ac-button ac-button-secondary" to={`/deck/${deck.deck_id}/suggestions`}>
+            <MessageSquare size={17} />
+            Sugestões
+          </Link>
           <Link className="ac-button ac-button-ghost" to="/community">
             Abrir na Community
           </Link>
@@ -301,6 +310,7 @@ function NoteModal({
   onClose: () => void
 }) {
   const [mode, setMode] = useState<'view' | 'suggest' | 'comments'>('view')
+  const [showComments, setShowComments] = useState(false)
   const fields = note.fields || {}
 
   return (
@@ -341,6 +351,22 @@ function NoteModal({
                 <p>{value}</p>
               </article>
             ))}
+            <div className="ac-note-comments-toggle">
+              <button
+                className="ac-button ac-button-secondary"
+                type="button"
+                aria-expanded={showComments}
+                aria-controls="note-comments-panel"
+                onClick={() => setShowComments((current) => !current)}
+              >
+                {showComments ? 'Ocultar comentários' : 'Mostrar comentários'}
+              </button>
+            </div>
+            {showComments && (
+              <div id="note-comments-panel" className="ac-note-comments-inline">
+                <NoteCommentsPanel publicId={note.public_id} />
+              </div>
+            )}
             <footer className="ac-tag-row">
               {note.tags.map((tag) => (
                 <span key={tag}>{tag}</span>
@@ -445,17 +471,8 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
     'anki-concursos-comments',
     initialComments,
   )
-  const [activeTab, setActiveTab] = useState<'all' | CommentKind>('all')
-  const [kind, setKind] = useState<CommentKind>('comment')
   const [body, setBody] = useState('')
   const noteComments = comments.filter((comment) => comment.publicId === publicId)
-
-  const countByKind = (k: CommentKind) => noteComments.filter((c) => c.kind === k).length
-
-  const filteredComments = noteComments.filter((comment) => {
-    if (activeTab === 'all') return true
-    return comment.kind === activeTab
-  })
 
   function addComment() {
     if (!body.trim()) return
@@ -464,7 +481,7 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
         id: crypto.randomUUID(),
         publicId,
         author: 'Você',
-        kind,
+        kind: 'comment',
         body,
         score: 0,
         createdAt: new Date().toISOString(),
@@ -474,26 +491,9 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
     setBody('')
   }
 
-  function handleTabChange(tabKey: 'all' | CommentKind) {
-    setActiveTab(tabKey)
-    if (tabKey !== 'all') {
-      setKind(tabKey)
-    }
-  }
-
   function handleUpvote(commentId: string) {
-    setComments((prev) =>
-      prev.map((c) => (c.id === commentId ? { ...c, score: c.score + 1 } : c))
-    )
+    setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, score: c.score + 1 } : c)))
   }
-
-  const tabOptions: { key: 'all' | CommentKind; label: string; count: number }[] = [
-    { key: 'all', label: 'Todos', count: noteComments.length },
-    { key: 'tip', label: 'Dicas', count: countByKind('tip') },
-    { key: 'mnemonic', label: 'Mnemônicos', count: countByKind('mnemonic') },
-    { key: 'question', label: 'Dúvidas', count: countByKind('question') },
-    { key: 'correction', label: 'Correções', count: countByKind('correction') },
-  ]
 
   const kindLabels: Record<CommentKind, string> = {
     comment: 'Comentário',
@@ -505,57 +505,41 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
 
   return (
     <div className="ac-comments-panel">
-      <div className="ac-comment-tabs">
-        {tabOptions.map(({ key, label, count }) => (
-          <button
-            key={key}
-            type="button"
-            className={activeTab === key ? 'active' : ''}
-            onClick={() => handleTabChange(key)}
-          >
-            {label} ({count})
-          </button>
-        ))}
-      </div>
       <div className="ac-new-comment">
-        <select value={kind} onChange={(event) => setKind(event.target.value as CommentKind)}>
-          <option value="comment">Comentário</option>
-          <option value="tip">Dica</option>
-          <option value="mnemonic">Mnemônico</option>
-          <option value="question">Dúvida</option>
-          <option value="correction">Correção</option>
-        </select>
         <textarea
           value={body}
           onChange={(event) => setBody(event.target.value)}
-          placeholder="Compartilhe uma dica, dúvida ou mnemônico..."
+          placeholder="Escreva um comentário sobre esta nota..."
         />
         <button className="ac-button ac-button-primary" type="button" onClick={addComment}>
           Publicar
         </button>
       </div>
       <div className="ac-comment-list">
-        {filteredComments.map((comment) => (
-          <article key={comment.id}>
-            <header>
-              <strong>{comment.author}</strong>
-              <span className="ac-comment-kind-badge">{kindLabels[comment.kind]}</span>
-              <small>{formatDate(comment.createdAt)}</small>
-            </header>
-            <p>{comment.body}</p>
-            <footer>
-              <button type="button" onClick={() => handleUpvote(comment.id)}>
-                <ThumbsUp size={15} />
-                Útil ({comment.score})
-              </button>
-              <button type="button">Denunciar</button>
-            </footer>
-          </article>
-        ))}
-        {!filteredComments.length && (
+        {noteComments
+          .slice()
+          .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+          .map((comment) => (
+            <article key={comment.id}>
+              <header>
+                <strong>{comment.author}</strong>
+                <span className="ac-comment-kind-badge">{kindLabels[comment.kind]}</span>
+                <small>{formatDate(comment.createdAt)}</small>
+              </header>
+              <p>{comment.body}</p>
+              <footer>
+                <button type="button" onClick={() => handleUpvote(comment.id)}>
+                  <ThumbsUp size={15} />
+                  Útil ({comment.score})
+                </button>
+                <button type="button">Denunciar</button>
+              </footer>
+            </article>
+          ))}
+        {!noteComments.length && (
           <EmptyPanel
-            title="Sem comentários nesta categoria"
-            description="Seja o primeiro a registrar uma dica ou dúvida."
+            title="Sem comentários ainda"
+            description="Publique a primeira observação para iniciar o feed cronológico desta nota."
           />
         )}
       </div>
@@ -822,6 +806,242 @@ export function CommunityFuturePage() {
           <p>Correções relevantes podem virar reports e novas versões.</p>
         </article>
       </section>
+    </div>
+  )
+}
+
+type DeckSuggestionHistory = {
+  id: string
+  noteId: string
+  publicId: string
+  userName: string
+  originalField: string
+  suggestedField: string
+  createdAt: string
+  discussion: Array<{
+    id: string
+    author: string
+    body: string
+    createdAt: string
+  }>
+}
+
+const suggestionHistorySeed: DeckSuggestionHistory[] = [
+  {
+    id: 'suggestion-history-1',
+    noteId: 'note-1',
+    publicId: 'AC-CONST-0001',
+    userName: 'Camila Ribeiro',
+    originalField: 'Habeas corpus protege a liberdade de locomoção.',
+    suggestedField:
+      'Habeas corpus protege a liberdade de locomoção contra coação ilegal.',
+    createdAt: '2026-06-16T10:15:00Z',
+    discussion: [
+      {
+        id: 'comment-1',
+        author: 'Equipe editorial',
+        body: 'Boa precisão. Mantém o sentido sem confundir o enunciado original da nota.',
+        createdAt: '2026-06-16T11:02:00Z',
+      },
+      {
+        id: 'comment-2',
+        author: 'Mariana S.',
+        body: 'A formulação ficou mais fiel ao texto legal e continua legível no preview.',
+        createdAt: '2026-06-16T11:26:00Z',
+      },
+    ],
+  },
+  {
+    id: 'suggestion-history-2',
+    noteId: 'note-2',
+    publicId: 'AC-CONST-0002',
+    userName: 'Paulo Nogueira',
+    originalField: 'A Constituição admite habeas corpus.',
+    suggestedField: 'A Constituição admite habeas corpus para proteger a locomoção.',
+    createdAt: '2026-06-15T16:40:00Z',
+    discussion: [
+      {
+        id: 'comment-3',
+        author: 'Revisor',
+        body: 'A sugestão está correta, mas não deve substituir o campo original sem contexto adicional.',
+        createdAt: '2026-06-15T17:05:00Z',
+      },
+    ],
+  },
+]
+
+export function CommunitySuggestionHistoryPage() {
+  const { deckId = '' } = useParams()
+  const decksQuery = useDeckCatalog()
+  const decks = decksQuery.data?.length ? decksQuery.data : fallbackDecks
+  const deck = decks.find((item) => item.deck_id === deckId)
+  const [selectedSuggestionId, setSelectedSuggestionId] = useState(
+    suggestionHistorySeed[0]?.id || '',
+  )
+  const [draftComment, setDraftComment] = useState('')
+  const [history, setHistory] = useLocalStorageState<DeckSuggestionHistory[]>(
+    `anki-concursos-suggestion-history-${deckId}`,
+    suggestionHistorySeed,
+  )
+
+  const visibleHistory = history.filter((item) => !deck || item.publicId.startsWith('AC'))
+  const selectedSuggestion =
+    visibleHistory.find((item) => item.id === selectedSuggestionId) || visibleHistory[0] || null
+
+  function addComment() {
+    if (!selectedSuggestion || !draftComment.trim()) return
+    const next = history.map((item) => {
+      if (item.id !== selectedSuggestion.id) return item
+      return {
+        ...item,
+        discussion: [
+          ...item.discussion,
+          {
+            id: crypto.randomUUID(),
+            author: 'Você',
+            body: draftComment.trim(),
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      }
+    })
+    setHistory(next)
+    setDraftComment('')
+  }
+
+  if (decksQuery.isLoading) return <LoadingState />
+  if (decksQuery.error) {
+    return (
+      <ErrorState
+        message={decksQuery.error.message}
+        requestId={decksQuery.error instanceof ApiError ? decksQuery.error.requestId : null}
+      />
+    )
+  }
+
+  if (!deck) {
+    return (
+      <EmptyState
+        title="Deck não encontrado"
+        description="Volte para a lista de decks e abra novamente a área de sugestões."
+      />
+    )
+  }
+
+  return (
+    <div className="ac-page ac-suggestion-history-page">
+      <header className="ac-suggestion-history-hero">
+        <div>
+          <span className="ac-eyebrow">Comunidade do deck</span>
+          <h1>Histórico de mudanças e discussão</h1>
+          <p>
+            {deck.name} · acompanhe a nota original, a proposta do usuário, o ID da nota e a conversa editorial
+            sem perder o contexto da sugestão.
+          </p>
+        </div>
+        <Link className="ac-button ac-button-secondary" to={`/deck/${deck.deck_id}`}>
+          <ArrowRight size={17} />
+          Voltar ao deck
+        </Link>
+      </header>
+
+      {!visibleHistory.length ? (
+        <EmptyState
+          title="Nenhuma sugestão registrada"
+          description="As mudanças da comunidade aparecerão aqui assim que forem criadas."
+        />
+      ) : (
+        <section className="ac-suggestion-history-layout">
+          <aside className="ac-suggestion-history-list" aria-label="Histórico de sugestões">
+            {visibleHistory.map((item) => {
+              const active = item.id === selectedSuggestion?.id
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={active ? 'active' : ''}
+                  onClick={() => setSelectedSuggestionId(item.id)}
+                >
+                  <span>Nota {item.noteId}</span>
+                  <strong>{item.publicId}</strong>
+                  <small>Por {item.userName}</small>
+                </button>
+              )
+            })}
+          </aside>
+
+          {selectedSuggestion && (
+            <main className="ac-suggestion-history-detail">
+              <section className="ac-suggestion-history-card">
+                <div className="ac-suggestion-history-card-header">
+                  <div>
+                    <span className="ac-eyebrow">Sugestão selecionada</span>
+                    <h2>{selectedSuggestion.publicId}</h2>
+                  </div>
+                  <StatusBadge value="published" />
+                </div>
+                <dl className="ac-suggestion-metadata">
+                  <div>
+                    <dt>ID da nota</dt>
+                    <dd>{selectedSuggestion.noteId}</dd>
+                  </div>
+                  <div>
+                    <dt>Usuário</dt>
+                    <dd>{selectedSuggestion.userName}</dd>
+                  </div>
+                  <div>
+                    <dt>Criada em</dt>
+                    <dd>{formatDate(selectedSuggestion.createdAt)}</dd>
+                  </div>
+                </dl>
+                <div className="ac-suggestion-comparison">
+                  <article>
+                    <span>Campo original</span>
+                    <p>{selectedSuggestion.originalField}</p>
+                  </article>
+                  <article>
+                    <span>Novo campo sugerido</span>
+                    <p>{selectedSuggestion.suggestedField}</p>
+                  </article>
+                </div>
+              </section>
+
+              <section className="ac-discussion-panel">
+                <div className="section-heading">
+                  <div>
+                    <p className="eyebrow">Discussão</p>
+                    <h2>Conversa editorial</h2>
+                  </div>
+                </div>
+                <div className="ac-discussion-list">
+                  {selectedSuggestion.discussion.map((comment) => (
+                    <article key={comment.id}>
+                      <header>
+                        <strong>{comment.author}</strong>
+                        <small>{formatDate(comment.createdAt)}</small>
+                      </header>
+                      <p>{comment.body}</p>
+                    </article>
+                  ))}
+                </div>
+                <label className="ac-discussion-form">
+                  <span>Adicionar comentário</span>
+                  <textarea
+                    rows={4}
+                    value={draftComment}
+                    onChange={(event) => setDraftComment(event.target.value)}
+                    placeholder="Registre uma observação sobre esta sugestão."
+                  />
+                </label>
+                <button className="ac-button ac-button-primary" type="button" onClick={addComment}>
+                  <MessageSquare size={17} />
+                  Publicar comentário
+                </button>
+              </section>
+            </main>
+          )}
+        </section>
+      )}
     </div>
   )
 }
