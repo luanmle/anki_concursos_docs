@@ -161,16 +161,18 @@ Regra operacional:
 
 ### Branches locais de desenvolvimento
 
-Foi visto historico com branches como:
+O repositorio usa branches curtas para evolucao e integracao. A convencao
+recomendada e:
 
-- `docs/context-adrs-skills`
-- `codex/admin-deploy-split`
-- `codex/admin-addon-prep-deploy`
-- `codex/admin-card-kind-deploy`
-- `codex/admin-csv-import-deploy`
-- `codex/admin-student-role-deploy`
+- `feat/<slug>` para funcionalidades;
+- `fix/<slug>` para correcoes;
+- `docs/<slug>` para documentacao;
+- `design/<slug>` para UI, design system e especificacoes visuais;
+- `codex/<slug>` apenas para trabalho temporario de agente, quando necessario.
 
-Essas branches indicam trabalho incremental e tematica de features. Elas nao fazem parte da arquitetura de deploy em si, mas mostram que o projeto usa branches curtas para evolucao e integracao.
+Branches historicas como `docs/context-adrs-skills` e `codex/admin-*` mostram o
+tipo de trabalho que ja passou pelo repositorio, mas nao devem ser tomadas como
+padrao futuro.
 
 ### Branches remotas observadas
 
