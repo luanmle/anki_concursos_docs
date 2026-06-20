@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  CheckCircle2,
-  Clipboard,
+  CheckCircle as CheckCircle2,
+  ClipboardText as Clipboard,
   GitBranch,
-  PlugZap,
-  RefreshCw,
+  Plug as PlugZap,
+  ArrowClockwise as RefreshCw,
   XCircle,
-} from 'lucide-react'
+} from '@phosphor-icons/react'
 import { useMemo, useState } from 'react'
 import { API_URL, ApiError, apiRequest } from '../api/client'
 import { useAuth } from '../auth/auth-context'

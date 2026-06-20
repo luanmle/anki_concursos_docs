@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
-  CheckCircle2,
+  CheckCircle as CheckCircle2,
   GitBranch,
-  History,
+  ClockClockwise as History,
   Plus,
-  Send,
-} from 'lucide-react'
+  PaperPlaneRight as Send,
+} from '@phosphor-icons/react'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError, apiRequest } from '../api/client'
 import { useAuth } from '../auth/auth-context'
