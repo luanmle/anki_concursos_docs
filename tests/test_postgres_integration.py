@@ -45,7 +45,7 @@ def test_migrations_apply_to_postgresql(monkeypatch: pytest.MonkeyPatch) -> None
                     )
                 ).scalars()
             )
-        assert revision == "20260615_0007"
+        assert revision == "20260618_0014"
         assert {
             "trg_card_versions_immutable",
             "trg_cards_current_version_ownership",
@@ -121,15 +121,16 @@ def test_postgresql_enforces_immutability_and_release_uniqueness(
                     "INSERT INTO card_versions "
                     "(id, card_id, version_number, front_text, back_text, "
                     "answer_text, explanation_text, change_reason, created_by, "
-                    "status, content_hash) VALUES "
+                    "status, content_hash, anki_fields) VALUES "
                     "(:id, :card_id, 1, 'front', 'back', 'answer', "
                     "'explanation', 'initial', 'postgres-test', 'published', "
-                    ":content_hash)"
+                    ":content_hash, :anki_fields)"
                 ),
                 {
                     "id": version_id,
                     "card_id": card_id,
                     "content_hash": uuid.uuid4().hex * 2,
+                    "anki_fields": "[]",
                 },
             )
             connection.execute(
