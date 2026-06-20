@@ -2771,6 +2771,11 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   gap: 12px;
 }
 
+.ac-suggestion-field-block {
+  display: grid;
+  gap: 8px;
+}
+
 .ac-new-comment {
   display: grid;
   gap: 10px;

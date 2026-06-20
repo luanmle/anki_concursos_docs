@@ -411,7 +411,8 @@ function SuggestChangePanel({
   const [message, setMessage] = useState('')
   const [fields, setFields] = useState<Record<string, string>>(note.fields || {})
   const [sent, setSent] = useState(false)
-  const messageRef = useRef<HTMLTextAreaElement | null>(null)
+  const fieldRefs = useRef<Record<string, HTMLTextAreaElement | null>>({})
+  const [activeField, setActiveField] = useState<string | null>(null)
 
   function submitSuggestion() {
     const suggestion: StudentSuggestion = {
@@ -429,21 +430,23 @@ function SuggestChangePanel({
     setSent(true)
   }
 
-  function insertMarkdown(before: string, after = before, placeholder = '') {
-    const textarea = messageRef.current
+  function insertMarkdown(fieldName: string, before: string, after = before, placeholder = '') {
+    const textarea = fieldRefs.current[fieldName]
     if (!textarea) return
 
-    const start = textarea.selectionStart ?? message.length
-    const end = textarea.selectionEnd ?? message.length
-    const selectedText = message.slice(start, end) || placeholder
+    const currentValue = fields[fieldName] ?? ''
+    const start = textarea.selectionStart ?? currentValue.length
+    const end = textarea.selectionEnd ?? currentValue.length
+    const selectedText = currentValue.slice(start, end) || placeholder
     const nextValue =
-      message.slice(0, start) +
+      currentValue.slice(0, start) +
       before +
       selectedText +
       after +
-      message.slice(end)
+      currentValue.slice(end)
 
-    setMessage(nextValue)
+    setFields((current) => ({ ...current, [fieldName]: nextValue }))
+    setActiveField(fieldName)
 
     window.requestAnimationFrame(() => {
       const selectionStart = start + before.length
@@ -468,87 +471,133 @@ function SuggestChangePanel({
         </select>
       </label>
       <div className="ac-markdown-editor">
-        <div className="ac-markdown-toolbar" aria-label="Barra de formatação">
-          <button type="button" aria-label="Desfazer">
-            <ArrowCounterClockwise size={16} />
-          </button>
-          <button type="button" aria-label="Refazer">
-            <ArrowClockwise size={16} />
-          </button>
-          <button type="button" onClick={() => insertMarkdown('**', '**', 'texto em negrito')} aria-label="Negrito">
-            <TextB size={16} />
-          </button>
-          <button type="button" onClick={() => insertMarkdown('*', '*', 'texto em itálico')} aria-label="Itálico">
-            <TextItalic size={16} />
-          </button>
-          <button type="button" onClick={() => insertMarkdown('### ', '', 'título')} aria-label="Título">
-            <TextH size={16} />
-          </button>
-          <button type="button" onClick={() => insertMarkdown('~~', '~~', 'texto tachado')} aria-label="Tachado">
-            <TextT size={16} />
-          </button>
-          <button type="button" onClick={() => insertMarkdown('[', '](https://)', 'link')} aria-label="Link">
-            <LinkSimple size={16} />
-          </button>
-          <button type="button" onClick={() => insertMarkdown('- ', '', 'item de lista')} aria-label="Lista com marcadores">
-            <ListBullets size={16} />
-          </button>
-          <button type="button" onClick={() => insertMarkdown('1. ', '', 'item numerado')} aria-label="Lista numerada">
-            <ListNumbers size={16} />
-          </button>
-          <button type="button" onClick={() => insertMarkdown('```\n', '\n```', 'codigo')} aria-label="Bloco de código">
-            <Code size={16} />
-          </button>
-          <button type="button" onClick={() => insertMarkdown('> ', '', 'citação')} aria-label="Citação">
-            <DotsThreeVertical size={16} />
-          </button>
-          <button type="button" onClick={() => setMessage((current) => `${current}\n---\n`)} aria-label="Linha horizontal">
-            —
-          </button>
-          <button type="button" aria-label="Alinhar à esquerda">
-            <TextAlignLeft size={16} />
-          </button>
-          <button type="button" aria-label="Centralizar">
-            <TextAlignCenter size={16} />
-          </button>
-          <button type="button" aria-label="Alinhar à direita">
-            <TextAlignRight size={16} />
-          </button>
-          <button type="button" aria-label="Justificar">
-            <TextAlignJustify size={16} />
-          </button>
-          <button type="button" aria-label="Tela cheia">
-            ⤢
-          </button>
+        <div className="ac-suggestion-fields">
+          {Object.entries(fields).map(([label, value]) => (
+            <div className="ac-suggestion-field-block" key={label}>
+              <label className="ac-field">
+                <span>{label}</span>
+                {activeField === label && (
+                  <div className="ac-markdown-toolbar" aria-label={`Barra de formatação de ${label}`}>
+                    <button type="button" aria-label="Desfazer">
+                      <ArrowCounterClockwise size={16} />
+                    </button>
+                    <button type="button" aria-label="Refazer">
+                      <ArrowClockwise size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertMarkdown(label, '**', '**', 'texto em negrito')}
+                      aria-label="Negrito"
+                    >
+                      <TextB size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertMarkdown(label, '*', '*', 'texto em itálico')}
+                      aria-label="Itálico"
+                    >
+                      <TextItalic size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertMarkdown(label, '### ', '', 'título')}
+                      aria-label="Título"
+                    >
+                      <TextH size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertMarkdown(label, '~~', '~~', 'texto tachado')}
+                      aria-label="Tachado"
+                    >
+                      <TextT size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertMarkdown(label, '[', '](https://)', 'link')}
+                      aria-label="Link"
+                    >
+                      <LinkSimple size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertMarkdown(label, '- ', '', 'item de lista')}
+                      aria-label="Lista com marcadores"
+                    >
+                      <ListBullets size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertMarkdown(label, '1. ', '', 'item numerado')}
+                      aria-label="Lista numerada"
+                    >
+                      <ListNumbers size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertMarkdown(label, '```\n', '\n```', 'codigo')}
+                      aria-label="Bloco de código"
+                    >
+                      <Code size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertMarkdown(label, '> ', '', 'citação')}
+                      aria-label="Citação"
+                    >
+                      <DotsThreeVertical size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertMarkdown(label, '\n---\n', '', '')}
+                      aria-label="Linha horizontal"
+                    >
+                      —
+                    </button>
+                    <button type="button" aria-label="Alinhar à esquerda">
+                      <TextAlignLeft size={16} />
+                    </button>
+                    <button type="button" aria-label="Centralizar">
+                      <TextAlignCenter size={16} />
+                    </button>
+                    <button type="button" aria-label="Alinhar à direita">
+                      <TextAlignRight size={16} />
+                    </button>
+                    <button type="button" aria-label="Justificar">
+                      <TextAlignJustify size={16} />
+                    </button>
+                    <button type="button" aria-label="Tela cheia">
+                      ⤢
+                    </button>
+                  </div>
+                )}
+                <textarea
+                  ref={(node) => {
+                    fieldRefs.current[label] = node
+                  }}
+                  value={value}
+                  onFocus={() => setActiveField(label)}
+                  onChange={(event) =>
+                    setFields((current) => ({ ...current, [label]: event.target.value }))
+                  }
+                  className="ac-markdown-textarea"
+                />
+              </label>
+              {activeField === label && (
+                <p className="ac-help-text">A barra acima edita este campo da nota.</p>
+              )}
+            </div>
+          ))}
         </div>
-        <label className="ac-field">
-          <span>Comentário em Markdown</span>
-          <textarea
-            ref={messageRef}
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            placeholder="Escreva a sugestão usando Markdown."
-            className="ac-markdown-textarea"
-          />
-        </label>
       </div>
-      <div className="ac-suggestion-fields">
-        {Object.entries(fields).map(([label, value]) => (
-          <label className="ac-field" key={label}>
-            <span>{label}</span>
-            <textarea
-              value={value}
-              onChange={(event) =>
-                setFields((current) => ({ ...current, [label]: event.target.value }))
-              }
-            />
-          </label>
-        ))}
-      </div>
-      <div className="ac-field">
-        <span>Orientação complementar</span>
-        <p className="ac-help-text">O conteúdo acima será enviado em Markdown e revisado manualmente antes de virar nova versão.</p>
-      </div>
+      <label className="ac-field">
+        <span>Comentário para o revisor</span>
+        <textarea
+          value={message}
+          onChange={(event) => setMessage(event.target.value)}
+          placeholder="Explique o motivo da sugestão."
+        />
+      </label>
       <button className="ac-button ac-button-primary" type="button" onClick={submitSuggestion}>
         Enviar sugestÃ£o
       </button>
