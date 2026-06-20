@@ -243,6 +243,7 @@ Depois do upload, o add-on continua usando:
 - `GET /addon/status`
 - `GET /addon/decks/{deck_id}/manifest`
 - `GET /addon/decks/{deck_id}/sync`
+- `GET /addon/decks/{deck_id}/templates/sync?since_version=0`
 
 Para mudancas `added` e `updated`, o sync pode retornar:
 
@@ -267,6 +268,8 @@ Campos canonicos antigos devem ser tratados apenas como fallback.
 5. Enviar `POST /addon/decks/upload`.
 6. Se a resposta tiver `published = true`, registrar a release retornada.
 7. Usar `manifest` e `sync` para downloads e atualizacoes futuras.
+8. Usar `templates/sync` quando a estrutura do modelo precisar ser reaplicada
+   localmente.
 
 ## Erros Que O Add-on Deve Tratar
 

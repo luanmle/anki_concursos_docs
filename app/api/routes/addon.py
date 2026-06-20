@@ -8,7 +8,11 @@ from app.core.database import get_db
 from app.core.security import require_authenticated_user
 from app.models import User
 from app.repositories import DeckRepository
-from app.schemas import AnkiDeckManifestResponse, AnkiDeckSyncResponse
+from app.schemas import (
+    AnkiDeckManifestResponse,
+    AnkiDeckSyncResponse,
+    AnkiDeckTemplateSyncResponse,
+)
 from app.schemas.decks import (
     AddonStatusResponse,
     AnkiDeckUploadRequest,
@@ -54,13 +58,30 @@ def sync_anki_deck(
     page_size: int | None = Query(default=None, ge=1, le=1000),
     user: User = Depends(require_authenticated_user),
     service: DeckService = Depends(get_deck_service),
-) -> AnkiDeckSyncResponse:
+    ) -> AnkiDeckSyncResponse:
     return service.anki_sync(
         deck_id,
         user_id=user.id,
         since_release=since_release,
         page=page,
         page_size=page_size,
+    )
+
+
+@router.get(
+    "/decks/{deck_id}/templates/sync",
+    response_model=AnkiDeckTemplateSyncResponse,
+)
+def sync_anki_deck_templates(
+    deck_id: uuid.UUID,
+    since_version: int = Query(default=0, ge=0),
+    user: User = Depends(require_authenticated_user),
+    service: DeckService = Depends(get_deck_service),
+) -> AnkiDeckTemplateSyncResponse:
+    return service.anki_template_sync(
+        deck_id,
+        user_id=user.id,
+        since_version=since_version,
     )
 
 

@@ -201,6 +201,32 @@ class AnkiDeckSyncResponse(BaseModel):
     total_changes: int | None = None
 
 
+class AnkiDeckTemplateVersionResponse(BaseModel):
+    template_id: uuid.UUID
+    template_key: str
+    template_name: str
+    note_type: str
+    card_kind: CardKind
+    version_number: int
+    content_hash: str
+    status: str
+    fields: list[str]
+    field_mapping: dict[str, str]
+    front_html: str
+    back_html: str
+    styling_css: str
+    created_by: str
+    created_at: datetime
+
+
+class AnkiDeckTemplateSyncResponse(BaseModel):
+    deck_id: uuid.UUID
+    from_version: int
+    to_version: int
+    has_changes: bool
+    changes: list[AnkiDeckTemplateVersionResponse]
+
+
 class AnkiDeckTemplatePayload(BaseModel):
     template_name: str = Field(min_length=1, max_length=255)
     note_type: str = Field(min_length=1, max_length=255)

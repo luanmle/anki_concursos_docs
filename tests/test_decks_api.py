@@ -1278,6 +1278,18 @@ def test_addon_can_upload_full_deck_package_and_publish_release(
     assert version.version_number == 1
     assert len(version.content_hash) == 64
 
+    template_sync = subscriber_client.get(
+        f"/addon/decks/{body['deck_id']}/templates/sync?since_version=0"
+    )
+    assert template_sync.status_code == 200
+    template_sync_body = template_sync.json()
+    assert template_sync_body["deck_id"] == body["deck_id"]
+    assert template_sync_body["from_version"] == 0
+    assert template_sync_body["to_version"] == 1
+    assert template_sync_body["has_changes"] is True
+    assert template_sync_body["changes"][0]["template_name"] == "Basic"
+    assert template_sync_body["changes"][0]["version_number"] == 1
+
 
 def test_addon_upload_reuses_cards_for_identical_content(
     session: Session,

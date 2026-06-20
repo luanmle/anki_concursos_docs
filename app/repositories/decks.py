@@ -62,7 +62,10 @@ class DeckRepository:
     def list_templates(self, deck_id: uuid.UUID) -> list[DeckTemplate]:
         statement = (
             select(DeckTemplate)
-            .options(selectinload(DeckTemplate.current_version))
+            .options(
+                selectinload(DeckTemplate.current_version),
+                selectinload(DeckTemplate.versions),
+            )
             .where(DeckTemplate.deck_id == deck_id)
             .order_by(DeckTemplate.template_name, DeckTemplate.id)
         )
@@ -93,6 +96,15 @@ class DeckRepository:
         self.session.add(version)
         self.session.flush()
         return version
+
+    def list_template_versions(self, deck_id: uuid.UUID) -> list[DeckTemplateVersion]:
+        statement = (
+            select(DeckTemplateVersion)
+            .join(DeckTemplate, DeckTemplateVersion.deck_template_id == DeckTemplate.id)
+            .where(DeckTemplate.deck_id == deck_id)
+            .order_by(DeckTemplateVersion.version_number, DeckTemplateVersion.id)
+        )
+        return list(self.session.scalars(statement).all())
 
     def get_by_id(self, deck_id: uuid.UUID, *, for_update: bool = False) -> Deck | None:
         statement = (

@@ -259,6 +259,12 @@ GET /addon/decks/{deck_id}/templates/sync?since_version=0
 
 Retorna apenas diffs de modelo.
 
+### Implementacao atual
+
+O backend ja expõe `templates/sync` lendo `deck_template_versions` como fonte
+primaria. O endpoint entrega a versao atual de cada template e aceita filtro
+por `since_version`, para que o add-on reaplique apenas o que mudou.
+
 ## Como isso se compara ao modelo atual
 
 ### Nosso modelo atual

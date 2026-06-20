@@ -45,6 +45,8 @@ from app.schemas import (
 from app.schemas.decks import (
     AnkiDeckManifestResponse,
     AnkiDeckSyncResponse,
+    AnkiDeckTemplateSyncResponse,
+    AnkiDeckTemplateVersionResponse,
     AnkiDeckTemplatePayload,
     AnkiDeckUploadItemResponse,
     AnkiDeckUploadRequest,
@@ -439,6 +441,62 @@ class DeckService:
                     "user_id": str(user_id),
                 },
                 tags=["addon", "sync"],
+            )
+            raise
+
+    def anki_template_sync(
+        self,
+        deck_id: uuid.UUID,
+        *,
+        user_id: uuid.UUID,
+        since_version: int,
+    ) -> AnkiDeckTemplateSyncResponse:
+        try:
+            self._require_active_subscription(user_id, deck_id)
+            versions = self.repository.list_template_versions(deck_id)
+            if since_version > 0:
+                versions = [
+                    version
+                    for version in versions
+                    if version.version_number > since_version
+                ]
+            to_version = max((version.version_number for version in versions), default=0)
+            return AnkiDeckTemplateSyncResponse(
+                deck_id=deck_id,
+                from_version=since_version,
+                to_version=to_version,
+                has_changes=bool(versions),
+                changes=[
+                    AnkiDeckTemplateVersionResponse(
+                        template_id=version.template.id,
+                        template_key=version.template.template_key,
+                        template_name=version.template.template_name,
+                        note_type=version.template.note_type,
+                        card_kind=version.template.card_kind,
+                        version_number=version.version_number,
+                        content_hash=version.content_hash,
+                        status=version.status,
+                        fields=list(version.fields),
+                        field_mapping=dict(version.field_mapping),
+                        front_html=version.front_html,
+                        back_html=version.back_html,
+                        styling_css=version.styling_css,
+                        created_by=version.created_by,
+                        created_at=version.created_at,
+                    )
+                    for version in versions
+                ],
+            )
+        except Exception as exc:
+            notify_exception(
+                exc,
+                context={
+                    "operation": "anki_template_sync",
+                    "deck_id": str(deck_id),
+                    "since_version": since_version,
+                    "user_id": str(user_id),
+                },
+                tags=["addon", "template_sync"],
             )
             raise
 
