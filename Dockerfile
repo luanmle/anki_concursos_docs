@@ -10,7 +10,7 @@ RUN npm run build
 
 FROM nginx:1.27-alpine
 
-ENV API_URL=https://flashcards-stagging-d9c092f5d04d.herokuapp.com \
+ENV API_URL=https://api-do-ambiente.herokuapp.com \
     APP_ENV=STAGING \
     PORT=8080
 

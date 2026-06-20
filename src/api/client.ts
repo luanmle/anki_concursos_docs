@@ -1,5 +1,5 @@
 const DEFAULT_API_URL =
-  'https://flashcards-stagging-d9c092f5d04d.herokuapp.com'
+  'http://localhost:8000'
 
 declare global {
   interface Window {
