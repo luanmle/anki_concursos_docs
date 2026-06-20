@@ -2,14 +2,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  PackagePlus,
+  CaretLeft as ChevronLeft,
+  CaretRight as ChevronRight,
+  DownloadSimple as Download,
+  Package as PackagePlus,
   Plus,
-  Rocket,
-  Trash2,
-} from 'lucide-react'
+  RocketLaunch as Rocket,
+  Trash as Trash2,
+} from '@phosphor-icons/react'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'

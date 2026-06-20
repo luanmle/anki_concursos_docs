@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, CheckCircle2, Download, Upload, XCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle as CheckCircle2, DownloadSimple as Download, UploadSimple as Upload, XCircle } from '@phosphor-icons/react'
 import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, apiRequest } from '../api/client'

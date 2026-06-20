@@ -150,6 +150,16 @@ main         -> backend FastAPI
 admin-deploy -> frontend estático, gerado automaticamente de admin/
 ```
 
+Convenção recomendada para branches de trabalho:
+
+```text
+feat/<slug>   -> funcionalidades
+fix/<slug>    -> correções
+docs/<slug>   -> documentação
+design/<slug> -> UI, design system e especificação visual
+codex/<slug>  -> uso temporário por agente, quando necessário
+```
+
 Não editar `admin-deploy` manualmente. O workflow
 `.github/workflows/publish-admin-deploy.yml` valida o frontend, executa
 `git subtree split` e substitui essa branch quando `admin/**` muda.

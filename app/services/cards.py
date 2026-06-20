@@ -9,6 +9,7 @@ import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
+from app.core.honeybadger import notify_exception
 from app.models import Card, CardVersion
 from app.models.enums import CardKind, CardStatus, CardVersionStatus
 from app.repositories import CardRepository
@@ -109,6 +110,16 @@ class CardService:
                 self.session.flush()
         except IntegrityError as exc:
             self.session.rollback()
+            notify_exception(
+                exc,
+                context={
+                    "operation": "create_card",
+                    "card_kind": payload.card_kind.value,
+                    "discipline_id": str(payload.discipline_id),
+                    "topic_id": str(payload.topic_id),
+                },
+                tags=["database", "card", "create"],
+            )
             if "canonical" in str(exc).lower():
                 self._raise_canonical_key_conflict()
             raise HTTPException(
@@ -124,20 +135,33 @@ class CardService:
         *,
         created_by: str,
     ) -> CardCsvImportResponse:
-        rows = self._read_import_rows(payload)
-        results: list[CardCsvImportRowResult] = []
-        seen_hashes: set[str] = set()
+        try:
+            rows = self._read_import_rows(payload)
+            results: list[CardCsvImportRowResult] = []
+            seen_hashes: set[str] = set()
 
-        with self.session.begin():
-            for row_number, row in rows:
-                row_result = self._import_csv_row(
-                    row_number,
-                    row,
-                    payload=payload,
-                    created_by=created_by,
-                    seen_hashes=seen_hashes,
-                )
-                results.append(row_result)
+            with self.session.begin():
+                for row_number, row in rows:
+                    row_result = self._import_csv_row(
+                        row_number,
+                        row,
+                        payload=payload,
+                        created_by=created_by,
+                        seen_hashes=seen_hashes,
+                    )
+                    results.append(row_result)
+        except Exception as exc:
+            notify_exception(
+                exc,
+                context={
+                    "operation": "import_csv",
+                    "created_by": created_by,
+                    "dry_run": payload.dry_run,
+                    "delimiter": payload.delimiter,
+                },
+                tags=["import", "csv", "cards"],
+            )
+            raise
 
         created_status = "ready" if payload.dry_run else "created"
         return CardCsvImportResponse(
@@ -193,6 +217,14 @@ class CardService:
                 self.session.flush()
         except IntegrityError as exc:
             self.session.rollback()
+            notify_exception(
+                exc,
+                context={
+                    "operation": "create_version",
+                    "card_id": str(card_id),
+                },
+                tags=["database", "card", "version"],
+            )
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Card version could not be created due to a conflict",

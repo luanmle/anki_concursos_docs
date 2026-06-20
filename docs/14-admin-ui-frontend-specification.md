@@ -811,7 +811,7 @@ Regras do cliente:
 Configuração por ambiente:
 
 ```text
-VITE_API_URL=https://flashcards-stagging-d9c092f5d04d.herokuapp.com
+VITE_API_URL=https://api-do-ambiente.herokuapp.com
 ```
 
 Nunca fixar a URL da API diretamente nos componentes.

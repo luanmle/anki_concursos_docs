@@ -1,18 +1,18 @@
 import {
-  Activity,
-  BookOpenCheck,
-  ChevronDown,
-  FileWarning,
-  LayoutDashboard,
-  Library,
-  LogOut,
-  Menu,
-  PlugZap,
-  Search,
+  Pulse as Activity,
+  BookOpenText as BookOpenCheck,
+  CaretDown,
+  WarningCircle as FileWarning,
+  Layout,
+  Books,
+  SignOut,
+  Plug as PlugZap,
+  MagnifyingGlass as Search,
   ShieldCheck,
   Users,
+  List as Menu,
   X,
-} from 'lucide-react'
+} from '@phosphor-icons/react'
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/auth-context'
@@ -35,16 +35,16 @@ export function AppShell() {
   const nav = [
     ...studentNav,
     ...(hasRole('admin', 'curator', 'reviewer')
-      ? [{ to: '/admin', label: 'Administracao', icon: LayoutDashboard }]
+      ? [{ to: '/admin', label: 'Administracao', icon: Layout }]
       : []),
     ...(hasRole('admin', 'curator')
-      ? [{ to: '/admin/decks', label: 'Gerenciar Baralhos', icon: Library }]
+      ? [{ to: '/admin/decks', label: 'Gerenciar Baralhos', icon: Books }]
       : []),
     ...(hasRole('admin', 'reviewer')
       ? [{ to: '/admin/suggestions', label: 'Sugestoes', icon: FileWarning }]
       : []),
     ...(hasRole('admin', 'curator')
-      ? [{ to: '/cards', label: 'Cartoes internos', icon: Library }]
+      ? [{ to: '/cards', label: 'Cartoes internos', icon: Books }]
       : []),
     ...(hasRole('admin', 'curator')
       ? [{ to: '/decks', label: 'Decks internos', icon: BookOpenCheck }]
@@ -60,7 +60,7 @@ export function AppShell() {
   ]
 
   return (
-    <div className="app-shell ac-shell">
+    <div className="app-shell">
       <button
         className="mobile-menu-button"
         type="button"
@@ -103,7 +103,7 @@ export function AppShell() {
               end={to === '/'}
               onClick={() => setOpen(false)}
             >
-              <Icon size={19} />
+              <Icon size={19} aria-hidden="true" />
               {label}
             </NavLink>
           ))}
@@ -115,7 +115,7 @@ export function AppShell() {
             <span>{user && translateStatus(user.role)}</span>
           </div>
           <button type="button" aria-label="Sair" onClick={logout}>
-            <LogOut size={18} />
+            <SignOut size={18} />
           </button>
         </div>
       </aside>
@@ -136,7 +136,7 @@ export function AppShell() {
               <span>{user && translateStatus(user.role)}</span>
             </div>
             <div className="avatar">{user?.display_name.slice(0, 2).toUpperCase()}</div>
-            <ChevronDown size={15} aria-hidden="true" />
+            <CaretDown size={15} aria-hidden="true" />
           </div>
         </header>
         <main className="main-content ac-main-content">
