@@ -2,7 +2,11 @@ name: CI
 
 on:
   push:
+    branches-ignore:
+      - admin-deploy
   pull_request:
+    branches-ignore:
+      - admin-deploy
 
 jobs:
   backend:
