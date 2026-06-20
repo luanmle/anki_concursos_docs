@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mockup — DeckDetailPage + CardDetailPage | Anki Concursos Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg:             '#181b23',
+          sidebar:        '#141720',
+          surface:        '#22252d',
+          'surface-high': '#2a2e38',
+          'surface-low':  '#1d2029',
+          'surface-lowest': '#0f1117',
+          border:         '#2a2e38',
+          'border-strong': '#374151',
+          text:           '#ffffff',
+          'text-body':    '#d1d5db',
+          'text-muted':   '#9ca3af',
+          'text-disabled':'#6b7280',
+          primary:        '#3b82f6',
+          'primary-hover':'#2563eb',
+          'primary-dim':  '#1e3a5f',
+          success:        '#34d399',
+          'success-dim':  '#052e25',
+          warning:        '#fbbf24',
+          'warning-dim':  '#3a2a05',
+          danger:         '#f87171',
+          'danger-dim':   '#3b1111',
+          info:           '#93c5fd',
+          'info-dim':     '#1e3a5f',
+          'tag-pro':      '#8b5cf6',
+          'tag-hot':      '#ef4444',
+          'tag-updated':  '#a855f7',
+        },
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+        },
+        borderRadius: {
+          sm:    '6px',
+          DEFAULT: '8px',
+          lg:    '12px',
+          xl:    '16px',
+          '2xl': '20px',
+          full:  '9999px',
+        },
+      }
+    }
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { background: #181b23; color: #d1d5db; font-family: Inter, sans-serif; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #181b23; }
+  ::-webkit-scrollbar-thumb { background: #2a2e38; border-radius: 3px; }
+
+  /* Status badges */
+  .badge {
+    display: inline-flex; align-items: center;
+    min-height: 20px; padding: 2px 7px;
+    border: 1px solid; border-radius: 4px;
+    font-size: 9px; font-weight: 800;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .badge-success { color: #6ee7b7; border-color: #047857; background: #052e25; }
+  .badge-warning { color: #fde68a; border-color: #a16207; background: #3a2a05; }
+  .badge-danger  { color: #fca5a5; border-color: #b91c1c; background: #3b1111; }
+  .badge-info    { color: #93c5fd; border-color: #1d4ed8; background: #1e3a5f; }
+  .badge-neutral { color: #9ca3af; border-color: #374151; background: #1f2937; }
+  .badge-curator { color: #ddd6fe; border-color: #6d28d9; background: #2e1065; }
+  .badge-pro     { color: #8b5cf6; border-color: #8b5cf6; background: rgba(139,92,246,0.15); }
+  .badge-hot     { color: #ef4444; border-color: #ef4444; background: rgba(239,68,68,0.15); }
+  .badge-free    { color: #3b82f6; border-color: #3b82f6; background: rgba(59,130,246,0.15); }
+
+  /* Nav items */
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    min-height: 42px; padding: 0 12px;
+    border: 1px solid transparent; border-radius: 8px;
+    color: #9ca3af; text-decoration: none;
+    font-size: 13px; font-weight: 600;
+    transition: all 0.12s ease; cursor: pointer;
+  }
+  .nav-item:hover { color: #fff; background: #2a2e38; }
+  .nav-item.active { color: #3b82f6; background: #1e2a3f; border-color: #2a2e38; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 40px; padding: 0 16px; border: 1px solid transparent;
+    border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-primary { background: #3b82f6; color: #fff; border-color: transparent; }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-secondary { background: #22252d; color: #d1d5db; border-color: #2a2e38; }
+  .btn-secondary:hover { background: #2a2e38; border-color: #374151; color: #fff; }
+  .btn-ghost { background: transparent; color: #9ca3af; border-color: transparent; }
+  .btn-ghost:hover { background: #2a2e38; color: #fff; }
+  .btn-sm { min-height: 32px; padding: 0 10px; font-size: 12px; }
+
+  /* Tabs */
+  .tab { display: flex; align-items: center; gap: 8px;
+    padding-bottom: 12px; border-bottom: 2px solid transparent;
+    color: #9ca3af; font-size: 14px; font-weight: 500; cursor: pointer; }
+  .tab:hover { color: #d1d5db; }
+  .tab.active { color: #fff; border-bottom-color: #fff; }
+  .tab-count { min-width: 18px; height: 18px; padding: 0 5px;
+    border-radius: 4px; background: #2a2e38;
+    font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; }
+
+  /* Note row */
+  .note-row { display: grid; grid-template-columns: auto minmax(0,1fr) auto auto;
+    align-items: center; gap: 16px; padding: 18px; background: #22252d; }
+  .note-row:hover { background: #1d2029; cursor: pointer; }
+  .note-row.selected { background: #1e2a3f; border-left: 3px solid #3b82f6; }
+
+  /* Content card */
+  .content-card { padding: 20px; border: 1px solid #2a2e38; border-radius: 12px; background: #22252d; }
+  .content-card-success { border-left: 3px solid #34d399; background: linear-gradient(90deg, rgba(52,211,153,0.06), #22252d 35%); }
+  .content-label { font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px; }
+  .content-label-success { color: #34d399; }
+  .content-body { font-size: 14px; line-height: 1.7; color: #d1d5db; white-space: pre-wrap; }
+
+  /* Modal */
+  .modal-backdrop { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
+    padding: 24px; background: rgba(0,0,0,0.72); }
+  .modal { display: grid; grid-template-rows: auto auto minmax(0,1fr);
+    width: min(960px, 100%); max-height: min(880px, 92vh); overflow: hidden;
+    border: 1px solid #2a2e38; border-radius: 22px; background: #22252d;
+    box-shadow: 0 28px 80px rgba(0,0,0,0.5); }
+
+  /* Section headings */
+  .eyebrow { font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #9ca3af; }
+</style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+<!-- ═══════════════════════════════════════════════════ SIDEBAR ═══ -->
+<aside style="width:256px; flex-shrink:0; background:#141720; border-right:1px solid #2a2e38; display:flex; flex-direction:column; overflow-y:auto; padding:20px 14px;">
+  <!-- Brand -->
+  <div style="display:flex; align-items:center; gap:11px; padding:0 8px 18px; border-bottom:1px solid #2a2e38; margin-bottom:18px;">
+    <div style="display:grid; place-items:center; width:36px; height:36px; border-radius:8px; background:#3b82f6;">
+      <i class="ph ph-cards" style="font-size:18px; color:#fff;"></i>
+    </div>
+    <div>
+      <strong style="display:block; font-size:14px; font-weight:700; color:#fff;">Anki Concursos</strong>
+      <span style="display:block; font-size:9px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:#9ca3af; margin-top:2px;">Admin Console</span>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav style="display:grid; gap:4px;">
+    <a class="nav-item" href="#"><i class="ph ph-squares-four" style="font-size:20px;"></i> Visão geral</a>
+    <a class="nav-item" href="#"><i class="ph ph-cards" style="font-size:20px;"></i> Cartões</a>
+    <a class="nav-item active" href="#"><i class="ph ph-books" style="font-size:20px;"></i> Decks</a>
+    <a class="nav-item" href="#"><i class="ph ph-flag" style="font-size:20px;"></i> Reports</a>
+    <a class="nav-item" href="#"><i class="ph ph-users" style="font-size:20px;"></i> Usuários</a>
+    <a class="nav-item" href="#"><i class="ph ph-activity" style="font-size:20px;"></i> Operação</a>
+  </nav>
+
+  <!-- User section -->
+  <div style="margin-top:auto; padding-top:14px; border-top:1px solid #2a2e38; display:grid; grid-template-columns:34px 1fr 30px; align-items:center; gap:9px;">
+    <div style="display:grid; place-items:center; width:34px; height:34px; border-radius:50%; background:#1e3a5f; border:1px solid #1d4ed8; color:#93c5fd; font-size:10px; font-weight:800;">LU</div>
+    <div>
+      <strong style="display:block; font-size:12px; font-weight:700; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:115px;">Luan Andrade</strong>
+      <span style="display:block; font-size:10px; color:#9ca3af; margin-top:2px;">admin</span>
+    </div>
+    <button class="btn-ghost btn btn-sm" style="width:30px; padding:0;" title="Sair">
+      <i class="ph ph-sign-out" style="font-size:16px;"></i>
+    </button>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════ MAIN ═══════ -->
+<main style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+
+  <!-- Topbar -->
+  <div style="position:sticky; top:0; z-index:15; display:flex; align-items:center; justify-content:space-between; min-height:62px; padding:0 clamp(24px,4vw,52px); border-bottom:1px solid #2a2e38; background:rgba(20,23,32,0.92); backdrop-filter:blur(14px);">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <!-- Breadcrumb -->
+      <a href="#" style="color:#9ca3af; font-size:13px; text-decoration:none; display:flex; align-items:center; gap:5px;">
+        <i class="ph ph-books" style="font-size:14px;"></i> Decks
+      </a>
+      <i class="ph ph-caret-right" style="color:#374151; font-size:12px;"></i>
+      <span style="color:#d1d5db; font-size:13px; font-weight:600;">Direito Constitucional — Poderes</span>
+      <!-- Env badge -->
+      <span style="padding:3px 8px; border:1px solid #1d4ed8; border-radius:4px; background:#1e3a5f; color:#93c5fd; font-size:9px; font-weight:800; letter-spacing:0.1em;">STAGING</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:9px;">
+      <div style="display:flex; align-items:center; gap:6px; color:#9ca3af; font-size:11px;">
+        <span style="width:6px; height:6px; border-radius:50%; background:#34d399; box-shadow:0 0 10px rgba(52,211,153,0.55);"></span>
+        API conectada
+      </div>
+      <div style="text-align:right; margin-left:8px;">
+        <strong style="display:block; font-size:11px; color:#fff;">Luan Andrade</strong>
+        <span style="display:block; font-size:9px; color:#9ca3af; margin-top:1px; text-transform:uppercase; letter-spacing:0.06em;">admin</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scrollable content -->
+  <div style="flex:1; overflow-y:auto; padding:38px clamp(24px,4vw,52px) 64px;">
+  <div style="max-width:1280px; margin:0 auto;">
+
+    <!-- ─── DECK HERO ──────────────────────────────────── -->
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; gap:28px; padding:28px 30px; border:1px solid #2a2e38; border-radius:20px; background:radial-gradient(circle at 95% 0%, rgba(59,130,246,0.10), transparent 26rem), #22252d; margin-bottom:28px; align-items:start;">
+      <div>
+        <!-- Status + tags -->
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+          <span class="badge badge-success">Publicado</span>
+          <span class="badge badge-pro">PRO</span>
+          <span class="badge badge-hot">HOT</span>
+          <span class="eyebrow" style="color:#3b82f6; margin-left:4px;">· Release 12</span>
+        </div>
+        <!-- Title -->
+        <h1 style="font-size:28px; font-weight:700; color:#fff; line-height:1.2; letter-spacing:-0.01em; margin-bottom:10px;">
+          Direito Constitucional — Poderes da República
+        </h1>
+        <!-- Description -->
+        <p style="font-size:14px; color:#9ca3af; line-height:1.6; max-width:680px; margin-bottom:18px;">
+          Flashcards sobre os três poderes da República Federativa do Brasil, atribuições constitucionais, processo legislativo e controle de constitucionalidade. Ideal para concursos de nível superior.
+        </p>
+        <!-- Metadata row -->
+        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+          <span style="display:flex; align-items:center; gap:6px; font-size:13px; color:#9ca3af;">
+            <i class="ph ph-folder-open" style="color:#3b82f6;"></i> Direito Constitucional
+          </span>
+          <span style="color:#2a2e38;">·</span>
+          <span style="display:flex; align-items:center; gap:6px; font-size:13px; color:#9ca3af;">
+            <i class="ph ph-cards" style="color:#3b82f6;"></i> 47 cartões
+          </span>
+          <span style="color:#2a2e38;">·</span>
+          <span style="display:flex; align-items:center; gap:6px; font-size:13px; color:#9ca3af;">
+            <i class="ph ph-package" style="color:#3b82f6;"></i> Release 12
+          </span>
+          <span style="color:#2a2e38;">·</span>
+          <span style="display:flex; align-items:center; gap:6px; font-size:13px; color:#9ca3af;">
+            <i class="ph ph-clock" style="color:#9ca3af;"></i> Atualizado há 3 dias
+          </span>
+        </div>
+      </div>
+      <!-- Ações -->
+      <div style="display:flex; flex-direction:column; gap:10px; min-width:200px;">
+        <button class="btn btn-primary">
+          <i class="ph ph-package"></i> Publicar Release
+        </button>
+        <button class="btn btn-secondary">
+          <i class="ph ph-plus"></i> Adicionar Cartão
+        </button>
+        <button class="btn btn-ghost" style="font-size:12px;">
+          <i class="ph ph-export"></i> Exportar CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── TABS ───────────────────────────────────────── -->
+    <div style="display:flex; align-items:center; gap:24px; border-bottom:1px solid #2a2e38; margin-bottom:20px;">
+      <button class="tab active">Cartões <span class="tab-count">47</span></button>
+      <button class="tab">Releases <span class="tab-count">12</span></button>
+      <button class="tab">Sync</button>
+    </div>
+
+    <!-- ─── SEARCH + FILTER ─────────────────────────────── -->
+    <div style="display:grid; grid-template-columns:1fr 180px 180px; gap:12px; margin-bottom:16px;">
+      <div style="position:relative;">
+        <i class="ph ph-magnifying-glass" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#9ca3af; font-size:16px;"></i>
+        <input type="search" placeholder="Buscar por frente, public_id..." style="width:100%; height:40px; padding:0 12px 0 38px; border:1px solid #2a2e38; border-radius:8px; background:#0f1117; color:#d1d5db; font-size:14px; font-family:Inter,sans-serif; outline:none;" />
+      </div>
+      <select style="height:40px; padding:0 12px; border:1px solid #2a2e38; border-radius:8px; background:#0f1117; color:#d1d5db; font-size:13px; font-family:Inter,sans-serif; outline:none;">
+        <option>Todos os status</option>
+        <option>Precisa de revisão</option>
+        <option>Aprovado</option>
+        <option>Publicado</option>
+        <option>Depreciado</option>
+      </select>
+      <select style="height:40px; padding:0 12px; border:1px solid #2a2e38; border-radius:8px; background:#0f1117; color:#d1d5db; font-size:13px; font-family:Inter,sans-serif; outline:none;">
+        <option>Todos os tipos</option>
+        <option>Basic</option>
+        <option>Cloze</option>
+      </select>
+    </div>
+
+    <!-- ─── NOTE LIST ────────────────────────────────────── -->
+    <div style="border:1px solid #2a2e38; border-radius:16px; overflow:hidden; background:#2a2e38; display:grid; gap:1px; margin-bottom:16px;">
+
+      <!-- Row 1 — selected/active -->
+      <div class="note-row selected">
+        <div style="display:flex; gap:6px;">
+          <span class="badge badge-info" style="font-size:8px;">BASIC</span>
+        </div>
+        <div>
+          <strong style="display:block; font-size:14px; font-weight:600; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            O Poder Executivo federal é exercido pelo Presidente da República, auxiliado pelos Ministros de Estado.
+          </strong>
+          <span style="display:block; font-size:10px; color:#9ca3af; margin-top:3px; font-family:monospace;">AC-3F7A2B1C4D5E6F7A8B9C0D1E2F3A4B5C</span>
+        </div>
+        <span class="badge badge-success">Publicado</span>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-ghost btn-sm" title="Ver detalhes" aria-label="Ver detalhes do cartão">
+            <i class="ph ph-eye" style="font-size:15px;"></i>
+          </button>
+          <button class="btn btn-ghost btn-sm" title="Abrir cartão" aria-label="Abrir página do cartão">
+            <i class="ph ph-arrow-square-out" style="font-size:15px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="note-row">
+        <div><span class="badge badge-info" style="font-size:8px;">BASIC</span></div>
+        <div>
+          <strong style="display:block; font-size:14px; font-weight:600; color:#d1d5db; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            São poderes da União, independentes e harmônicos entre si, o Legislativo, o Executivo e o Judiciário.
+          </strong>
+          <span style="display:block; font-size:10px; color:#9ca3af; margin-top:3px; font-family:monospace;">AC-1A2B3C4D5E6F7A8B9C0D1E2F3A4B5C6</span>
+        </div>
+        <span class="badge badge-success">Publicado</span>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-ghost btn-sm" aria-label="Ver detalhes"><i class="ph ph-eye" style="font-size:15px;"></i></button>
+          <button class="btn btn-ghost btn-sm" aria-label="Abrir cartão"><i class="ph ph-arrow-square-out" style="font-size:15px;"></i></button>
+        </div>
+      </div>
+
+      <!-- Row 3 — needs review -->
+      <div class="note-row">
+        <div style="display:flex; gap:6px;">
+          <span class="badge badge-neutral" style="font-size:8px;">CLOZE</span>
+        </div>
+        <div>
+          <strong style="display:block; font-size:14px; font-weight:600; color:#d1d5db; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            O mandato do Presidente da República é de {{c1::4 anos}}, permitida uma reeleição.
+          </strong>
+          <span style="display:block; font-size:10px; color:#9ca3af; margin-top:3px; font-family:monospace;">AC-9D8C7B6A5E4F3A2B1C0D9E8F7A6B5C4</span>
+        </div>
+        <span class="badge badge-warning">Precisa de revisão</span>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-ghost btn-sm" aria-label="Ver detalhes"><i class="ph ph-eye" style="font-size:15px;"></i></button>
+          <button class="btn btn-ghost btn-sm" aria-label="Abrir cartão"><i class="ph ph-arrow-square-out" style="font-size:15px;"></i></button>
+        </div>
+      </div>
+
+      <!-- Row 4 — deprecated -->
+      <div class="note-row" style="opacity:0.65;">
+        <div><span class="badge badge-neutral" style="font-size:8px;">BASIC</span></div>
+        <div>
+          <strong style="display:block; font-size:14px; font-weight:600; color:#9ca3af; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            [Versão antiga] O STF é composto por onze Ministros, todos brasileiros natos...
+          </strong>
+          <span style="display:block; font-size:10px; color:#9ca3af; margin-top:3px; font-family:monospace;">AC-7E6D5C4B3A2F1E0D9C8B7A6E5D4C3B2</span>
+        </div>
+        <span class="badge badge-danger">Depreciado</span>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-ghost btn-sm" aria-label="Ver detalhes"><i class="ph ph-eye" style="font-size:15px;"></i></button>
+          <button class="btn btn-ghost btn-sm" aria-label="Abrir cartão"><i class="ph ph-arrow-square-out" style="font-size:15px;"></i></button>
+        </div>
+      </div>
+
+      <!-- Row 5 -->
+      <div class="note-row">
+        <div><span class="badge badge-info" style="font-size:8px;">BASIC</span></div>
+        <div>
+          <strong style="display:block; font-size:14px; font-weight:600; color:#d1d5db; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            A Câmara dos Deputados compõe-se de representantes do povo, eleitos pelo sistema proporcional em cada Estado...
+          </strong>
+          <span style="display:block; font-size:10px; color:#9ca3af; margin-top:3px; font-family:monospace;">AC-2A3B4C5D6E7F8A9B0C1D2E3F4A5B6C7</span>
+        </div>
+        <span class="badge badge-success">Publicado</span>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-ghost btn-sm" aria-label="Ver detalhes"><i class="ph ph-eye" style="font-size:15px;"></i></button>
+          <button class="btn btn-ghost btn-sm" aria-label="Abrir cartão"><i class="ph ph-arrow-square-out" style="font-size:15px;"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paginação -->
+    <div style="display:flex; align-items:center; justify-content:space-between; color:#9ca3af; font-size:11px; padding:8px 0;">
+      <span>Mostrando 5 de 47 cartões</span>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button class="btn btn-ghost btn-sm" style="width:30px; padding:0;" aria-label="Página anterior" disabled><i class="ph ph-caret-left"></i></button>
+        <button style="display:grid; place-items:center; width:30px; height:30px; border-radius:5px; border:1px solid #3b82f6; background:#3b82f6; color:#fff; font-size:12px; font-weight:700; cursor:pointer;">1</button>
+        <button class="btn btn-ghost btn-sm" style="width:30px; padding:0;">2</button>
+        <button class="btn btn-ghost btn-sm" style="width:30px; padding:0;">3</button>
+        <span style="padding:0 4px;">···</span>
+        <button class="btn btn-ghost btn-sm" style="width:30px; padding:0;">10</button>
+        <button class="btn btn-ghost btn-sm" style="width:30px; padding:0;" aria-label="Próxima página"><i class="ph ph-caret-right"></i></button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- SECTION DIVIDER: CardDetailPage (abaixo, para referência visual) -->
+    <div style="margin:52px 0 28px; padding-top:28px; border-top:1px dashed #2a2e38;">
+      <p class="eyebrow" style="margin-bottom:8px;">↓ CardDetailPage — ao clicar em "abrir cartão" na linha acima</p>
+    </div>
+
+    <!-- Back link -->
+    <a href="#" style="display:inline-flex; align-items:center; gap:7px; margin-bottom:20px; color:#9ca3af; text-decoration:none; font-size:11px;">
+      <i class="ph ph-arrow-left" style="font-size:14px;"></i> Decks / Direito Constitucional
+    </a>
+
+    <!-- ─── CARD HEADER ──────────────────────────────────── -->
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:22px; padding-bottom:22px; border-bottom:1px solid #2a2e38; margin-bottom:18px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:300px;">
+        <!-- Kicker -->
+        <div style="display:flex; align-items:center; gap:9px; margin-bottom:10px; flex-wrap:wrap;">
+          <code style="font-size:10px; color:#9ca3af; font-family:monospace;">AC-3F7A2B1C4D5E6F7A8B9C0D1E2F3A4B5C</code>
+          <span class="badge badge-success">Publicado</span>
+          <span class="badge badge-success">v3 · Publicado</span>
+        </div>
+        <!-- Title -->
+        <h1 style="font-size:clamp(22px,3vw,32px); font-weight:700; color:#fff; line-height:1.2; letter-spacing:-0.01em; margin-bottom:10px; max-width:780px;">
+          O Poder Executivo federal é exercido pelo Presidente da República, auxiliado pelos Ministros de Estado.
+        </h1>
+        <!-- Meta -->
+        <p style="font-size:11px; color:#9ca3af;">
+          Direito Constitucional · Poder Executivo · 3 versões · Atualizado em 15 jun 2025
+        </p>
+      </div>
+      <!-- Ações -->
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-primary"><i class="ph ph-plus"></i> Nova versão</button>
+        <button class="btn btn-secondary"><i class="ph ph-copy"></i> Copiar ID</button>
+      </div>
+    </div>
+
+    <!-- ─── CARD DETAIL TABS ──────────────────────────────── -->
+    <div style="display:flex; align-items:center; gap:24px; border-bottom:1px solid #2a2e38; margin-bottom:20px;">
+      <button class="tab active">Conteúdo atual</button>
+      <button class="tab">Histórico <span class="tab-count">3</span></button>
+      <button class="tab">Metadados</button>
+    </div>
+
+    <!-- ─── DETAIL LAYOUT ───────────────────────────────── -->
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:14px; margin-bottom:40px;">
+
+      <!-- Content column -->
+      <div style="display:grid; gap:12px; align-content:start;">
+
+        <!-- ContentCard: Frente (success — published) -->
+        <article class="content-card content-card-success">
+          <div class="content-label content-label-success">Frente</div>
+          <div class="content-body" style="color:#fff; font-size:15px; font-weight:500;">
+            O Poder Executivo federal é exercido pelo Presidente da República, auxiliado pelos Ministros de Estado.
+          </div>
+        </article>
+
+        <!-- ContentCard: Verso -->
+        <article class="content-card">
+          <div class="content-label">Verso</div>
+          <div class="content-body">
+            Art. 76 da Constituição Federal de 1988.
+O Presidente da República é simultaneamente Chefe de Estado e Chefe de Governo.
+Os Ministros de Estado são de livre nomeação e exoneração pelo Presidente.
+          </div>
+        </article>
+
+        <!-- ContentCard: Resposta -->
+        <article class="content-card content-card-success">
+          <div class="content-label content-label-success">Resposta</div>
+          <div class="content-body" style="color:#6ee7b7;">
+            Presidente da República, auxiliado pelos Ministros de Estado.
+          </div>
+        </article>
+
+        <!-- ContentCard: Explicação -->
+        <article class="content-card">
+          <div class="content-label">Explicação</div>
+          <div class="content-body">
+            O art. 76 da CF/88 trata do Poder Executivo federal. Diferente dos estados (Governador) e municípios (Prefeito), no âmbito federal o Executivo é chefiado pelo Presidente, com os Ministros atuando como colaboradores diretos.
+
+Questão frequente em concursos: a diferença entre Chefe de Estado (representa o Brasil nas relações internacionais) e Chefe de Governo (administra o país internamente) — ambas as funções pertencem ao Presidente.
+          </div>
+        </article>
+
+        <!-- Editorial actions -->
+        <div style="display:flex; gap:10px; padding-top:4px;">
+          <button class="btn btn-ghost" style="color:#fbbf24; font-size:12px;">
+            <i class="ph ph-warning"></i> Reportar problema
+          </button>
+        </div>
+      </div>
+
+      <!-- Sidebar: Metadata + Actions -->
+      <div style="display:grid; align-content:start; gap:12px;">
+
+        <!-- MetadataCard -->
+        <div class="content-card" style="border-radius:8px;">
+          <div class="content-label" style="margin-bottom:14px;">Metadados</div>
+          <dl style="display:grid; gap:0;">
+            <div style="padding:10px 0; border-bottom:1px solid #2a2e38;">
+              <dt style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#9ca3af; margin-bottom:4px;">Public ID</dt>
+              <dd style="font-size:10px; color:#d1d5db; font-family:monospace; overflow-wrap:anywhere;">AC-3F7A2B1C4D5E6F7A<br/>8B9C0D1E2F3A4B5C
+                <button class="btn btn-ghost btn-sm" style="margin-left:4px; padding:0 4px; min-height:20px;" aria-label="Copiar ID"><i class="ph ph-copy" style="font-size:12px;"></i></button>
+              </dd>
+            </div>
+            <div style="padding:10px 0; border-bottom:1px solid #2a2e38;">
+              <dt style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#9ca3af; margin-bottom:4px;">Tipo</dt>
+              <dd><span class="badge badge-info">BASIC</span></dd>
+            </div>
+            <div style="padding:10px 0; border-bottom:1px solid #2a2e38;">
+              <dt style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#9ca3af; margin-bottom:4px;">Status do cartão</dt>
+              <dd><span class="badge badge-success">Publicado</span></dd>
+            </div>
+            <div style="padding:10px 0; border-bottom:1px solid #2a2e38;">
+              <dt style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#9ca3af; margin-bottom:4px;">Versão atual</dt>
+              <dd style="font-size:11px; color:#d1d5db;">v3 · <span class="badge badge-success" style="font-size:8px;">Publicado</span></dd>
+            </div>
+            <div style="padding:10px 0; border-bottom:1px solid #2a2e38;">
+              <dt style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#9ca3af; margin-bottom:4px;">Disciplina</dt>
+              <dd style="font-size:11px; color:#d1d5db;">Direito Constitucional</dd>
+            </div>
+            <div style="padding:10px 0;">
+              <dt style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#9ca3af; margin-bottom:4px;">Atualizado em</dt>
+              <dd style="font-size:11px; color:#d1d5db;">15 de junho de 2025</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Editorial Actions -->
+        <div class="content-card" style="border-radius:8px; display:grid; gap:8px;">
+          <div class="content-label" style="margin-bottom:6px;">Ações editoriais</div>
+          <button class="btn btn-primary" style="width:100%; justify-content:center;">
+            <i class="ph ph-plus"></i> Nova versão
+          </button>
+          <button class="btn btn-secondary" style="width:100%; justify-content:center; opacity:0.4; cursor:not-allowed;" disabled title="Versão já publicada — criar nova versão para editar">
+            <i class="ph ph-check"></i> Aprovar versão
+          </button>
+          <button class="btn btn-secondary" style="width:100%; justify-content:center; opacity:0.4; cursor:not-allowed;" disabled>
+            <i class="ph ph-check-circle"></i> Publicar versão
+          </button>
+        </div>
+
+        <!-- Version history preview -->
+        <div class="content-card" style="border-radius:8px;">
+          <div class="content-label" style="margin-bottom:14px;">Histórico de versões</div>
+          <div style="display:grid; gap:1px; background:#2a2e38; border-radius:6px; overflow:hidden;">
+
+            <!-- v3 — current, published -->
+            <div style="display:grid; grid-template-columns:32px 1fr auto; align-items:center; gap:10px; padding:12px; background:linear-gradient(90deg,rgba(59,130,246,0.06),#1d2029 40%); border-left:2px solid #3b82f6;">
+              <div style="display:grid; place-items:center; width:30px; height:30px; border-radius:50%; background:#1e3a5f; color:#3b82f6; font-size:11px; font-weight:800;">v3</div>
+              <div>
+                <strong style="display:block; font-size:11px; color:#fff; font-weight:600;">Correção ortográfica</strong>
+                <small style="display:block; font-size:9px; color:#9ca3af; margin-top:2px;">luan@mail.com · 15 jun 2025</small>
+              </div>
+              <span class="badge badge-success">Publicado</span>
+            </div>
+
+            <!-- v2 -->
+            <div style="display:grid; grid-template-columns:32px 1fr auto; align-items:center; gap:10px; padding:12px; background:#1d2029;">
+              <div style="display:grid; place-items:center; width:30px; height:30px; border-radius:50%; background:#1f2937; color:#9ca3af; font-size:11px; font-weight:800;">v2</div>
+              <div>
+                <strong style="display:block; font-size:11px; color:#d1d5db; font-weight:600;">Adição da explicação</strong>
+                <small style="display:block; font-size:9px; color:#9ca3af; margin-top:2px;">luan@mail.com · 2 jan 2025</small>
+              </div>
+              <span class="badge badge-neutral">Substituído</span>
+            </div>
+
+            <!-- v1 -->
+            <div style="display:grid; grid-template-columns:32px 1fr auto; align-items:center; gap:10px; padding:12px; background:#1d2029;">
+              <div style="display:grid; place-items:center; width:30px; height:30px; border-radius:50%; background:#1f2937; color:#9ca3af; font-size:11px; font-weight:800;">v1</div>
+              <div>
+                <strong style="display:block; font-size:11px; color:#d1d5db; font-weight:600;">Versão inicial</strong>
+                <small style="display:block; font-size:9px; color:#9ca3af; margin-top:2px;">luan@mail.com · 10 dez 2024</small>
+              </div>
+              <span class="badge badge-neutral">Substituído</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── STATUS BADGE SHOWCASE ───────────────────────── -->
+    <div style="margin-top:40px; padding-top:28px; border-top:1px dashed #2a2e38;">
+      <p class="eyebrow" style="margin-bottom:16px;">Referência: StatusBadge — todos os estados do domínio</p>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+        <span class="eyebrow" style="width:100%; margin-bottom:4px;">CardStatus</span>
+        <span class="badge badge-neutral">Gerado</span>
+        <span class="badge badge-warning">Precisa de revisão</span>
+        <span class="badge badge-success">Aprovado</span>
+        <span class="badge badge-success">Publicado</span>
+        <span class="badge badge-danger">Reportado</span>
+        <span class="badge badge-success">Revisado</span>
+        <span class="badge badge-danger">Depreciado</span>
+        <span class="badge badge-neutral">Arquivado</span>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+        <span class="eyebrow" style="width:100%; margin-bottom:4px;">CardVersionStatus</span>
+        <span class="badge badge-neutral">Gerado</span>
+        <span class="badge badge-warning">Precisa de revisão</span>
+        <span class="badge badge-success">Aprovado</span>
+        <span class="badge badge-success">Publicado</span>
+        <span class="badge badge-danger">Rejeitado</span>
+        <span class="badge badge-neutral">Substituído</span>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+        <span class="eyebrow" style="width:100%; margin-bottom:4px;">ReleaseAction</span>
+        <span class="badge badge-success">Adicionado</span>
+        <span class="badge badge-info">Atualizado</span>
+        <span class="badge badge-danger">Removido</span>
+        <span class="badge badge-warning">Depreciado</span>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+        <span class="eyebrow" style="width:100%; margin-bottom:4px;">UserRole</span>
+        <span class="badge badge-success">Admin</span>
+        <span class="badge badge-curator">Curador</span>
+        <span class="badge badge-warning">Revisor</span>
+        <span class="badge badge-info">Aluno</span>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        <span class="eyebrow" style="width:100%; margin-bottom:4px;">Tags de tipo (Scrimba pattern)</span>
+        <span class="badge badge-pro">PRO</span>
+        <span class="badge badge-hot">HOT</span>
+        <span class="badge badge-free">FREE</span>
+        <span style="display:inline-flex; align-items:center; min-height:20px; padding:2px 7px; border:1px solid #a855f7; border-radius:4px; font-size:9px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#a855f7; background:rgba(168,85,247,0.15);">UPDATED</span>
+      </div>
+    </div>
+
+  </div>
+  </div>
+</main>
+
+</body>
+</html>

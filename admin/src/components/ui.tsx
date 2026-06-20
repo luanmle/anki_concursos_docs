@@ -3,7 +3,7 @@ import { translateStatus } from '../lib/presentation'
 
 export function StatusBadge({ value }: { value: string }) {
   return (
-    <span className={`status-badge status-${value}`} title={value}>
+    <span className={`status-badge status-${value}`} title={value} aria-label={value}>
       {translateStatus(value)}
     </span>
   )
@@ -51,7 +51,7 @@ export function LoadingState() {
   return (
     <div className="loading-state" aria-live="polite">
       <span className="spinner" />
-      Carregando dados…
+      Carregando dados...
     </div>
   )
 }

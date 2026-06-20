@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anki Concursos Admin — Glass Shell Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* === TOKENS === */
+:root {
+  --bg:               #181b23;
+  --sidebar-bg:       #141720;
+  --surface:          #22252d;
+  --surface-high:     #2a2e38;
+  --surface-low:      #1d2029;
+  --border:           #2a2e38;
+  --border-strong:    #374151;
+  --text:             #ffffff;
+  --text-body:        #d1d5db;
+  --text-muted:       #9ca3af;
+  --text-disabled:    #6b7280;
+  --primary:          #3b82f6;
+  --primary-hover:    #2563eb;
+  --primary-dim:      #1e3a5f;
+  --success:          #34d399;
+  --success-dim:      #052e25;
+  --warning:          #fbbf24;
+  --warning-dim:      #3a2a05;
+  --danger:           #f87171;
+  --danger-dim:       #3b1111;
+  --info:             #93c5fd;
+  --info-dim:         #1e3a5f;
+
+  /* Glass tokens */
+  --glass-sidebar:        rgba(20, 23, 32, 0.85);
+  --glass-topbar:         rgba(24, 27, 35, 0.80);
+  --glass-elevated:       rgba(34, 37, 45, 0.75);
+  --glass-modal:          rgba(20, 23, 32, 0.92);
+  --glass-tooltip:        rgba(24, 27, 35, 0.95);
+  --glass-overlay:        rgba(0, 0, 0, 0.68);
+  --glass-border:         rgba(255, 255, 255, 0.07);
+  --glass-border-strong:  rgba(255, 255, 255, 0.12);
+
+  --sidebar-width: 256px;
+  --sidebar-collapsed-width: 64px;
+  --topbar-height: 62px;
+  --sidebar-transition: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* === TOPBAR === */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--topbar-height);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--glass-topbar);
+  backdrop-filter: blur(8px) saturate(1.1);
+  -webkit-backdrop-filter: blur(8px) saturate(1.1);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.env-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--warning-dim);
+  color: var(--warning);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.topbar-user:hover { background: var(--surface-high); }
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-dim);
+  border: 2px solid rgba(59,130,246,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.user-info { text-align: left; }
+.user-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.user-role {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+/* === SIDEBAR === */
+.sidebar {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-width);
+  background: var(--glass-sidebar);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border-right: 1px solid var(--glass-border);
+  transition: width var(--sidebar-transition);
+  overflow: hidden;
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 14px 16px;
+  flex-shrink: 0;
+}
+
+.logo-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: white;
+}
+
+.brand-text { overflow: hidden; }
+.brand-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  transition: opacity 120ms ease, width var(--sidebar-transition);
+}
+.brand-env {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: opacity 120ms ease;
+}
+
+.collapsed .brand-text { opacity: 0; width: 0; pointer-events: none; }
+
+.sidebar-divider {
+  height: 1px;
+  background: var(--glass-border);
+  margin: 0 14px 12px;
+  flex-shrink: 0;
+}
+
+/* === NAV === */
+.nav-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 14px;
+  overflow: hidden;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+  position: relative;
+}
+
+.nav-item:hover {
+  background: var(--surface-high);
+  border-color: transparent;
+}
+
+.nav-item.active {
+  background: #1e2a3f;
+  border-color: var(--border);
+}
+
+.nav-icon {
+  font-size: 18px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: color 0.15s ease;
+}
+
+.nav-item:hover .nav-icon { color: var(--text); }
+.nav-item.active .nav-icon { color: var(--primary); }
+
+.nav-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: color 0.15s ease, opacity var(--sidebar-transition), width var(--sidebar-transition);
+  overflow: hidden;
+}
+
+.nav-item:hover .nav-label { color: var(--text); }
+.nav-item.active .nav-label { color: var(--primary); }
+
+.collapsed .nav-label { opacity: 0; width: 0; }
+.collapsed .nav-item { padding: 0; justify-content: center; gap: 0; }
+
+/* === SIDEBAR FOOTER === */
+.sidebar-footer {
+  padding: 12px 14px 16px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--glass-border);
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.sidebar-user-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.sidebar-user-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 115px;
+  transition: opacity var(--sidebar-transition), width var(--sidebar-transition);
+}
+.sidebar-user-role {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  transition: opacity var(--sidebar-transition);
+}
+
+.collapsed .sidebar-user-info { opacity: 0; width: 0; pointer-events: none; }
+
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 36px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.toggle-btn:hover { background: var(--surface-high); color: var(--text); }
+
+.toggle-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: transform var(--sidebar-transition);
+}
+.collapsed .toggle-icon { transform: scaleX(-1); }
+.collapsed .toggle-btn { justify-content: center; padding: 0; }
+.collapsed .toggle-label { opacity: 0; width: 0; overflow: hidden; }
+
+/* === MAIN === */
+.main-layout {
+  margin-top: var(--topbar-height);
+  margin-left: var(--sidebar-width);
+  transition: margin-left var(--sidebar-transition);
+  min-height: calc(100vh - var(--topbar-height));
+  padding: 24px;
+}
+
+.main-layout.collapsed { margin-left: var(--sidebar-collapsed-width); }
+
+/* === PAGE CONTENT (demo) === */
+.page-header {
+  margin-bottom: 24px;
+}
+.breadcrumb {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.breadcrumb-sep { color: var(--border-strong); }
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.page-subtitle { font-size: 14px; color: var(--text-muted); }
+
+/* Data table demo */
+.card-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+
+.search-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-low);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 12px 0 10px;
+  height: 36px;
+  font-size: 13px;
+  color: var(--text-muted);
+  width: 280px;
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease;
+}
+.btn-primary:hover { background: var(--primary-hover); }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  padding: 10px 20px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  background: var(--surface-low);
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-body);
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+
+.badge-success { background: var(--success-dim); color: #6ee7b7; border-color: #047857; }
+.badge-warning { background: var(--warning-dim); color: #fde68a; border-color: #a16207; }
+.badge-neutral { background: #1f2937; color: var(--text-muted); border-color: var(--border-strong); }
+.badge-info { background: var(--info-dim); color: var(--info); border-color: #1d4ed8; }
+
+/* === MODAL OVERLAY (demo) === */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--glass-overlay);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.visible { display: flex; }
+
+.modal-panel {
+  background: var(--glass-modal);
+  backdrop-filter: blur(28px) saturate(1.2);
+  -webkit-backdrop-filter: blur(28px) saturate(1.2);
+  border: 1px solid var(--glass-border-strong);
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.60);
+  padding: 28px;
+  width: 100%;
+  max-width: 480px;
+  margin: 24px;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.modal-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 16px;
+  background: var(--surface);
+  color: var(--text-body);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.btn-secondary:hover { background: var(--surface-high); border-color: var(--border-strong); color: var(--text); }
+
+/* === TOOLTIP (demo) === */
+.tooltip-demo {
+  position: absolute;
+  left: calc(var(--sidebar-collapsed-width) + 10px);
+  top: 200px;
+  background: var(--glass-tooltip);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border-strong);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-body);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  display: none;
+  white-space: nowrap;
+  z-index: 60;
+}
+
+.sidebar.collapsed ~ .tooltip-demo { display: block; }
+
+/* === TOGGLE BUTTON demo === */
+.demo-toggle {
+  position: fixed;
+  top: 18px;
+  right: 24px;
+  display: flex;
+  gap: 8px;
+}
+
+.demo-btn {
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+.demo-btn:hover { background: var(--surface-high); color: var(--text); }
+.demo-btn.active { background: var(--primary-dim); color: var(--primary); border-color: rgba(59,130,246,0.3); }
+</style>
+</head>
+<body>
+
+<!-- Topbar glass -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div style="width:30px;height:30px;border-radius:7px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;flex-shrink:0;">A</div>
+    <span class="topbar-title">Anki Concursos</span>
+    <span class="env-badge">Staging</span>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-user">
+      <div class="avatar">LA</div>
+      <div class="user-info">
+        <div class="user-name">Luan Andrade</div>
+        <div class="user-role">Admin</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Demo controls -->
+<div class="demo-toggle">
+  <button class="demo-btn" onclick="toggleSidebar()" id="btn-sidebar">⊣ Toggle Sidebar</button>
+  <button class="demo-btn" onclick="toggleModal()" id="btn-modal">◈ Ver Modal</button>
+</div>
+
+<!-- Sidebar glass -->
+<nav class="sidebar" id="sidebar" aria-label="Navegação principal">
+  <div class="sidebar-header">
+    <div class="logo-mark">A</div>
+    <div class="brand-text">
+      <div class="brand-name">Anki Concursos</div>
+      <div class="brand-env">Admin Console</div>
+    </div>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <nav class="nav-list" id="sidebar-nav">
+    <!-- Visão Geral -->
+    <a class="nav-item" href="#" title="Visão Geral">
+      <span class="nav-icon">⊞</span>
+      <span class="nav-label">Visão Geral</span>
+    </a>
+    <!-- Cartões (active) -->
+    <a class="nav-item active" href="#" aria-current="page" title="Cartões">
+      <span class="nav-icon">□</span>
+      <span class="nav-label">Cartões</span>
+    </a>
+    <!-- Decks -->
+    <a class="nav-item" href="#" title="Decks">
+      <span class="nav-icon">◫</span>
+      <span class="nav-label">Decks</span>
+    </a>
+    <!-- Reports -->
+    <a class="nav-item" href="#" title="Reports">
+      <span class="nav-icon">⚑</span>
+      <span class="nav-label">Reports</span>
+    </a>
+    <!-- Operação -->
+    <a class="nav-item" href="#" title="Operação">
+      <span class="nav-icon">◷</span>
+      <span class="nav-label">Operação</span>
+    </a>
+    <!-- Usuários (admin only) -->
+    <a class="nav-item" href="#" title="Usuários">
+      <span class="nav-icon">◎</span>
+      <span class="nav-label">Usuários</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="avatar">LA</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name">Luan Andrade</div>
+        <div class="sidebar-user-role">Admin</div>
+      </div>
+    </div>
+    <button
+      class="toggle-btn"
+      id="toggle-btn"
+      onclick="toggleSidebar()"
+      aria-expanded="true"
+      aria-controls="sidebar-nav"
+    >
+      <span class="toggle-icon">⊣</span>
+      <span class="toggle-label">Recolher sidebar</span>
+    </button>
+  </div>
+</nav>
+
+<!-- Tooltip que aparece no modo colapsado -->
+<div class="tooltip-demo" style="top:242px">Cartões</div>
+
+<!-- Main content -->
+<main class="main-layout" id="main-layout">
+  <div class="page-header">
+    <div class="breadcrumb">
+      <span>Cartões</span>
+    </div>
+    <h1 class="page-title">Cartões</h1>
+    <p class="page-subtitle">Gerencie e revise os flashcards da plataforma.</p>
+  </div>
+
+  <div class="card-panel">
+    <div class="table-toolbar">
+      <div class="search-input">
+        🔍
+        <span>Buscar por public_id, chave canônica...</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="search-input" style="width:140px;">Status ▼</div>
+        <div class="search-input" style="width:120px;">Tipo ▼</div>
+        <button class="btn-primary">+ Novo Cartão</button>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Public ID</th>
+          <th>Disciplina / Assunto</th>
+          <th>Status</th>
+          <th>Versão</th>
+          <th>Atualizado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--text);font-weight:600;font-family:monospace;font-size:12px">AC-3F7A2B1C...</td>
+          <td>
+            <div style="font-weight:600;color:var(--text-body)">Direito Constitucional</div>
+            <div style="font-size:12px;color:var(--text-muted)">Princípios fundamentais</div>
+          </td>
+          <td><span class="badge badge-warning">Precisa revisão</span></td>
+          <td style="color:var(--text-muted)">v3</td>
+          <td style="color:var(--text-muted);font-size:12px">20/06/2026</td>
+          <td style="text-align:right"><span style="color:var(--text-muted);cursor:pointer">→</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text);font-weight:600;font-family:monospace;font-size:12px">AC-A1B2C3D4...</td>
+          <td>
+            <div style="font-weight:600;color:var(--text-body)">Direito Administrativo</div>
+            <div style="font-size:12px;color:var(--text-muted)">Poderes da administração</div>
+          </td>
+          <td><span class="badge badge-success">Publicado</span></td>
+          <td style="color:var(--text-muted)">v1</td>
+          <td style="color:var(--text-muted);font-size:12px">19/06/2026</td>
+          <td style="text-align:right"><span style="color:var(--text-muted);cursor:pointer">→</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text);font-weight:600;font-family:monospace;font-size:12px">AC-E5F6A7B8...</td>
+          <td>
+            <div style="font-weight:600;color:var(--text-body)">Raciocínio Lógico</div>
+            <div style="font-size:12px;color:var(--text-muted)">Lógica de predicados</div>
+          </td>
+          <td><span class="badge badge-neutral">Gerado</span></td>
+          <td style="color:var(--text-muted)">v1</td>
+          <td style="color:var(--text-muted);font-size:12px">18/06/2026</td>
+          <td style="text-align:right"><span style="color:var(--text-muted);cursor:pointer">→</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text);font-weight:600;font-family:monospace;font-size:12px">AC-9C0D1E2F...</td>
+          <td>
+            <div style="font-weight:600;color:var(--text-body)">Português</div>
+            <div style="font-size:12px;color:var(--text-muted)">Concordância nominal</div>
+          </td>
+          <td><span class="badge badge-info">Aprovado</span></td>
+          <td style="color:var(--text-muted)">v2</td>
+          <td style="color:var(--text-muted);font-size:12px">17/06/2026</td>
+          <td style="text-align:right"><span style="color:var(--text-muted);cursor:pointer">→</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)">
+      <span style="font-size:13px;color:var(--text-muted)">247 cartões</span>
+      <div style="display:flex;gap:6px;font-size:13px;color:var(--text-muted)">
+        ← 1 2 3 ... 13 →
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal glass (example: publish confirmation) -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal-panel" onclick="event.stopPropagation()">
+    <h2 class="modal-title">Publicar versão v3</h2>
+    <p class="modal-desc">
+      A versão v3 do cartão <strong style="color:var(--text);font-family:monospace">AC-3F7A2B1C</strong> será publicada.
+      Versões publicadas não podem ser editadas — uma mudança posterior criará uma nova versão.<br><br>
+      Decks contendo este cartão <strong style="color:var(--text)">não são atualizados automaticamente</strong>.
+      Você precisará atualizar manualmente.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="toggleModal()">Cancelar</button>
+      <button class="btn-primary">Publicar versão</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const sidebar = document.getElementById('sidebar');
+const mainLayout = document.getElementById('main-layout');
+const toggleBtn = document.getElementById('toggle-btn');
+let collapsed = false;
+
+function toggleSidebar() {
+  collapsed = !collapsed;
+  sidebar.classList.toggle('collapsed', collapsed);
+  mainLayout.classList.toggle('collapsed', collapsed);
+  toggleBtn.setAttribute('aria-expanded', String(!collapsed));
+
+  const label = toggleBtn.querySelector('.toggle-label');
+  if (label) label.textContent = collapsed ? 'Expandir sidebar' : 'Recolher sidebar';
+}
+
+function toggleModal() {
+  const overlay = document.getElementById('modal-overlay');
+  overlay.classList.toggle('visible');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) toggleModal();
+}
+</script>
+</body>
+</html>

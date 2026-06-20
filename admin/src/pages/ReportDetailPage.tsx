@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, ArrowLeft, CheckCircle2, GitBranch } from 'lucide-react'
+import { WarningCircle as AlertTriangle, ArrowLeft, CheckCircle as CheckCircle2, GitBranch } from '@phosphor-icons/react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError, apiRequest } from '../api/client'

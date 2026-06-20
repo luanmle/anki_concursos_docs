@@ -1,5 +1,8 @@
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.routes.addon import router as addon_router
 from app.api.routes.auth import (
@@ -21,18 +24,55 @@ from app.api.routes.reports import (
 from app.api.routes.subscriptions import router as subscriptions_router
 from app.api.routes.taxonomy import router as taxonomy_router
 from app.core.config import get_settings
+from app.core.honeybadger import configure_honeybadger, notify_exception
 from app.core.logging import configure_logging
 from app.core.middleware import RequestBodyLimitMiddleware, RequestContextMiddleware
 
 settings = get_settings()
 configure_logging(settings.log_level)
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    configure_honeybadger(settings)
+    yield
+
+
 app = FastAPI(
     title=settings.app_name,
     docs_url="/docs" if settings.docs_enabled else None,
     redoc_url="/redoc" if settings.docs_enabled else None,
     openapi_url="/openapi.json" if settings.docs_enabled else None,
+    lifespan=lifespan,
 )
+
+
+@app.exception_handler(Exception)
+async def handle_unexpected_exception(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    request_id = getattr(request.state, "request_id", None) or request.headers.get(
+        "X-Request-ID"
+    )
+    notify_exception(
+        exc,
+        context={
+            "endpoint": request.url.path,
+            "method": request.method,
+            "request_id": request_id,
+            "client_ip": request.client.host if request.client else None,
+            "query_params": dict(request.query_params),
+        },
+        tags=["fastapi", "unhandled_exception"],
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error"},
+        headers={"X-Request-ID": request_id} if request_id else None,
+    )
+
+
 app.add_middleware(
     RequestBodyLimitMiddleware,
     maximum_bytes=settings.max_request_body_bytes,
