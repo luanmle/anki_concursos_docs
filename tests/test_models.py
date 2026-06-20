@@ -37,6 +37,7 @@ def test_mvp_1_tables_are_declared() -> None:
         "raw_documents", "exams", "questions", "question_alternatives",
         "disciplines", "topics", "cards", "card_versions", "decks",
         "deck_cards", "deck_subscriptions", "deck_snapshots",
+        "deck_templates", "deck_template_versions",
         "releases", "release_items",
         "processing_jobs",
         "card_reports", "review_tasks",

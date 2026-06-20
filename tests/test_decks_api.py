@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import create_access_token, hash_password
 from app.main import app
-from app.models import Discipline, Topic, User
+from app.models import DeckTemplate, DeckTemplateVersion, Discipline, Topic, User
 from app.models.enums import UserRole
 
 
@@ -1267,6 +1267,16 @@ def test_addon_can_upload_full_deck_package_and_publish_release(
     ]
     assert manifest_body["templates"][0]["template_name"] == "Basic"
     assert manifest_body["templates"][0]["styling_css"] == ".card { font-family: Inter; }"
+
+    deck_template = session.query(DeckTemplate).one()
+    assert deck_template.template_name == "Basic"
+    assert deck_template.note_type == "Anki Concursos Basic"
+    assert deck_template.current_version is not None
+
+    version = session.query(DeckTemplateVersion).one()
+    assert version.deck_template_id == deck_template.id
+    assert version.version_number == 1
+    assert len(version.content_hash) == 64
 
 
 def test_addon_upload_reuses_cards_for_identical_content(

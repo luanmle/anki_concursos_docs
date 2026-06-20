@@ -16,6 +16,8 @@ from app.models import (
     Deck,
     DeckCard,
     DeckSnapshot,
+    DeckTemplate,
+    DeckTemplateVersion,
     DeckSubscription,
     Release,
     ReleaseItem,
@@ -485,6 +487,57 @@ class DeckService:
                 template_map: dict[tuple[str, str], AnkiDeckTemplatePayload] = {}
                 templates_by_note_type: dict[str, list[AnkiDeckTemplatePayload]] = {}
                 for template in payload.templates:
+                    template_key = self._template_key_for_upload(
+                        deck.id,
+                        template.template_name,
+                        template.note_type,
+                    )
+                    deck_template = self.repository.get_template_by_key(
+                        deck.id,
+                        template_key,
+                    )
+                    template_hash = self._template_content_hash(template)
+                    if deck_template is None:
+                        deck_template = self.repository.create_template(
+                            DeckTemplate(
+                                deck_id=deck.id,
+                                template_key=template_key,
+                                template_name=template.template_name,
+                                note_type=template.note_type,
+                                card_kind=template.card_kind,
+                            )
+                        )
+                    template_version_number = self.repository.next_template_version_number(
+                        deck_template.id
+                    )
+                    if (
+                        deck_template.current_version is not None
+                        and deck_template.current_version.content_hash == template_hash
+                    ):
+                        template_version_number = deck_template.current_version.version_number
+
+                    if (
+                        deck_template.current_version is None
+                        or deck_template.current_version.content_hash != template_hash
+                    ):
+                        deck_template_version = self.repository.create_template_version(
+                            DeckTemplateVersion(
+                                deck_template_id=deck_template.id,
+                                version_number=template_version_number,
+                                fields=list(template.fields),
+                                field_mapping=dict(template.field_mapping),
+                                front_html=template.front_html,
+                                back_html=template.back_html,
+                                styling_css=template.styling_css,
+                                content_hash=template_hash,
+                                status="published",
+                                created_by=uploaded_by,
+                            )
+                        )
+                        deck_template.current_version_id = deck_template_version.id
+                    deck_template.template_name = template.template_name
+                    deck_template.note_type = template.note_type
+                    deck_template.card_kind = template.card_kind
                     normalized_note_type = self._normalize_upload_key(
                         template.note_type
                     )
@@ -991,6 +1044,34 @@ class DeckService:
             except Exception:
                 continue
         return templates
+
+    @staticmethod
+    def _template_key_for_upload(
+        deck_id: uuid.UUID,
+        template_name: str,
+        note_type: str,
+    ) -> str:
+        normalized_name = DeckService._normalize_upload_key(template_name)
+        normalized_note_type = DeckService._normalize_upload_key(note_type)
+        raw_key = f"{deck_id}:{normalized_note_type}:{normalized_name}"
+        return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _template_content_hash(template: AnkiDeckTemplatePayload) -> str:
+        payload = {
+            "template_name": template.template_name,
+            "note_type": template.note_type,
+            "card_kind": template.card_kind.value
+            if isinstance(template.card_kind, CardKind)
+            else str(template.card_kind),
+            "fields": list(template.fields),
+            "field_mapping": dict(sorted(template.field_mapping.items())),
+            "front_html": template.front_html,
+            "back_html": template.back_html,
+            "styling_css": template.styling_css,
+        }
+        raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     @staticmethod
     def _parse_card_kind(value: CardKind | str) -> CardKind:

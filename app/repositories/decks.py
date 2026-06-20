@@ -8,6 +8,8 @@ from app.models import (
     Deck,
     DeckCard,
     DeckSnapshot,
+    DeckTemplate,
+    DeckTemplateVersion,
     DeckSubscription,
     Discipline,
     Release,
@@ -56,6 +58,32 @@ class DeckRepository:
         self.session.add(snapshot)
         self.session.flush()
         return snapshot
+
+    def get_template_by_key(self, deck_id: uuid.UUID, template_key: str) -> DeckTemplate | None:
+        return self.session.scalar(
+            select(DeckTemplate).where(
+                DeckTemplate.deck_id == deck_id,
+                DeckTemplate.template_key == template_key,
+            )
+        )
+
+    def next_template_version_number(self, deck_template_id: uuid.UUID) -> int:
+        next_version = self.session.scalar(
+            select(func.coalesce(func.max(DeckTemplateVersion.version_number), 0) + 1).where(
+                DeckTemplateVersion.deck_template_id == deck_template_id
+            )
+        )
+        return int(next_version or 1)
+
+    def create_template(self, template: DeckTemplate) -> DeckTemplate:
+        self.session.add(template)
+        self.session.flush()
+        return template
+
+    def create_template_version(self, version: DeckTemplateVersion) -> DeckTemplateVersion:
+        self.session.add(version)
+        self.session.flush()
+        return version
 
     def get_by_id(self, deck_id: uuid.UUID, *, for_update: bool = False) -> Deck | None:
         statement = (

@@ -509,6 +509,79 @@ class DeckSnapshot(TimestampMixin, Base):
     )
 
 
+class DeckTemplate(TimestampMixin, Base):
+    __tablename__ = "deck_templates"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    deck_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("decks.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    template_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    template_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    note_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    card_kind: Mapped[CardKind] = mapped_column(
+        enum_column(CardKind, "deck_template_card_kind"), nullable=False
+    )
+    current_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("deck_template_versions.id", ondelete="SET NULL"), index=True
+    )
+
+    deck: Mapped[Deck] = relationship()
+    versions: Mapped[list["DeckTemplateVersion"]] = relationship(
+        back_populates="template",
+        foreign_keys="DeckTemplateVersion.deck_template_id",
+    )
+    current_version: Mapped["DeckTemplateVersion | None"] = relationship(
+        foreign_keys=[current_version_id], post_update=True
+    )
+
+    __table_args__ = (
+        UniqueConstraint("deck_id", "template_key", name="uq_deck_template_key"),
+        UniqueConstraint("deck_id", "template_name", name="uq_deck_template_name"),
+        CheckConstraint("length(template_key) > 0", name="template_key_not_empty"),
+        CheckConstraint("length(template_name) > 0", name="template_name_not_empty"),
+        CheckConstraint("length(note_type) > 0", name="template_note_type_not_empty"),
+    )
+
+
+class DeckTemplateVersion(TimestampMixin, Base):
+    __tablename__ = "deck_template_versions"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    deck_template_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("deck_templates.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    fields: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    field_mapping: Mapped[dict[str, str]] = mapped_column(
+        JSON, default=dict, nullable=False
+    )
+    front_html: Mapped[str] = mapped_column(Text, nullable=False)
+    back_html: Mapped[str] = mapped_column(Text, nullable=False)
+    styling_css: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(32), default="published", nullable=False)
+    created_by: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    template: Mapped[DeckTemplate] = relationship(
+        back_populates="versions",
+        foreign_keys=[deck_template_id],
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "deck_template_id", "version_number", name="uq_deck_template_version"
+        ),
+        CheckConstraint("version_number > 0", name="positive_template_version_number"),
+        CheckConstraint("length(front_html) > 0", name="template_front_not_empty"),
+        CheckConstraint("length(back_html) > 0", name="template_back_not_empty"),
+        CheckConstraint("length(content_hash) = 64", name="template_hash_length"),
+        CheckConstraint("length(created_by) > 0", name="template_created_by_not_empty"),
+    )
+
+
 class DeckCard(Base):
     __tablename__ = "deck_cards"
 
