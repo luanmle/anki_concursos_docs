@@ -164,6 +164,10 @@ Não editar `admin-deploy` manualmente. O workflow
 `.github/workflows/publish-admin-deploy.yml` valida o frontend, executa
 `git subtree split` e substitui essa branch quando `admin/**` muda.
 
+Política de tags e releases:
+
+- [docs/tag-release-policy.md](docs/tag-release-policy.md)
+
 ## API de cartões
 
 Obtenha um token:
