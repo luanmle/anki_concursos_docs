@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight,
   Book as BookOpen,
@@ -7,6 +7,12 @@ import {
   Copy,
   Flag,
   Lightbulb,
+  ArrowCounterClockwise,
+  ArrowClockwise,
+  TextAlignLeft,
+  TextAlignCenter,
+  TextAlignRight,
+  TextAlignJustify,
   ChatText as MessageSquare,
   Plus,
   MagnifyingGlass as Search,
@@ -14,9 +20,18 @@ import {
   ShieldCheck,
   Sparkle as Sparkles,
   ThumbsUp,
+  Code,
+  LinkSimple,
+  ListBullets,
+  ListNumbers,
+  TextB,
+  TextH,
+  TextT,
+  TextItalic,
+  DotsThreeVertical,
   X,
 } from '@phosphor-icons/react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError, apiRequest } from '../api/client'
 import { useAuth } from '../auth/auth-context'
@@ -122,7 +137,7 @@ export function ExplorePage() {
         <div>
           <span className="ac-eyebrow">Explore</span>
           <h1>Explore Baralhos</h1>
-          <p>Encontre e inscreva-se nos melhores decks focados em concursos públicos.</p>
+          <p>Encontre e inscreva-se nos melhores decks focados em concursos pÃºblicos.</p>
         </div>
         <SegmentedFilter value={filter} onChange={setFilter} />
       </header>
@@ -154,10 +169,10 @@ export function ExplorePage() {
         <section className="ac-admin-callout">
           <ShieldCheck size={22} />
           <div>
-            <strong>Área administrativa disponível</strong>
-            <span>Gerencie baralhos, sugestões e releases sem misturar o fluxo do estudante.</span>
+            <strong>Ãrea administrativa disponÃ­vel</strong>
+            <span>Gerencie baralhos, sugestÃµes e releases sem misturar o fluxo do estudante.</span>
           </div>
-          <Link to="/admin">Abrir administração</Link>
+          <Link to="/admin">Abrir administraÃ§Ã£o</Link>
         </section>
       )}
     </div>
@@ -175,7 +190,7 @@ export function MyDecksPage() {
       <header className="ac-hero">
         <span className="ac-eyebrow">Biblioteca</span>
         <h1>Meus Baralhos</h1>
-        <p>Continue estudando os decks em que você está inscrito e prepare a sincronização no Anki.</p>
+        <p>Continue estudando os decks em que vocÃª estÃ¡ inscrito e prepare a sincronizaÃ§Ã£o no Anki.</p>
       </header>
       {decks.length ? (
         <section className="ac-deck-grid">
@@ -185,16 +200,16 @@ export function MyDecksPage() {
         </section>
       ) : (
         <EmptyPanel
-          title="Você ainda não está inscrito em baralhos"
-          description="Explore os decks disponíveis e inscreva-se para sincronizar pelo add-on."
+          title="VocÃª ainda nÃ£o estÃ¡ inscrito em baralhos"
+          description="Explore os decks disponÃ­veis e inscreva-se para sincronizar pelo add-on."
           action={<Link className="ac-button ac-button-primary" to="/">Explorar baralhos</Link>}
         />
       )}
       <section className="ac-sync-card">
         <BookOpen size={24} />
         <div>
-          <strong>Sincronização com o Anki</strong>
-          <p>O add-on usa suas inscrições para baixar manifestos, notas e releases incrementais.</p>
+          <strong>SincronizaÃ§Ã£o com o Anki</strong>
+          <p>O add-on usa suas inscriÃ§Ãµes para baixar manifestos, notas e releases incrementais.</p>
         </div>
       </section>
     </div>
@@ -219,8 +234,8 @@ export function DeckPage() {
   if (!deck) {
     return (
       <EmptyPanel
-        title="Baralho não encontrado"
-        description="Volte para Explore e escolha um baralho disponível."
+        title="Baralho nÃ£o encontrado"
+        description="Volte para Explore e escolha um baralho disponÃ­vel."
       />
     )
   }
@@ -246,7 +261,7 @@ export function DeckPage() {
           </button>
           <Link className="ac-button ac-button-secondary" to={`/deck/${deck.deck_id}/suggestions`}>
             <MessageSquare size={17} />
-            Sugestões
+            SugestÃµes
           </Link>
           <Link className="ac-button ac-button-ghost" to="/community">
             Abrir na Community
@@ -333,13 +348,13 @@ function NoteModal({
 
         <nav className="ac-modal-tabs" aria-label="Nota">
           <button className={mode === 'view' ? 'active' : ''} onClick={() => setMode('view')}>
-            Conteúdo
+            ConteÃºdo
           </button>
           <button className={mode === 'suggest' ? 'active' : ''} onClick={() => setMode('suggest')}>
-            Sugerir mudanças
+            Sugerir mudanÃ§as
           </button>
           <button className={mode === 'comments' ? 'active' : ''} onClick={() => setMode('comments')}>
-            Comentários
+            ComentÃ¡rios
           </button>
         </nav>
 
@@ -359,7 +374,7 @@ function NoteModal({
                 aria-controls="note-comments-panel"
                 onClick={() => setShowComments((current) => !current)}
               >
-                {showComments ? 'Ocultar comentários' : 'Mostrar comentários'}
+                {showComments ? 'Ocultar comentÃ¡rios' : 'Mostrar comentÃ¡rios'}
               </button>
             </div>
             {showComments && (
@@ -396,15 +411,16 @@ function SuggestChangePanel({
   const [message, setMessage] = useState('')
   const [fields, setFields] = useState<Record<string, string>>(note.fields || {})
   const [sent, setSent] = useState(false)
+  const messageRef = useRef<HTMLTextAreaElement | null>(null)
 
   function submitSuggestion() {
-      const suggestion: StudentSuggestion = {
-        id: crypto.randomUUID(),
-        deckId,
-        cardId: note.card_id,
-        publicId: note.public_id,
-        changeType,
-        message,
+    const suggestion: StudentSuggestion = {
+      id: crypto.randomUUID(),
+      deckId,
+      cardId: note.card_id,
+      publicId: note.public_id,
+      changeType,
+      message,
       proposedFields: fields,
       status: 'pending',
       createdAt: new Date().toISOString(),
@@ -413,24 +429,108 @@ function SuggestChangePanel({
     setSent(true)
   }
 
+  function insertMarkdown(before: string, after = before, placeholder = '') {
+    const textarea = messageRef.current
+    if (!textarea) return
+
+    const start = textarea.selectionStart ?? message.length
+    const end = textarea.selectionEnd ?? message.length
+    const selectedText = message.slice(start, end) || placeholder
+    const nextValue =
+      message.slice(0, start) +
+      before +
+      selectedText +
+      after +
+      message.slice(end)
+
+    setMessage(nextValue)
+
+    window.requestAnimationFrame(() => {
+      const selectionStart = start + before.length
+      const selectionEnd = selectionStart + selectedText.length
+      textarea.focus()
+      textarea.setSelectionRange(selectionStart, selectionEnd)
+    })
+  }
+
   return (
     <div className="ac-suggestion-panel">
       <div className="ac-warning-box">
         <Flag size={18} />
-        Sua sugestão será enviada para revisão. Ela não altera automaticamente a nota publicada.
+        Sua sugestÃ£o serÃ¡ enviada para revisÃ£o. Ela nÃ£o altera automaticamente a nota publicada.
       </div>
       <label className="ac-field">
-        <span>Tipo de mudança</span>
+        <span>Tipo de mudanÃ§a</span>
         <select value={changeType} onChange={(event) => setChangeType(event.target.value)}>
           {changeTypes.map((type) => (
             <option key={type}>{type}</option>
           ))}
         </select>
       </label>
-      <div className="ac-markdown-toolbar" aria-label="Barra de formatação">
-        {['B', 'I', 'Lista', 'Citação', 'Código', 'Link', 'Preview'].map((item) => (
-          <button key={item} type="button">{item}</button>
-        ))}
+      <div className="ac-markdown-editor">
+        <div className="ac-markdown-toolbar" aria-label="Barra de formatação">
+          <button type="button" aria-label="Desfazer">
+            <ArrowCounterClockwise size={16} />
+          </button>
+          <button type="button" aria-label="Refazer">
+            <ArrowClockwise size={16} />
+          </button>
+          <button type="button" onClick={() => insertMarkdown('**', '**', 'texto em negrito')} aria-label="Negrito">
+            <TextB size={16} />
+          </button>
+          <button type="button" onClick={() => insertMarkdown('*', '*', 'texto em itálico')} aria-label="Itálico">
+            <TextItalic size={16} />
+          </button>
+          <button type="button" onClick={() => insertMarkdown('### ', '', 'título')} aria-label="Título">
+            <TextH size={16} />
+          </button>
+          <button type="button" onClick={() => insertMarkdown('~~', '~~', 'texto tachado')} aria-label="Tachado">
+            <TextT size={16} />
+          </button>
+          <button type="button" onClick={() => insertMarkdown('[', '](https://)', 'link')} aria-label="Link">
+            <LinkSimple size={16} />
+          </button>
+          <button type="button" onClick={() => insertMarkdown('- ', '', 'item de lista')} aria-label="Lista com marcadores">
+            <ListBullets size={16} />
+          </button>
+          <button type="button" onClick={() => insertMarkdown('1. ', '', 'item numerado')} aria-label="Lista numerada">
+            <ListNumbers size={16} />
+          </button>
+          <button type="button" onClick={() => insertMarkdown('```\n', '\n```', 'codigo')} aria-label="Bloco de código">
+            <Code size={16} />
+          </button>
+          <button type="button" onClick={() => insertMarkdown('> ', '', 'citação')} aria-label="Citação">
+            <DotsThreeVertical size={16} />
+          </button>
+          <button type="button" onClick={() => setMessage((current) => `${current}\n---\n`)} aria-label="Linha horizontal">
+            —
+          </button>
+          <button type="button" aria-label="Alinhar à esquerda">
+            <TextAlignLeft size={16} />
+          </button>
+          <button type="button" aria-label="Centralizar">
+            <TextAlignCenter size={16} />
+          </button>
+          <button type="button" aria-label="Alinhar à direita">
+            <TextAlignRight size={16} />
+          </button>
+          <button type="button" aria-label="Justificar">
+            <TextAlignJustify size={16} />
+          </button>
+          <button type="button" aria-label="Tela cheia">
+            ⤢
+          </button>
+        </div>
+        <label className="ac-field">
+          <span>Comentário em Markdown</span>
+          <textarea
+            ref={messageRef}
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            placeholder="Escreva a sugestão usando Markdown."
+            className="ac-markdown-textarea"
+          />
+        </label>
       </div>
       <div className="ac-suggestion-fields">
         {Object.entries(fields).map(([label, value]) => (
@@ -445,21 +545,17 @@ function SuggestChangePanel({
           </label>
         ))}
       </div>
-      <label className="ac-field">
-        <span>Comentário para o revisor</span>
-        <textarea
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-          placeholder="Explique o motivo da sugestão."
-        />
-      </label>
+      <div className="ac-field">
+        <span>Orientação complementar</span>
+        <p className="ac-help-text">O conteúdo acima será enviado em Markdown e revisado manualmente antes de virar nova versão.</p>
+      </div>
       <button className="ac-button ac-button-primary" type="button" onClick={submitSuggestion}>
-        Enviar sugestão
+        Enviar sugestÃ£o
       </button>
       {sent && (
         <div className="ac-success-box">
           <Check size={18} />
-          Sugestão enviada para revisão.
+          SugestÃ£o enviada para revisÃ£o.
         </div>
       )}
     </div>
@@ -480,7 +576,7 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
       {
         id: crypto.randomUUID(),
         publicId,
-        author: 'Você',
+        author: 'VocÃª',
         kind: 'comment',
         body,
         score: 0,
@@ -496,11 +592,11 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
   }
 
   const kindLabels: Record<CommentKind, string> = {
-    comment: 'Comentário',
+    comment: 'ComentÃ¡rio',
     tip: 'Dica',
-    mnemonic: 'Mnemônico',
-    question: 'Dúvida',
-    correction: 'Correção',
+    mnemonic: 'MnemÃ´nico',
+    question: 'DÃºvida',
+    correction: 'CorreÃ§Ã£o',
   }
 
   return (
@@ -509,7 +605,7 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
         <textarea
           value={body}
           onChange={(event) => setBody(event.target.value)}
-          placeholder="Escreva um comentário sobre esta nota..."
+          placeholder="Escreva um comentÃ¡rio sobre esta nota..."
         />
         <button className="ac-button ac-button-primary" type="button" onClick={addComment}>
           Publicar
@@ -530,7 +626,7 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
               <footer>
                 <button type="button" onClick={() => handleUpvote(comment.id)}>
                   <ThumbsUp size={15} />
-                  Útil ({comment.score})
+                  Ãštil ({comment.score})
                 </button>
                 <button type="button">Denunciar</button>
               </footer>
@@ -538,8 +634,8 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
           ))}
         {!noteComments.length && (
           <EmptyPanel
-            title="Sem comentários ainda"
-            description="Publique a primeira observação para iniciar o feed cronológico desta nota."
+            title="Sem comentÃ¡rios ainda"
+            description="Publique a primeira observaÃ§Ã£o para iniciar o feed cronolÃ³gico desta nota."
           />
         )}
       </div>
@@ -556,21 +652,21 @@ export function AdminDashboardPage() {
   return (
     <div className="ac-page ac-admin-page">
       <header className="ac-hero">
-        <span className="ac-eyebrow">Administração</span>
+        <span className="ac-eyebrow">AdministraÃ§Ã£o</span>
         <h1>Dashboard Administrativo</h1>
-        <p>Funções de curadoria para aprovar, revisar e publicar baralhos.</p>
+        <p>FunÃ§Ãµes de curadoria para aprovar, revisar e publicar baralhos.</p>
       </header>
       <section className="ac-admin-metrics">
         <MetricCard label="Baralhos publicados" value="12" />
-        <MetricCard label="Sugestões pendentes" value={String(pendingSuggestions.length)} />
-        <MetricCard label="Versões em revisão" value="25" />
+        <MetricCard label="SugestÃµes pendentes" value={String(pendingSuggestions.length)} />
+        <MetricCard label="VersÃµes em revisÃ£o" value="25" />
         <MetricCard label="Releases pendentes" value="3" />
       </section>
       <section className="ac-admin-actions">
         <Link to="/admin/decks">Gerenciar baralhos</Link>
-        <Link to="/admin/suggestions">Revisar sugestões</Link>
+        <Link to="/admin/suggestions">Revisar sugestÃµes</Link>
         <Link to="/reports">Reports formais</Link>
-        <Link to="/users">Usuários</Link>
+        <Link to="/users">UsuÃ¡rios</Link>
       </section>
     </div>
   )
@@ -583,9 +679,9 @@ export function AdminDecksPage() {
     <div className="ac-page ac-admin-page">
       <header className="ac-hero ac-hero-row">
         <div>
-          <span className="ac-eyebrow">Administração</span>
+          <span className="ac-eyebrow">AdministraÃ§Ã£o</span>
           <h1>Gerenciar Baralhos</h1>
-          <p>Controle publicações, releases e composição editorial.</p>
+          <p>Controle publicaÃ§Ãµes, releases e composiÃ§Ã£o editorial.</p>
         </div>
         <Link className="ac-button ac-button-primary" to="/decks/new">
           <Plus size={17} />
@@ -597,7 +693,7 @@ export function AdminDecksPage() {
           <article key={deck.deck_id}>
             <div>
               <strong>{deck.name}</strong>
-              <p>{deck.description || 'Sem descrição.'}</p>
+              <p>{deck.description || 'Sem descriÃ§Ã£o.'}</p>
             </div>
             <span>{deck.status}</span>
             <span>{deck.active_card_count} notas</span>
@@ -677,7 +773,7 @@ export function AdminSuggestionsPage() {
         {
           method: 'POST',
           body: JSON.stringify({
-            description: `Sugestão aceita: ${suggestion.changeType}`,
+            description: `SugestÃ£o aceita: ${suggestion.changeType}`,
           }),
         },
         token,
@@ -697,13 +793,13 @@ export function AdminSuggestionsPage() {
       if (deckId) {
         queryClient.invalidateQueries({ queryKey: ['deck', deckId] })
       }
-      setSuccess('Sugestão convertida e publicada.')
+      setSuccess('SugestÃ£o convertida e publicada.')
     },
     onError: (mutationError) => {
       setError(
         mutationError instanceof Error
           ? mutationError.message
-          : 'Falha ao processar a sugestão.',
+          : 'Falha ao processar a sugestÃ£o.',
       )
     },
   })
@@ -716,13 +812,13 @@ export function AdminSuggestionsPage() {
       return suggestion.id
     },
     onSuccess: () => {
-      setSuccess('Sugestão rejeitada.')
+      setSuccess('SugestÃ£o rejeitada.')
     },
     onError: (mutationError) => {
       setError(
         mutationError instanceof Error
           ? mutationError.message
-          : 'Falha ao rejeitar a sugestão.',
+          : 'Falha ao rejeitar a sugestÃ£o.',
       )
     },
   })
@@ -731,8 +827,8 @@ export function AdminSuggestionsPage() {
     <div className="ac-page ac-admin-page">
       <header className="ac-hero">
         <span className="ac-eyebrow">Curadoria</span>
-        <h1>Sugestões dos Estudantes</h1>
-        <p>Revise propostas enviadas a partir das notas sem editar conteúdo publicado diretamente.</p>
+        <h1>SugestÃµes dos Estudantes</h1>
+        <p>Revise propostas enviadas a partir das notas sem editar conteÃºdo publicado diretamente.</p>
       </header>
       {error && <div className="ac-warning-box">{error}</div>}
       {success && <div className="ac-success-box">{success}</div>}
@@ -747,7 +843,7 @@ export function AdminSuggestionsPage() {
                 <span>v {suggestion.resultingCardVersionId.slice(0, 8)}</span>
               )}
             </header>
-            <p>{suggestion.message || 'Sem comentário adicional.'}</p>
+            <p>{suggestion.message || 'Sem comentÃ¡rio adicional.'}</p>
             <footer>
               <small>{formatDate(suggestion.createdAt)}</small>
               <button
@@ -755,7 +851,7 @@ export function AdminSuggestionsPage() {
                 disabled={suggestion.status !== 'pending'}
                 onClick={() => convertSuggestion.mutate(suggestion)}
               >
-                Converter em nova versão
+                Converter em nova versÃ£o
               </button>
               <button
                 type="button"
@@ -769,8 +865,8 @@ export function AdminSuggestionsPage() {
         ))}
         {!suggestions.length && (
           <EmptyPanel
-            title="Nenhuma sugestão pendente"
-            description="As sugestões criadas no modal da nota aparecerão aqui."
+            title="Nenhuma sugestÃ£o pendente"
+            description="As sugestÃµes criadas no modal da nota aparecerÃ£o aqui."
           />
         )}
       </div>
@@ -785,25 +881,25 @@ export function CommunityFuturePage() {
         <span className="ac-eyebrow">Community futura</span>
         <h1>Comunidade Anki Concursos</h1>
         <p>
-          Espaço planejado para comentários, dicas, mnemônicos e sugestões públicas por
+          EspaÃ§o planejado para comentÃ¡rios, dicas, mnemÃ´nicos e sugestÃµes pÃºblicas por
           baralho e por nota.
         </p>
       </section>
       <section className="ac-community-grid">
         <article>
           <MessageSquare size={24} />
-          <strong>Discussões por nota</strong>
-          <p>Comentários colaborativos conectados ao public_id da nota.</p>
+          <strong>DiscussÃµes por nota</strong>
+          <p>ComentÃ¡rios colaborativos conectados ao public_id da nota.</p>
         </article>
         <article>
           <Lightbulb size={24} />
-          <strong>Dicas e mnemônicos</strong>
-          <p>Conteúdo social separado do cartão oficial e moderado pela plataforma.</p>
+          <strong>Dicas e mnemÃ´nicos</strong>
+          <p>ConteÃºdo social separado do cartÃ£o oficial e moderado pela plataforma.</p>
         </article>
         <article>
           <Sparkles size={24} />
-          <strong>Sugestões para curadoria</strong>
-          <p>Correções relevantes podem virar reports e novas versões.</p>
+          <strong>SugestÃµes para curadoria</strong>
+          <p>CorreÃ§Ãµes relevantes podem virar reports e novas versÃµes.</p>
         </article>
       </section>
     </div>
@@ -832,21 +928,21 @@ const suggestionHistorySeed: DeckSuggestionHistory[] = [
     noteId: 'note-1',
     publicId: 'AC-CONST-0001',
     userName: 'Camila Ribeiro',
-    originalField: 'Habeas corpus protege a liberdade de locomoção.',
+    originalField: 'Habeas corpus protege a liberdade de locomoÃ§Ã£o.',
     suggestedField:
-      'Habeas corpus protege a liberdade de locomoção contra coação ilegal.',
+      'Habeas corpus protege a liberdade de locomoÃ§Ã£o contra coaÃ§Ã£o ilegal.',
     createdAt: '2026-06-16T10:15:00Z',
     discussion: [
       {
         id: 'comment-1',
         author: 'Equipe editorial',
-        body: 'Boa precisão. Mantém o sentido sem confundir o enunciado original da nota.',
+        body: 'Boa precisÃ£o. MantÃ©m o sentido sem confundir o enunciado original da nota.',
         createdAt: '2026-06-16T11:02:00Z',
       },
       {
         id: 'comment-2',
         author: 'Mariana S.',
-        body: 'A formulação ficou mais fiel ao texto legal e continua legível no preview.',
+        body: 'A formulaÃ§Ã£o ficou mais fiel ao texto legal e continua legÃ­vel no preview.',
         createdAt: '2026-06-16T11:26:00Z',
       },
     ],
@@ -856,14 +952,14 @@ const suggestionHistorySeed: DeckSuggestionHistory[] = [
     noteId: 'note-2',
     publicId: 'AC-CONST-0002',
     userName: 'Paulo Nogueira',
-    originalField: 'A Constituição admite habeas corpus.',
-    suggestedField: 'A Constituição admite habeas corpus para proteger a locomoção.',
+    originalField: 'A ConstituiÃ§Ã£o admite habeas corpus.',
+    suggestedField: 'A ConstituiÃ§Ã£o admite habeas corpus para proteger a locomoÃ§Ã£o.',
     createdAt: '2026-06-15T16:40:00Z',
     discussion: [
       {
         id: 'comment-3',
         author: 'Revisor',
-        body: 'A sugestão está correta, mas não deve substituir o campo original sem contexto adicional.',
+        body: 'A sugestÃ£o estÃ¡ correta, mas nÃ£o deve substituir o campo original sem contexto adicional.',
         createdAt: '2026-06-15T17:05:00Z',
       },
     ],
@@ -898,7 +994,7 @@ export function CommunitySuggestionHistoryPage() {
           ...item.discussion,
           {
             id: crypto.randomUUID(),
-            author: 'Você',
+            author: 'VocÃª',
             body: draftComment.trim(),
             createdAt: new Date().toISOString(),
           },
@@ -922,8 +1018,8 @@ export function CommunitySuggestionHistoryPage() {
   if (!deck) {
     return (
       <EmptyState
-        title="Deck não encontrado"
-        description="Volte para a lista de decks e abra novamente a área de sugestões."
+        title="Deck nÃ£o encontrado"
+        description="Volte para a lista de decks e abra novamente a Ã¡rea de sugestÃµes."
       />
     )
   }
@@ -933,10 +1029,10 @@ export function CommunitySuggestionHistoryPage() {
       <header className="ac-suggestion-history-hero">
         <div>
           <span className="ac-eyebrow">Comunidade do deck</span>
-          <h1>Histórico de mudanças e discussão</h1>
+          <h1>HistÃ³rico de mudanÃ§as e discussÃ£o</h1>
           <p>
-            {deck.name} · acompanhe a nota original, a proposta do usuário, o ID da nota e a conversa editorial
-            sem perder o contexto da sugestão.
+            {deck.name} Â· acompanhe a nota original, a proposta do usuÃ¡rio, o ID da nota e a conversa editorial
+            sem perder o contexto da sugestÃ£o.
           </p>
         </div>
         <Link className="ac-button ac-button-secondary" to={`/deck/${deck.deck_id}`}>
@@ -947,12 +1043,12 @@ export function CommunitySuggestionHistoryPage() {
 
       {!visibleHistory.length ? (
         <EmptyState
-          title="Nenhuma sugestão registrada"
-          description="As mudanças da comunidade aparecerão aqui assim que forem criadas."
+          title="Nenhuma sugestÃ£o registrada"
+          description="As mudanÃ§as da comunidade aparecerÃ£o aqui assim que forem criadas."
         />
       ) : (
         <section className="ac-suggestion-history-layout">
-          <aside className="ac-suggestion-history-list" aria-label="Histórico de sugestões">
+          <aside className="ac-suggestion-history-list" aria-label="HistÃ³rico de sugestÃµes">
             {visibleHistory.map((item) => {
               const active = item.id === selectedSuggestion?.id
               return (
@@ -975,7 +1071,7 @@ export function CommunitySuggestionHistoryPage() {
               <section className="ac-suggestion-history-card">
                 <div className="ac-suggestion-history-card-header">
                   <div>
-                    <span className="ac-eyebrow">Sugestão selecionada</span>
+                    <span className="ac-eyebrow">SugestÃ£o selecionada</span>
                     <h2>{selectedSuggestion.publicId}</h2>
                   </div>
                   <StatusBadge value="published" />
@@ -986,7 +1082,7 @@ export function CommunitySuggestionHistoryPage() {
                     <dd>{selectedSuggestion.noteId}</dd>
                   </div>
                   <div>
-                    <dt>Usuário</dt>
+                    <dt>UsuÃ¡rio</dt>
                     <dd>{selectedSuggestion.userName}</dd>
                   </div>
                   <div>
@@ -1009,7 +1105,7 @@ export function CommunitySuggestionHistoryPage() {
               <section className="ac-discussion-panel">
                 <div className="section-heading">
                   <div>
-                    <p className="eyebrow">Discussão</p>
+                    <p className="eyebrow">DiscussÃ£o</p>
                     <h2>Conversa editorial</h2>
                   </div>
                 </div>
@@ -1025,17 +1121,17 @@ export function CommunitySuggestionHistoryPage() {
                   ))}
                 </div>
                 <label className="ac-discussion-form">
-                  <span>Adicionar comentário</span>
+                  <span>Adicionar comentÃ¡rio</span>
                   <textarea
                     rows={4}
                     value={draftComment}
                     onChange={(event) => setDraftComment(event.target.value)}
-                    placeholder="Registre uma observação sobre esta sugestão."
+                    placeholder="Registre uma observaÃ§Ã£o sobre esta sugestÃ£o."
                   />
                 </label>
                 <button className="ac-button ac-button-primary" type="button" onClick={addComment}>
                   <MessageSquare size={17} />
-                  Publicar comentário
+                  Publicar comentÃ¡rio
                 </button>
               </section>
             </main>
@@ -1075,7 +1171,7 @@ function buildVersionPayload(suggestion: StudentSuggestion) {
 
   if (!front_text || !back_text || !answer_text || !explanation_text) {
     throw new Error(
-      'A sugestão não contém campos suficientes para criar uma nova versão.',
+      'A sugestÃ£o nÃ£o contÃ©m campos suficientes para criar uma nova versÃ£o.',
     )
   }
 
@@ -1099,7 +1195,7 @@ function DeckCard({ deck }: { deck: SubscribableDeck }) {
       <p>{deck.description || 'Baralho publicado na plataforma.'}</p>
       <div className="ac-deck-meta">
         <span>{deck.active_card_count} notas</span>
-        <span>Última atualização: {formatDate(deck.updated_at)}</span>
+        <span>Ãšltima atualizaÃ§Ã£o: {formatDate(deck.updated_at)}</span>
       </div>
       {deck.subscribed ? (
         <Link className="ac-button ac-button-primary" to={`/deck/${deck.deck_id}`}>
@@ -1174,7 +1270,7 @@ function SegmentedFilter({
       {[
         ['all', 'Todos'],
         ['subscribed', 'Inscritos'],
-        ['available', 'Disponíveis'],
+        ['available', 'DisponÃ­veis'],
       ].map(([key, label]) => (
         <button
           key={key}
@@ -1231,3 +1327,7 @@ function EmptyPanel({
     </section>
   )
 }
+
+
+
+
