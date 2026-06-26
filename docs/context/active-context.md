@@ -1,53 +1,64 @@
 # Contexto Ativo
 
 **Atualizado:** 2026-06-26
-**Branch:** `frontend-redesign`
-**Status:** sync contract — concluído (não commitado); frontend redesign — em andamento
+**Branch:** `frontend-redesign` (dark mode) · sync já mergeado em `main` (Heroku v97)
+**Status:** modo noturno Muriae — concluído, não commitado; sync — mergeado e no ar
 
 ## O que está sendo trabalhado
 
-Endurecimento do **contrato de sincronização entre o backend (`app/`) e o add-on
-do Anki (`../addon-anki`)** — revisão exaustiva que corrigiu bugs de perda de
-dados/desync e divergências de contrato. Concluído e testado; ainda **não commitado**
-nos dois repositórios.
+**Modo noturno (dark mode)** da superfície Muriae — tema escuro do
+`design-reference/redesign.html`, com toggle no topbar e persistência. Concluído e
+verificado visualmente (claro + escuro); ainda **não commitado** (branch `frontend-redesign`).
 
-A thread anterior (migração de design Muriae do admin) segue pendente — ver
-"O que NÃO tocar agora".
+Em paralelo, o **contrato de sync backend ↔ add-on** já foi mergeado em `main` e
+publicado (Heroku v97) — ver "Sync (estado herdado)" abaixo; ainda há ações pendentes lá,
+incluindo uma **urgente de segurança**.
 
-## Últimas mudanças (desta sessão)
+## Últimas mudanças (desta sessão — dark mode)
 
-- Backend: `app/services/decks.py`, `app/api/routes/addon.py`, `app/schemas/decks.py`,
-  `app/schemas/__init__.py`, `tests/test_decks_api.py` — `to_release` em `/sync`,
-  flag `native` + `content_hash` no change, endpoint `GET /addon/decks/{id}/state`.
-- Add-on (`../addon-anki`): `sync/engine.py`, `api/client.py`, `api/models.py`,
-  `services/note_manager.py`, `sync/fields.py`, `storage/database.py` +
-  `tests/test_sync.py`, `tests/test_contract.py` (novo) — watermark pós-fetch-completo,
-  isolamento por-deck, version-check defensivo, undo agrupado, skip por hash,
-  reconcile de deleções via `/state`.
-- Detalhe completo: `docs/CHANGELOG.md` (entrada 2026-06-26).
+- `admin/src/index.css` — tokens semânticos `--mu-*` escopados em `.app-shell`,
+  swap via `html[data-theme="dark"]`; utilitários no `@theme`; chrome do shell
+  (topbar/sidebar/hero/page) reescrito de hex para `var(--mu-*)`.
+- `admin/src/pages/CommunityInterfacePages.tsx` — ~242 cores hard-coded → tokens
+  (prefix-aware: fill sólido da marca mantido, marca-como-texto invertida).
+- `admin/src/components/MuriaeDeckCard.tsx` — `CATEGORY` migrado para tokens.
+- `admin/src/lib/theme.ts` + `theme.test.ts` (novos), `ThemeToggle.tsx` (novo),
+  `AppShell.tsx` (toggle no topbar), `main.tsx` (`initTheme()`).
+- Detalhe completo: `docs/CHANGELOG.md` (entrada 2026-06-26 — Modo noturno).
 
 ## Próximos passos
 
-- [ ] Commitar as mudanças de sync nos dois repos (backend `frontend-redesign`;
-      add-on `main`) — mensagens separadas por repo.
-- [ ] Rodar `tests/test_addon_can_upload_full_deck_package_and_publish_release`
-      com Postgres ativo (falha atual é só ambiente).
-- [ ] Avaliar wiring do endpoint `/addon/decks/{id}/templates/sync` (hoje sem
-      consumidor no add-on) ou removê-lo.
-- [ ] Retomar migração frontend Muriae (páginas restantes do app — ver thread abaixo).
+- [ ] **Segurança (urgente, herdado do sync):** rotacionar segredos expostos no terminal
+      via `heroku releases:info` — `AUTH_SECRET_KEY`, senha do admin,
+      `heroku pg:credentials:rotate -a flashcards-stagging`.
+- [ ] Validar o dark mode **no app real** com backend de pé + login
+      (`admin@example.com` / `development-password`) — nesta sessão a API local estava
+      fora; validação feita sobre o CSS do build.
+- [ ] `review-change` e commit do dark mode em `frontend-redesign`.
+- [ ] Aplicar tokens `--mu-*` às demais páginas Muriae ao migrá-las.
+- [ ] Revisar e mergear add-on PR **#2** (`luanmle/addon-anki#2`); avaliar
+      `/addon/decks/{id}/templates/sync` (sem consumidor) ou removê-lo.
 
-## Decisões recentes
+## Decisões recentes (dark mode)
 
-- **Atomicidade coleção+DB inexiste na API do Anki** — garantia via undo agrupado +
-  idempotência por Card ID + watermark só após fetch completo.
-- **Reconcile via endpoint full-state separado** (404 → skip), não tombstones no snapshot.
-- **Flag `native` como contrato explícito**, heurística de formato só como fallback.
+- **Tokens semânticos `--mu-*` num único `[data-theme]`**, não variantes `dark:` por
+  elemento — espelha a arquitetura do protótipo e isola o tema.
+- **Escopo só Muriae** (decisão do usuário); legado fica fora do toggle.
+- **Fill sólido da marca não inverte** no escuro; só marca como texto/borda clareia.
+- **Padrão claro + lembrar** (decisão do usuário); ignora `prefers-color-scheme`.
+
+## Sync (estado herdado, já no ar)
+
+- Backend PR **#6** (squash) → `main` (`7cbb9666`); add-on PR **#2** aberto, **não mergeado**.
+- Heroku `flashcards-stagging` release **v97** — alembic limpo; `/state` responde 401 (vivo).
+- ⚠️ **Vazamento de segredos** (ver "Próximos passos"): `heroku releases:info` despejou
+  `AUTH_SECRET_KEY`, `BOOTSTRAP_ADMIN_PASSWORD` e `DATABASE_URL` de produção no terminal.
 
 ## O que NÃO tocar agora
 
-- `note_type_manager.py` e `installer.py` no add-on — têm alterações não commitadas
-  de sessão anterior, fora do escopo da revisão de sync.
 - `admin-deploy` — branch gerada automaticamente.
-- Frontend Muriae (`admin/`) — thread separada em andamento (DashboardPage, CardsPage,
-  CardDetailPage, CardFormPage, CardImportPage, DecksPage/DeckDetailPage, AddonPage,
-  ReportDetailPage, UserPages, OperationPage ainda no tema escuro legado).
+- Tema escuro **legado** (`:root` global, `.sidebar`/`.brand*`/`.topbar` base) — de páginas
+  ainda não migradas; não confundir com os tokens `--mu-*` da superfície Muriae.
+- `note_type_manager.py` / `installer.py` no add-on — alterações soltas de sessão anterior.
+- Páginas Muriae ainda não migradas (DashboardPage, CardsPage, CardDetailPage, CardFormPage,
+  CardImportPage, DecksPage/DeckDetailPage, AddonPage, ReportDetailPage, UserPages, OperationPage).
