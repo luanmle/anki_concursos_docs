@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { CheckCircle as CheckCircle2, Database, ArrowClockwise as RefreshCw, Cloud as Server } from '@phosphor-icons/react'
 import { API_URL, apiRequest } from '../api/client'
-import { PageHeader } from '../components/ui'
+import { PageHeader } from '../components/ui-primitives'
 
 async function getOperationStatus() {
   const health = await apiRequest<{ status: string }>('/health')

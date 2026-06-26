@@ -8,7 +8,7 @@ import {
   ErrorState,
   LoadingState,
   StatusBadge,
-} from '../components/ui'
+} from '../components/ui-primitives'
 import { formatDate, translateStatus } from '../lib/presentation'
 import type { CardDetail, CardVersion, Report } from '../types'
 

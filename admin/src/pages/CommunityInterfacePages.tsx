@@ -1,11 +1,12 @@
 ﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  ArrowLeft,
   ArrowRight,
   Book as BookOpen,
   Check,
   Clock as Clock3,
   Copy,
-  Flag,
+  Info,
   Lightbulb,
   ArrowCounterClockwise,
   ArrowClockwise,
@@ -17,7 +18,8 @@ import {
   Plus,
   MagnifyingGlass as Search,
   ShareNetwork as Share2,
-  ShieldCheck,
+  SlidersHorizontal,
+  Stack,
   Sparkle as Sparkles,
   ThumbsUp,
   Code,
@@ -31,7 +33,7 @@ import {
   DotsThreeVertical,
   X,
 } from '@phosphor-icons/react'
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError, apiRequest } from '../api/client'
 import { useAuth } from '../auth/auth-context'
@@ -48,10 +50,38 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
-} from '../components/ui'
+} from '../components/ui-primitives'
+import { ExploreHero } from '../components/ExploreHero'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu'
+import { Input } from '../components/ui/input'
+import { Badge } from '../components/ui/badge'
+import { Button } from '../components/ui/button'
+import { Dialog, DialogContent, DialogTitle } from '../components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group'
+import {
+  CATEGORY,
+  MuriaeDeckCard,
+  deckCategory,
+  formatDeckDate,
+} from '../components/MuriaeDeckCard'
+import { cn } from '../lib/utils'
 import { useLocalStorageState } from '../hooks/useLocalStorageState'
 import { formatDate } from '../lib/presentation'
-import { StatusBadge } from '../components/ui'
+import { StatusBadge } from '../components/ui-primitives'
 import type {
   AnkiDeckSync,
   AnkiSyncChange,
@@ -60,6 +90,8 @@ import type {
   SubscribableDeck,
   SubscribableDeckList,
 } from '../types'
+
+/* eslint-disable react-hooks/refs */
 
 type DeckFilter = 'all' | 'subscribed' | 'available'
 
@@ -114,46 +146,88 @@ function useDeckNotes(deckId: string, enabled = true) {
   })
 }
 
+type DeckSort = 'recent' | 'notes' | 'alpha'
+
+const SORT_LABELS: Record<DeckSort, string> = {
+  recent: 'Mais recentes',
+  notes: 'Mais notas',
+  alpha: 'A–Z',
+}
+
 export function ExplorePage() {
-  const { hasRole } = useAuth()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<DeckFilter>('all')
+  const [sort, setSort] = useState<DeckSort>('recent')
   const decksQuery = useDeckCatalog()
   const decks = decksQuery.data?.length ? decksQuery.data : fallbackDecks
-  const visibleDecks = decks.filter((deck) => {
-    const matchesQuery = `${deck.name} ${deck.description || ''}`
-      .toLowerCase()
-      .includes(query.toLowerCase())
-    const matchesFilter =
-      filter === 'all' ||
-      (filter === 'subscribed' && deck.subscribed) ||
-      (filter === 'available' && !deck.subscribed)
-    return matchesQuery && matchesFilter
-  })
+  const visibleDecks = decks
+    .filter((deck) => {
+      const matchesQuery = `${deck.name} ${deck.description || ''}`
+        .toLowerCase()
+        .includes(query.toLowerCase())
+      const matchesFilter =
+        filter === 'all' ||
+        (filter === 'subscribed' && deck.subscribed) ||
+        (filter === 'available' && !deck.subscribed)
+      return matchesQuery && matchesFilter
+    })
+    .sort((left, right) => {
+      if (sort === 'notes') return right.active_card_count - left.active_card_count
+      if (sort === 'alpha') return left.name.localeCompare(right.name, 'pt-BR')
+      return right.updated_at.localeCompare(left.updated_at)
+    })
 
   return (
-    <div className="ac-page">
-      <header className="ac-hero ac-hero-row">
-        <div>
-          <span className="ac-eyebrow">Explore</span>
-          <h1>Explore Baralhos</h1>
-          <p>Encontre e inscreva-se nos melhores decks focados em concursos pÃºblicos.</p>
+    <div className="ac-page ac-page-muriae">
+      <ExploreHero
+        eyebrow="Explore"
+        title="Explore baralhos"
+        description="Encontre e inscreva-se nos melhores baralhos focados em concursos públicos, construídos e revisados em comunidade."
+      />
+
+      <div className="mt-7 flex items-stretch gap-3 max-[720px]:flex-wrap">
+        <div className="relative min-w-0 flex-1 max-[720px]:basis-full">
+          <Search
+            size={18}
+            className="pointer-events-none absolute left-[14px] top-1/2 -translate-y-1/2 text-[#98a2b3]"
+          />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar baralhos..."
+            className="h-[42px] rounded-[6px] border-[#e4e1da] bg-white pl-[40px] text-[14px] text-[#1f2430] placeholder:text-[#98a2b3] focus-visible:ring-[#231651]/30"
+          />
         </div>
+
         <SegmentedFilter value={filter} onChange={setFilter} />
-      </header>
 
-      <label className="ac-search">
-        <Search size={18} />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar baralhos..."
-        />
-      </label>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="inline-flex h-[42px] items-center gap-2 whitespace-nowrap rounded-[6px] border border-[#e4e1da] bg-white px-4 text-[13.5px] font-semibold text-[#1f2430] outline-none transition-colors hover:border-[#d4d0c7] hover:bg-[#fbfaf8]">
+            <SlidersHorizontal size={16} className="text-[#667085]" />
+            {SORT_LABELS[sort]}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuRadioGroup
+              value={sort}
+              onValueChange={(value) => setSort(value as DeckSort)}
+            >
+              <DropdownMenuRadioItem value="recent">Mais recentes</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="notes">Mais notas</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="alpha">A–Z</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
-      <section className="ac-deck-grid">
+      {!decksQuery.isLoading && (
+        <p className="mt-[18px] mb-4 text-[13px] font-medium text-[#667085]">
+          {visibleDecks.length} {visibleDecks.length === 1 ? 'baralho' : 'baralhos'}
+        </p>
+      )}
+
+      <section className="grid grid-cols-1 gap-5 min-[721px]:grid-cols-2 min-[1081px]:grid-cols-3">
         {visibleDecks.map((deck) => (
-          <DeckCard key={deck.deck_id} deck={deck} />
+          <MuriaeDeckCard key={deck.deck_id} deck={deck} />
         ))}
         {decksQuery.isLoading && <SkeletonDeckCard />}
       </section>
@@ -165,16 +239,6 @@ export function ExplorePage() {
         />
       )}
 
-      {hasRole('admin', 'curator', 'reviewer') && (
-        <section className="ac-admin-callout">
-          <ShieldCheck size={22} />
-          <div>
-            <strong>Ãrea administrativa disponÃ­vel</strong>
-            <span>Gerencie baralhos, sugestÃµes e releases sem misturar o fluxo do estudante.</span>
-          </div>
-          <Link to="/admin">Abrir administraÃ§Ã£o</Link>
-        </section>
-      )}
     </div>
   )
 }
@@ -186,30 +250,47 @@ export function MyDecksPage() {
   )
 
   return (
-    <div className="ac-page">
-      <header className="ac-hero">
-        <span className="ac-eyebrow">Biblioteca</span>
-        <h1>Meus Baralhos</h1>
-        <p>Continue estudando os decks em que vocÃª estÃ¡ inscrito e prepare a sincronizaÃ§Ã£o no Anki.</p>
-      </header>
+    <div className="ac-page ac-page-muriae">
+      <ExploreHero
+        eyebrow="Biblioteca"
+        title="Meus baralhos"
+        description="Continue estudando os baralhos em que você está inscrito e prepare a sincronização no Anki."
+      />
+
       {decks.length ? (
-        <section className="ac-deck-grid">
+        <section className="mt-8 grid grid-cols-1 gap-5 min-[721px]:grid-cols-2 min-[1081px]:grid-cols-3">
           {decks.map((deck) => (
-            <DeckCard key={deck.deck_id} deck={deck} />
+            <MuriaeDeckCard key={deck.deck_id} deck={deck} />
           ))}
         </section>
       ) : (
-        <EmptyPanel
-          title="VocÃª ainda nÃ£o estÃ¡ inscrito em baralhos"
-          description="Explore os decks disponÃ­veis e inscreva-se para sincronizar pelo add-on."
-          action={<Link className="ac-button ac-button-primary" to="/">Explorar baralhos</Link>}
-        />
+        <section className="mt-8 flex flex-col items-start gap-3 rounded-[10px] border border-dashed border-[#e4e1da] bg-white p-8">
+          <strong className="text-[16px] font-semibold text-[#1f2430]">
+            Você ainda não está inscrito em baralhos
+          </strong>
+          <p className="max-w-[420px] text-[14px] leading-[1.55] text-[#667085]">
+            Explore os baralhos disponíveis e inscreva-se para sincronizar pelo add-on.
+          </p>
+          <Button
+            asChild
+            className="mt-1 h-[42px] gap-2 rounded-[6px] bg-[#231651] px-4 text-[13.5px] font-semibold text-white hover:bg-[#1a1040]"
+          >
+            <Link to="/">Explorar baralhos</Link>
+          </Button>
+        </section>
       )}
-      <section className="ac-sync-card">
-        <BookOpen size={24} />
+
+      <section className="mt-6 flex items-start gap-3.5 rounded-[10px] border border-[#e4e1da] bg-white p-5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[#eeebfa] text-[#231651]">
+          <BookOpen size={20} />
+        </span>
         <div>
-          <strong>SincronizaÃ§Ã£o com o Anki</strong>
-          <p>O add-on usa suas inscriÃ§Ãµes para baixar manifestos, notas e releases incrementais.</p>
+          <strong className="block text-[15px] font-semibold text-[#1f2430]">
+            Sincronização com o Anki
+          </strong>
+          <p className="mt-1 text-[13.5px] leading-[1.55] text-[#667085]">
+            O add-on usa suas inscrições para baixar manifestos, notas e releases incrementais.
+          </p>
         </div>
       </section>
     </div>
@@ -234,79 +315,120 @@ export function DeckPage() {
   if (!deck) {
     return (
       <EmptyPanel
-        title="Baralho nÃ£o encontrado"
-        description="Volte para Explore e escolha um baralho disponÃ­vel."
+        title="Baralho não encontrado"
+        description="Volte para Explore e escolha um baralho disponível."
       />
     )
   }
 
+  const category = deckCategory(deck)
+  const secondaryButton =
+    'h-[42px] gap-2 rounded-[6px] border-[#e4e1da] bg-white px-4 text-[13.5px] font-semibold text-[#1f2430] hover:border-[#d4d0c7] hover:bg-[#fbfaf8]'
+
   return (
-    <div className="ac-page">
-      <section className="ac-deck-hero">
-        <div>
-          <span className="ac-eyebrow">Baralho</span>
-          <h1>{deck.name}</h1>
-          <p>{deck.description || 'Deck publicado na plataforma Anki Concursos.'}</p>
-          <div className="ac-meta-row">
-            <span>{deck.active_card_count} notas</span>
-            <span>Release {deck.latest_release}</span>
-            <span>Atualizado {formatDate(deck.updated_at)}</span>
+    <div className="ac-page ac-page-muriae">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#667085] transition-colors hover:text-[#1f2430]"
+      >
+        <ArrowLeft size={16} />
+        Voltar ao Explore
+      </Link>
+
+      <section className="mt-5 flex flex-col gap-6 border-b border-[#e4e1da] pb-8 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#231651]">
+            Baralho
+          </span>
+          <h1 className="mt-2 font-dm-serif text-[34px] font-normal leading-[1.1] tracking-[-0.01em] text-[#1f2430]">
+            {deck.name}
+          </h1>
+          <p className="mt-3 max-w-[640px] text-[15px] leading-[1.6] text-[#667085]">
+            {deck.description || 'Deck publicado na plataforma Anki Concursos.'}
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-[#667085]">
+            <Badge
+              className={cn(
+                'rounded-[5px] border px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em]',
+                CATEGORY[category].badge,
+              )}
+            >
+              {CATEGORY[category].label}
+            </Badge>
+            <span className="inline-flex items-center gap-1.5">
+              <Stack size={14} className="text-[#98a2b3]" />
+              {deck.active_card_count.toLocaleString('pt-BR')} notas
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <ArrowClockwise size={14} className="text-[#98a2b3]" />
+              Versão {deck.latest_release}
+            </span>
+            <span>Atualizado {formatDeckDate(deck.updated_at)}</span>
           </div>
         </div>
-        <div className="ac-deck-actions">
+
+        <div className="flex shrink-0 flex-wrap items-center gap-2.5">
           <SubscriptionButton deck={deck} />
-          <button className="ac-button ac-button-secondary" type="button">
-            <Share2 size={17} />
+          <Button variant="outline" className={secondaryButton}>
+            <Share2 size={16} />
             Compartilhar
-          </button>
-          <Link className="ac-button ac-button-secondary" to={`/deck/${deck.deck_id}/suggestions`}>
-            <MessageSquare size={17} />
-            SugestÃµes
-          </Link>
-          <Link className="ac-button ac-button-ghost" to="/community">
-            Abrir na Community
-          </Link>
+          </Button>
+          <Button asChild variant="outline" className={secondaryButton}>
+            <Link to={`/deck/${deck.deck_id}/suggestions`}>
+              <MessageSquare size={16} />
+              Sugestões
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            className="h-[42px] px-3 text-[13.5px] font-semibold text-[#667085] hover:bg-transparent hover:text-[#231651]"
+          >
+            <Link to="/community">Ver na Comunidade</Link>
+          </Button>
         </div>
       </section>
 
-      <section className="ac-notes-section">
-        <div className="ac-section-heading">
+      <section className="mt-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <span className="ac-eyebrow">Notas</span>
-            <h2>Preview do baralho</h2>
+            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#231651]">
+              Notas
+            </span>
+            <h2 className="mt-1.5 font-dm-serif text-[22px] font-normal text-[#1f2430]">
+              Preview do baralho
+            </h2>
           </div>
-          <label className="ac-search">
-            <Search size={18} />
-            <input
+          <div className="relative w-full sm:w-[280px]">
+            <Search
+              size={18}
+              className="pointer-events-none absolute left-[14px] top-1/2 -translate-y-1/2 text-[#98a2b3]"
+            />
+            <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar notas..."
+              className="h-[42px] rounded-[6px] border-[#e4e1da] bg-white pl-[40px] text-[14px] text-[#1f2430] placeholder:text-[#98a2b3] focus-visible:ring-[#231651]/30"
             />
-          </label>
+          </div>
         </div>
-        <div className="ac-note-list">
+
+        <div className="mt-5 flex flex-col gap-2.5">
           {filteredNotes.map((note) => (
-            <button
-              key={note.card_id}
-              className="ac-note-row"
-              type="button"
-              onClick={() => setSelectedNote(note)}
-            >
-              <span className="ac-note-kind">{note.card_kind || 'basic'}</span>
-              <div>
-                <strong>{noteTitle(note)}</strong>
-                <p>{noteSummary(note)}</p>
-              </div>
-              <code>{note.public_id}</code>
-              <ArrowRight size={18} />
-            </button>
+            <NoteRow key={note.card_id} note={note} onOpen={() => setSelectedNote(note)} />
           ))}
+          {!filteredNotes.length && (
+            <EmptyPanel
+              title="Nenhuma nota encontrada"
+              description="Ajuste a busca para localizar notas deste baralho."
+            />
+          )}
         </div>
       </section>
 
       {selectedNote && (
         <NoteModal
-          deckId={deck.deck_id}
+          deck={deck}
           note={selectedNote}
           onClose={() => setSelectedNote(null)}
         />
@@ -315,84 +437,199 @@ export function DeckPage() {
   )
 }
 
+function NoteRow({ note, onOpen }: { note: AnkiSyncChange; onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group flex items-center gap-4 rounded-[8px] border border-[#e4e1da] bg-white px-4 py-3.5 text-left shadow-[0_1px_2px_-1px_rgba(31,36,48,0.05),0_2px_6px_-2px_rgba(31,36,48,0.06)] transition-[border-color,box-shadow,transform] duration-200 ease-out hover:-translate-y-[2px] hover:border-[#cdbfae] hover:shadow-[0_5px_10px_-3px_rgba(31,36,48,0.10),0_14px_26px_-8px_rgba(35,22,81,0.16)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#231651]"
+    >
+      <Badge className="shrink-0 rounded-[5px] border-[#e4e1da] bg-[#f6f5f2] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#667085]">
+        {note.card_kind || 'basic'}
+      </Badge>
+      <div className="min-w-0 flex-1">
+        <strong className="block truncate text-[14px] font-semibold text-[#1f2430]">
+          {noteTitle(note)}
+        </strong>
+        <p className="mt-0.5 truncate text-[13px] text-[#667085]">{noteSummary(note)}</p>
+      </div>
+      {/* "Validado" é apresentação: notas de baralho publicado são tidas como validadas. */}
+      <Badge className="hidden shrink-0 items-center gap-1 rounded-[5px] border-[#abefc6] bg-[#ecfdf3] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-[#15803d] sm:inline-flex">
+        <Check size={11} weight="bold" />
+        Validado
+      </Badge>
+      <code className="hidden shrink-0 font-mono text-[12px] text-[#98a2b3] md:block">
+        {note.public_id}
+      </code>
+      <ArrowRight
+        size={18}
+        className="shrink-0 text-[#98a2b3] transition-colors group-hover:text-[#231651]"
+      />
+    </button>
+  )
+}
+
+const modalTab =
+  'h-11 flex-none rounded-none border-0 border-b-2 border-b-transparent bg-transparent px-0 text-[14px] font-semibold text-[#667085] shadow-none transition-colors hover:text-[#1f2430] focus-visible:outline-none focus-visible:ring-0 data-[state=active]:border-b-[#231651] data-[state=active]:text-[#1f2430]'
+
+const muriaePrimaryBtn =
+  'inline-flex h-[42px] items-center gap-2 rounded-[6px] bg-[#231651] px-4 text-[13.5px] font-semibold !text-white transition-colors hover:bg-[#1a1040]'
+const muriaeSecondaryBtn =
+  'inline-flex h-[42px] items-center gap-2 rounded-[6px] border border-[#e4e1da] bg-white px-4 text-[13.5px] font-semibold text-[#1f2430] transition-colors hover:border-[#d4d0c7] hover:bg-[#fbfaf8]'
+const muriaeSurface =
+  'rounded-[10px] border border-[#e4e1da] bg-white shadow-[0_1px_2px_-1px_rgba(31,36,48,0.05),0_2px_6px_-2px_rgba(31,36,48,0.05)]'
+const muriaeEyebrow =
+  'text-[11px] font-bold uppercase tracking-[0.14em] text-[#231651]'
+
 function NoteModal({
-  deckId,
+  deck,
   note,
   onClose,
 }: {
-  deckId: string
+  deck: SubscribableDeck
   note: AnkiSyncChange
   onClose: () => void
 }) {
-  const [mode, setMode] = useState<'view' | 'suggest' | 'comments'>('view')
   const [showComments, setShowComments] = useState(false)
+  const [allComments] = useLocalStorageState<StudentComment[]>(
+    'anki-concursos-comments',
+    initialComments,
+  )
+  const commentCount = allComments.filter((c) => c.publicId === note.public_id).length
   const fields = note.fields || {}
+  const category = CATEGORY[deckCategory(deck)]
 
   return (
-    <div className="ac-modal-backdrop" role="presentation">
-      <section className="ac-note-modal" role="dialog" aria-modal="true">
-        <header className="ac-modal-header">
-          <div>
-            <span className="ac-eyebrow">{note.card_kind || 'basic'}</span>
-            <h2>{note.public_id}</h2>
-          </div>
-          <div className="ac-modal-actions">
-            <button type="button" onClick={() => navigator.clipboard?.writeText(note.public_id)}>
-              <Copy size={17} />
-            </button>
-            <button type="button" onClick={onClose} aria-label="Fechar">
-              <X size={20} />
-            </button>
-          </div>
-        </header>
-
-        <nav className="ac-modal-tabs" aria-label="Nota">
-          <button className={mode === 'view' ? 'active' : ''} onClick={() => setMode('view')}>
-            ConteÃºdo
-          </button>
-          <button className={mode === 'suggest' ? 'active' : ''} onClick={() => setMode('suggest')}>
-            Sugerir mudanÃ§as
-          </button>
-          <button className={mode === 'comments' ? 'active' : ''} onClick={() => setMode('comments')}>
-            ComentÃ¡rios
-          </button>
-        </nav>
-
-        {mode === 'view' && (
-          <div className="ac-note-fields">
-            {Object.entries(fields).map(([label, value]) => (
-              <article key={label}>
-                <span>{label}</span>
-                <p>{value}</p>
-              </article>
-            ))}
-            <div className="ac-note-comments-toggle">
-              <button
-                className="ac-button ac-button-secondary"
-                type="button"
-                aria-expanded={showComments}
-                aria-controls="note-comments-panel"
-                onClick={() => setShowComments((current) => !current)}
-              >
-                {showComments ? 'Ocultar comentÃ¡rios' : 'Mostrar comentÃ¡rios'}
-              </button>
-            </div>
-            {showComments && (
-              <div id="note-comments-panel" className="ac-note-comments-inline">
-                <NoteCommentsPanel publicId={note.public_id} />
-              </div>
-            )}
-            <footer className="ac-tag-row">
-              {note.tags.map((tag) => (
-                <span key={tag}>{tag}</span>
-              ))}
-            </footer>
-          </div>
+    <Dialog open onOpenChange={(next) => !next && onClose()}>
+      <DialogContent
+        showCloseButton={false}
+        className={cn(
+          'grid-cols-[minmax(0,1fr)] gap-0 overflow-hidden rounded-[14px] border-[#e4e1da] bg-white p-0 text-[#1f2430] sm:max-w-[720px]',
+          showComments && 'sm:max-w-[1160px]',
         )}
-        {mode === 'suggest' && <SuggestChangePanel deckId={deckId} note={note} />}
-        {mode === 'comments' && <NoteCommentsPanel publicId={note.public_id} />}
-      </section>
-    </div>
+      >
+        <DialogTitle className="sr-only">{note.public_id}</DialogTitle>
+
+        <div className="flex items-start justify-between gap-4 px-6 pt-5">
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#667085]">
+              {note.card_kind || 'basic'}
+            </span>
+            <h2 className="mt-0.5 truncate font-mono text-[20px] font-semibold text-[#1f2430]">
+              {note.public_id}
+            </h2>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Badge
+              className={cn(
+                'rounded-[5px] border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em]',
+                category.badge,
+              )}
+            >
+              {category.label}
+            </Badge>
+            <Badge className="inline-flex items-center gap-1 rounded-[5px] border-[#abefc6] bg-[#ecfdf3] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-[#15803d]">
+              <Check size={10} weight="bold" />
+              Validado
+            </Badge>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard?.writeText(note.public_id)}
+              aria-label="Copiar identificador"
+              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#667085] transition-colors hover:bg-[#f1f0ec] hover:text-[#1f2430]"
+            >
+              <Copy size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fechar"
+              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#667085] transition-colors hover:bg-[#f1f0ec] hover:text-[#1f2430]"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <Tabs defaultValue="content" className="mt-3 gap-0">
+          <div className="flex flex-col gap-2 border-b border-[#e4e1da] px-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <TabsList variant="line" className="h-auto gap-6 rounded-none bg-transparent p-0">
+              <TabsTrigger value="content" className={modalTab}>
+                Conteúdo
+              </TabsTrigger>
+              <TabsTrigger value="suggest" className={modalTab}>
+                Sugerir mudanças
+              </TabsTrigger>
+            </TabsList>
+            <button
+              type="button"
+              onClick={() => setShowComments((current) => !current)}
+              aria-pressed={showComments}
+              className={cn(
+                'inline-flex shrink-0 items-center gap-1.5 rounded-[6px] px-3 py-1.5 text-[13px] font-semibold transition-colors',
+                showComments
+                  ? 'bg-[#231651] text-white'
+                  : 'text-[#667085] hover:text-[#231651]',
+              )}
+            >
+              <MessageSquare size={15} />
+              Comentários
+              {commentCount > 0 && (
+                <span
+                  className={cn(
+                    'inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold',
+                    showComments ? 'bg-white/20 text-white' : 'bg-[#eeebfa] text-[#231651]',
+                  )}
+                >
+                  {commentCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          <div className="flex max-h-[70vh] min-h-0 flex-col md:flex-row">
+            <div className="min-w-0 flex-1 overflow-y-auto px-6 py-5">
+              <TabsContent value="content" className="mt-0">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {Object.entries(fields).map(([label, value]) => (
+                    <article
+                      key={label}
+                      className="rounded-[8px] border border-[#e4e1da] bg-[#fafaf8] p-4"
+                    >
+                      <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#98a2b3]">
+                        {label}
+                      </span>
+                      <p className="mt-1.5 text-[14px] leading-[1.55] text-[#1f2430]">{value}</p>
+                    </article>
+                  ))}
+                </div>
+                {note.tags.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {note.tags.map((tag) => (
+                      <Badge
+                        key={tag}
+                        className="rounded-[5px] border-[#e4e1da] bg-[#f6f5f2] px-2 py-0.5 text-[11px] font-medium text-[#667085]"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+              <TabsContent value="suggest" className="mt-0">
+                <SuggestChangePanel deckId={deck.deck_id} note={note} />
+              </TabsContent>
+            </div>
+
+            {showComments && (
+              <aside className="w-full shrink-0 overflow-y-auto border-t border-[#e4e1da] bg-[#fafaf8] px-6 py-6 md:w-[448px] md:border-l md:border-t-0">
+                <NoteCommentsPanel publicId={note.public_id} />
+              </aside>
+            )}
+          </div>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -413,6 +650,12 @@ function SuggestChangePanel({
   const [sent, setSent] = useState(false)
   const fieldRefs = useRef<Record<string, HTMLTextAreaElement | null>>({})
   const [activeField, setActiveField] = useState<string | null>(null)
+  const registerFieldRef = useCallback(
+    (fieldName: string) => (node: HTMLTextAreaElement | null) => {
+      fieldRefs.current[fieldName] = node
+    },
+    [],
+  )
 
   function submitSuggestion() {
     const suggestion: StudentSuggestion = {
@@ -456,159 +699,131 @@ function SuggestChangePanel({
     })
   }
 
+  const toolbarItems = (label: string): Array<{
+    icon: React.ReactNode
+    label: string
+    onClick?: () => void
+  }> => [
+    { icon: <ArrowCounterClockwise size={15} />, label: 'Desfazer' },
+    { icon: <ArrowClockwise size={15} />, label: 'Refazer' },
+    { icon: <TextB size={15} />, label: 'Negrito', onClick: () => insertMarkdown(label, '**', '**', 'texto em negrito') },
+    { icon: <TextItalic size={15} />, label: 'Itálico', onClick: () => insertMarkdown(label, '*', '*', 'texto em itálico') },
+    { icon: <TextH size={15} />, label: 'Título', onClick: () => insertMarkdown(label, '### ', '', 'título') },
+    { icon: <TextT size={15} />, label: 'Tachado', onClick: () => insertMarkdown(label, '~~', '~~', 'texto tachado') },
+    { icon: <LinkSimple size={15} />, label: 'Link', onClick: () => insertMarkdown(label, '[', '](https://)', 'link') },
+    { icon: <ListBullets size={15} />, label: 'Lista com marcadores', onClick: () => insertMarkdown(label, '- ', '', 'item de lista') },
+    { icon: <ListNumbers size={15} />, label: 'Lista numerada', onClick: () => insertMarkdown(label, '1. ', '', 'item numerado') },
+    { icon: <Code size={15} />, label: 'Bloco de código', onClick: () => insertMarkdown(label, '```\n', '\n```', 'codigo') },
+    { icon: <DotsThreeVertical size={15} />, label: 'Citação', onClick: () => insertMarkdown(label, '> ', '', 'citação') },
+    { icon: <span className="text-[14px] leading-none">—</span>, label: 'Linha horizontal', onClick: () => insertMarkdown(label, '\n---\n', '', '') },
+    { icon: <TextAlignLeft size={15} />, label: 'Alinhar à esquerda' },
+    { icon: <TextAlignCenter size={15} />, label: 'Centralizar' },
+    { icon: <TextAlignRight size={15} />, label: 'Alinhar à direita' },
+    { icon: <TextAlignJustify size={15} />, label: 'Justificar' },
+  ]
+  const toolbarButton =
+    'inline-flex h-7 min-w-7 items-center justify-center rounded-[4px] px-1 text-[#667085] transition-colors hover:bg-[#eceae4] hover:text-[#1f2430]'
+  const fieldTextarea =
+    'min-h-[88px] w-full rounded-[6px] border border-[#e4e1da] bg-white px-3 py-2 text-[14px] leading-[1.5] text-[#1f2430] outline-none transition-colors placeholder:text-[#98a2b3] focus:border-[#231651]'
+
   return (
-    <div className="ac-suggestion-panel">
-      <div className="ac-warning-box">
-        <Flag size={18} />
-        Sua sugestÃ£o serÃ¡ enviada para revisÃ£o. Ela nÃ£o altera automaticamente a nota publicada.
+    <div className="flex flex-col gap-4">
+      <div className="flex items-start gap-2 rounded-[8px] border border-[rgba(35,22,81,0.16)] bg-[#f3f1fb] px-3.5 py-2.5 text-[13px] leading-[1.5] text-[#3b2f6b]">
+        <Info size={17} className="mt-px shrink-0" />
+        Sua sugestão será enviada para revisão da comunidade. Ela não altera automaticamente a
+        nota publicada.
       </div>
-      <label className="ac-field">
-        <span>Tipo de mudanÃ§a</span>
-        <select value={changeType} onChange={(event) => setChangeType(event.target.value)}>
-          {changeTypes.map((type) => (
-            <option key={type}>{type}</option>
-          ))}
-        </select>
-      </label>
-      <div className="ac-markdown-editor">
-        <div className="ac-suggestion-fields">
-          {Object.entries(fields).map(([label, value]) => (
-            <div className="ac-suggestion-field-block" key={label}>
-              <label className="ac-field">
-                <span>{label}</span>
-                {activeField === label && (
-                  <div className="ac-markdown-toolbar" aria-label={`Barra de formatação de ${label}`}>
-                    <button type="button" aria-label="Desfazer">
-                      <ArrowCounterClockwise size={16} />
-                    </button>
-                    <button type="button" aria-label="Refazer">
-                      <ArrowClockwise size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertMarkdown(label, '**', '**', 'texto em negrito')}
-                      aria-label="Negrito"
-                    >
-                      <TextB size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertMarkdown(label, '*', '*', 'texto em itálico')}
-                      aria-label="Itálico"
-                    >
-                      <TextItalic size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertMarkdown(label, '### ', '', 'título')}
-                      aria-label="Título"
-                    >
-                      <TextH size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertMarkdown(label, '~~', '~~', 'texto tachado')}
-                      aria-label="Tachado"
-                    >
-                      <TextT size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertMarkdown(label, '[', '](https://)', 'link')}
-                      aria-label="Link"
-                    >
-                      <LinkSimple size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertMarkdown(label, '- ', '', 'item de lista')}
-                      aria-label="Lista com marcadores"
-                    >
-                      <ListBullets size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertMarkdown(label, '1. ', '', 'item numerado')}
-                      aria-label="Lista numerada"
-                    >
-                      <ListNumbers size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertMarkdown(label, '```\n', '\n```', 'codigo')}
-                      aria-label="Bloco de código"
-                    >
-                      <Code size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertMarkdown(label, '> ', '', 'citação')}
-                      aria-label="Citação"
-                    >
-                      <DotsThreeVertical size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertMarkdown(label, '\n---\n', '', '')}
-                      aria-label="Linha horizontal"
-                    >
-                      —
-                    </button>
-                    <button type="button" aria-label="Alinhar à esquerda">
-                      <TextAlignLeft size={16} />
-                    </button>
-                    <button type="button" aria-label="Centralizar">
-                      <TextAlignCenter size={16} />
-                    </button>
-                    <button type="button" aria-label="Alinhar à direita">
-                      <TextAlignRight size={16} />
-                    </button>
-                    <button type="button" aria-label="Justificar">
-                      <TextAlignJustify size={16} />
-                    </button>
-                    <button type="button" aria-label="Tela cheia">
-                      ⤢
-                    </button>
-                  </div>
-                )}
-                <textarea
-                  ref={(node) => {
-                    fieldRefs.current[label] = node
-                  }}
-                  value={value}
-                  onFocus={() => setActiveField(label)}
-                  onChange={(event) =>
-                    setFields((current) => ({ ...current, [label]: event.target.value }))
-                  }
-                  className="ac-markdown-textarea"
-                />
-              </label>
-              {activeField === label && (
-                <p className="ac-help-text">A barra acima edita este campo da nota.</p>
-              )}
-            </div>
-          ))}
-        </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[13px] font-semibold text-[#1f2430]">Tipo de mudança</span>
+        <Select value={changeType} onValueChange={setChangeType}>
+          <SelectTrigger className="h-[42px] w-full rounded-[6px] border-[#e4e1da] bg-white text-[14px] text-[#1f2430] focus-visible:ring-[#231651]/30">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {changeTypes.map((type) => (
+              <SelectItem key={type} value={type}>
+                {type}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      <label className="ac-field">
-        <span>Comentário para o revisor</span>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {Object.entries(fields).map(([label, value]) => (
+          <div className="flex flex-col gap-1.5" key={label}>
+            <span className="text-[13px] font-semibold text-[#1f2430]">{label}</span>
+            {activeField === label && (
+              <div
+                className="flex flex-wrap items-center gap-0.5 rounded-[6px] border border-[#e4e1da] bg-[#fafaf8] p-1"
+                aria-label={`Barra de formatação de ${label}`}
+              >
+                {toolbarItems(label).map((item, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={item.onClick}
+                    aria-label={item.label}
+                    className={toolbarButton}
+                  >
+                    {item.icon}
+                  </button>
+                ))}
+              </div>
+            )}
+            <textarea
+              ref={registerFieldRef(label)}
+              value={value}
+              onFocus={() => setActiveField(label)}
+              onChange={(event) =>
+                setFields((current) => ({ ...current, [label]: event.target.value }))
+              }
+              className={fieldTextarea}
+            />
+            {activeField === label && (
+              <p className="text-[12px] text-[#98a2b3]">A barra acima edita este campo da nota.</p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[13px] font-semibold text-[#1f2430]">Comentário para o revisor</span>
         <textarea
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           placeholder="Explique o motivo da sugestão."
+          className={fieldTextarea}
         />
       </label>
-      <button className="ac-button ac-button-primary" type="button" onClick={submitSuggestion}>
-        Enviar sugestÃ£o
-      </button>
+
+      <div>
+        <Button
+          type="button"
+          onClick={submitSuggestion}
+          className="h-[42px] gap-2 rounded-[6px] bg-[#231651] px-4 text-[13.5px] font-semibold text-white hover:bg-[#1a1040]"
+        >
+          Enviar sugestão
+        </Button>
+      </div>
+
       {sent && (
-        <div className="ac-success-box">
-          <Check size={18} />
-          SugestÃ£o enviada para revisÃ£o.
+        <div className="flex items-center gap-2 rounded-[8px] border border-[#abefc6] bg-[#ecfdf3] px-3.5 py-2.5 text-[13px] font-medium text-[#15803d]">
+          <Check size={16} weight="bold" />
+          Sugestão enviada para revisão.
         </div>
       )}
     </div>
   )
+}
+
+const COMMENT_KIND_LABELS: Record<CommentKind, string> = {
+  comment: 'Comentário',
+  tip: 'Dica',
+  mnemonic: 'Mnemônico',
+  question: 'Dúvida',
+  correction: 'Correção',
 }
 
 function NoteCommentsPanel({ publicId }: { publicId: string }) {
@@ -625,7 +840,7 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
       {
         id: crypto.randomUUID(),
         publicId,
-        author: 'VocÃª',
+        author: 'Você',
         kind: 'comment',
         body,
         score: 0,
@@ -640,52 +855,96 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
     setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, score: c.score + 1 } : c)))
   }
 
-  const kindLabels: Record<CommentKind, string> = {
-    comment: 'ComentÃ¡rio',
-    tip: 'Dica',
-    mnemonic: 'MnemÃ´nico',
-    question: 'DÃºvida',
-    correction: 'CorreÃ§Ã£o',
-  }
-
   return (
-    <div className="ac-comments-panel">
-      <div className="ac-new-comment">
+    <div className="flex flex-col gap-6">
+      <div>
+        <div className="flex items-center gap-2 text-[15px] font-semibold text-[#1f2430]">
+          <MessageSquare size={17} className="text-[#231651]" />
+          Comentários
+          <span className="ml-0.5 inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-[#eeebfa] px-1.5 text-[11px] font-bold text-[#231651]">
+            {noteComments.length}
+          </span>
+        </div>
+        <p className="mt-1.5 text-[12.5px] leading-[1.5] text-[#667085]">
+          Compartilhe dicas, mnemônicos e dúvidas para ajudar outros estudantes.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-[10px] border border-[#e4e1da] bg-white p-3.5 shadow-[0_1px_2px_-1px_rgba(31,36,48,0.05),0_2px_6px_-2px_rgba(31,36,48,0.05)]">
         <textarea
           value={body}
           onChange={(event) => setBody(event.target.value)}
-          placeholder="Escreva um comentÃ¡rio sobre esta nota..."
+          placeholder="Escreva um comentário sobre esta nota..."
+          className="min-h-[84px] w-full resize-none rounded-[8px] border border-[#e4e1da] bg-[#fafaf8] px-3.5 py-2.5 text-[14px] leading-[1.55] text-[#1f2430] outline-none transition-colors placeholder:text-[#98a2b3] focus:border-[#231651] focus:bg-white"
         />
-        <button className="ac-button ac-button-primary" type="button" onClick={addComment}>
+        <Button
+          type="button"
+          onClick={addComment}
+          className="h-[40px] gap-2 self-end rounded-[8px] bg-[#231651] px-5 text-[13.5px] font-semibold text-white hover:bg-[#1a1040]"
+        >
+          <MessageSquare size={15} />
           Publicar
-        </button>
+        </Button>
       </div>
-      <div className="ac-comment-list">
+
+      <div className="flex flex-col gap-4 border-t border-[#e4e1da] pt-6">
         {noteComments
           .slice()
           .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
-          .map((comment) => (
-            <article key={comment.id}>
-              <header>
-                <strong>{comment.author}</strong>
-                <span className="ac-comment-kind-badge">{kindLabels[comment.kind]}</span>
-                <small>{formatDate(comment.createdAt)}</small>
-              </header>
-              <p>{comment.body}</p>
-              <footer>
-                <button type="button" onClick={() => handleUpvote(comment.id)}>
-                  <ThumbsUp size={15} />
-                  Ãštil ({comment.score})
-                </button>
-                <button type="button">Denunciar</button>
-              </footer>
-            </article>
-          ))}
+          .map((comment) => {
+            return (
+              <div key={comment.id} className="flex gap-3">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eeebfa] text-[12px] font-bold uppercase text-[#231651]">
+                  {comment.author.slice(0, 2)}
+                </span>
+                <article className="min-w-0 flex-1 rounded-[12px] border border-[#e4e1da] bg-white p-4 shadow-[0_1px_2px_-1px_rgba(31,36,48,0.06),0_4px_10px_-4px_rgba(31,36,48,0.08)]">
+                  <header className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <strong className="text-[13.5px] font-semibold text-[#1f2430]">
+                      {comment.author}
+                    </strong>
+                    <Badge className="rounded-full border-[#e4e1da] bg-[#f6f5f2] px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.06em] text-[#667085]">
+                      {COMMENT_KIND_LABELS[comment.kind]}
+                    </Badge>
+                    <small className="ml-auto text-[11px] text-[#98a2b3]">
+                      {formatDate(comment.createdAt)}
+                    </small>
+                  </header>
+                  <p className="mt-2.5 text-[13.5px] leading-[1.65] text-[#3f4754]">
+                    {comment.body}
+                  </p>
+                  <footer className="mt-3.5 flex items-center gap-2 border-t border-[#f1efe9] pt-3">
+                    <button
+                      type="button"
+                      onClick={() => handleUpvote(comment.id)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[#e4e1da] bg-white px-3 py-1 text-[12px] font-semibold text-[#475467] transition-colors hover:border-[#231651] hover:bg-[#f3f1fb] hover:text-[#231651]"
+                    >
+                      <ThumbsUp size={13} weight="fill" className="text-[#98a2b3]" />
+                      Útil
+                      <span className="tabular-nums">{comment.score}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="ml-auto text-[12px] font-medium text-[#98a2b3] transition-colors hover:text-[#1f2430]"
+                    >
+                      Denunciar
+                    </button>
+                  </footer>
+                </article>
+              </div>
+            )
+          })}
         {!noteComments.length && (
-          <EmptyPanel
-            title="Sem comentÃ¡rios ainda"
-            description="Publique a primeira observaÃ§Ã£o para iniciar o feed cronolÃ³gico desta nota."
-          />
+          <div className="flex flex-col items-center gap-2 rounded-[12px] border border-dashed border-[#d8d3c8] bg-white px-4 py-10 text-center">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eeebfa] text-[#231651]">
+              <MessageSquare size={20} />
+            </span>
+            <strong className="text-[13.5px] font-semibold text-[#1f2430]">
+              Ainda não há comentários
+            </strong>
+            <p className="max-w-[240px] text-[12.5px] leading-[1.5] text-[#98a2b3]">
+              Seja o primeiro a contribuir com uma dica ou observação sobre esta nota.
+            </p>
+          </div>
         )}
       </div>
     </div>
@@ -698,24 +957,42 @@ export function AdminDashboardPage() {
     [],
   )
   const pendingSuggestions = suggestions.filter((item) => item.status === 'pending')
+  const actions = [
+    { to: '/admin/decks', label: 'Gerenciar baralhos' },
+    { to: '/admin/suggestions', label: 'Revisar sugestões' },
+    { to: '/reports', label: 'Reports formais' },
+    { to: '/users', label: 'Usuários' },
+  ]
   return (
-    <div className="ac-page ac-admin-page">
-      <header className="ac-hero">
-        <span className="ac-eyebrow">AdministraÃ§Ã£o</span>
-        <h1>Dashboard Administrativo</h1>
-        <p>FunÃ§Ãµes de curadoria para aprovar, revisar e publicar baralhos.</p>
-      </header>
-      <section className="ac-admin-metrics">
+    <div className="ac-page ac-page-muriae">
+      <ExploreHero
+        eyebrow="Administração"
+        title="Dashboard administrativo"
+        description="Funções de curadoria para aprovar, revisar e publicar baralhos."
+      />
+      <section className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard label="Baralhos publicados" value="12" />
-        <MetricCard label="SugestÃµes pendentes" value={String(pendingSuggestions.length)} />
-        <MetricCard label="VersÃµes em revisÃ£o" value="25" />
+        <MetricCard label="Sugestões pendentes" value={String(pendingSuggestions.length)} />
+        <MetricCard label="Versões em revisão" value="25" />
         <MetricCard label="Releases pendentes" value="3" />
       </section>
-      <section className="ac-admin-actions">
-        <Link to="/admin/decks">Gerenciar baralhos</Link>
-        <Link to="/admin/suggestions">Revisar sugestÃµes</Link>
-        <Link to="/reports">Reports formais</Link>
-        <Link to="/users">UsuÃ¡rios</Link>
+      <section className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {actions.map((action) => (
+          <Link
+            key={action.to}
+            to={action.to}
+            className={cn(
+              muriaeSurface,
+              'group flex items-center justify-between gap-4 p-5 transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px hover:border-[#d4d0c7]',
+            )}
+          >
+            <strong className="text-[15px] font-semibold text-[#1f2430]">{action.label}</strong>
+            <ArrowRight
+              size={18}
+              className="shrink-0 text-[#98a2b3] transition-colors group-hover:text-[#231651]"
+            />
+          </Link>
+        ))}
       </section>
     </div>
   )
@@ -725,29 +1002,48 @@ export function AdminDecksPage() {
   const decksQuery = useDeckCatalog()
   const decks = decksQuery.data?.length ? decksQuery.data : fallbackDecks
   return (
-    <div className="ac-page ac-admin-page">
-      <header className="ac-hero ac-hero-row">
-        <div>
-          <span className="ac-eyebrow">AdministraÃ§Ã£o</span>
-          <h1>Gerenciar Baralhos</h1>
-          <p>Controle publicaÃ§Ãµes, releases e composiÃ§Ã£o editorial.</p>
-        </div>
-        <Link className="ac-button ac-button-primary" to="/decks/new">
-          <Plus size={17} />
+    <div className="ac-page ac-page-muriae">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <ExploreHero
+          eyebrow="Administração"
+          title="Gerenciar baralhos"
+          description="Controle publicações, releases e composição editorial."
+        />
+        <Link to="/decks/new" className={cn(muriaePrimaryBtn, 'shrink-0')}>
+          <Plus size={16} />
           Novo baralho
         </Link>
-      </header>
-      <div className="ac-admin-table">
+      </div>
+
+      <div className="mt-8 flex flex-col gap-2.5">
         {decks.map((deck) => (
-          <article key={deck.deck_id}>
-            <div>
-              <strong>{deck.name}</strong>
-              <p>{deck.description || 'Sem descriÃ§Ã£o.'}</p>
+          <article
+            key={deck.deck_id}
+            className={cn(muriaeSurface, 'flex flex-wrap items-center gap-x-5 gap-y-2 p-4')}
+          >
+            <div className="min-w-0 flex-1">
+              <strong className="block text-[15px] font-semibold text-[#1f2430]">
+                {deck.name}
+              </strong>
+              <p className="mt-0.5 truncate text-[13px] text-[#667085]">
+                {deck.description || 'Sem descrição.'}
+              </p>
             </div>
-            <span>{deck.status}</span>
-            <span>{deck.active_card_count} notas</span>
-            <span>Release {deck.latest_release}</span>
-            <Link to={`/deck/${deck.deck_id}`}>Abrir</Link>
+            <Badge className="shrink-0 rounded-[5px] border-[#e4e1da] bg-[#f6f5f2] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-[#667085]">
+              {deck.status}
+            </Badge>
+            <span className="shrink-0 text-[13px] text-[#667085]">
+              {deck.active_card_count} notas
+            </span>
+            <span className="shrink-0 text-[13px] text-[#667085]">
+              Release {deck.latest_release}
+            </span>
+            <Link
+              to={`/deck/${deck.deck_id}`}
+              className={cn(muriaeSecondaryBtn, 'h-[36px] shrink-0 px-3.5')}
+            >
+              Abrir
+            </Link>
           </article>
         ))}
       </div>
@@ -822,7 +1118,7 @@ export function AdminSuggestionsPage() {
         {
           method: 'POST',
           body: JSON.stringify({
-            description: `SugestÃ£o aceita: ${suggestion.changeType}`,
+            description: `Sugestão aceita: ${suggestion.changeType}`,
           }),
         },
         token,
@@ -842,13 +1138,13 @@ export function AdminSuggestionsPage() {
       if (deckId) {
         queryClient.invalidateQueries({ queryKey: ['deck', deckId] })
       }
-      setSuccess('SugestÃ£o convertida e publicada.')
+      setSuccess('Sugestão convertida e publicada.')
     },
     onError: (mutationError) => {
       setError(
         mutationError instanceof Error
           ? mutationError.message
-          : 'Falha ao processar a sugestÃ£o.',
+          : 'Falha ao processar a sugestão.',
       )
     },
   })
@@ -861,62 +1157,91 @@ export function AdminSuggestionsPage() {
       return suggestion.id
     },
     onSuccess: () => {
-      setSuccess('SugestÃ£o rejeitada.')
+      setSuccess('Sugestão rejeitada.')
     },
     onError: (mutationError) => {
       setError(
         mutationError instanceof Error
           ? mutationError.message
-          : 'Falha ao rejeitar a sugestÃ£o.',
+          : 'Falha ao rejeitar a sugestão.',
       )
     },
   })
 
   return (
-    <div className="ac-page ac-admin-page">
-      <header className="ac-hero">
-        <span className="ac-eyebrow">Curadoria</span>
-        <h1>SugestÃµes dos Estudantes</h1>
-        <p>Revise propostas enviadas a partir das notas sem editar conteÃºdo publicado diretamente.</p>
-      </header>
-      {error && <div className="ac-warning-box">{error}</div>}
-      {success && <div className="ac-success-box">{success}</div>}
-      <div className="ac-suggestion-list">
+    <div className="ac-page ac-page-muriae">
+      <ExploreHero
+        eyebrow="Curadoria"
+        title="Sugestões dos estudantes"
+        description="Revise propostas enviadas a partir das notas sem editar conteúdo publicado diretamente."
+      />
+
+      <div className="mt-8 flex flex-col gap-2.5">
+        {error && (
+          <div className="flex items-center gap-2 rounded-[8px] border border-[#fecaca] bg-[#fef2f2] px-3.5 py-2.5 text-[13px] font-medium text-[#b42318]">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="flex items-center gap-2 rounded-[8px] border border-[#abefc6] bg-[#ecfdf3] px-3.5 py-2.5 text-[13px] font-medium text-[#15803d]">
+            <Check size={16} weight="bold" />
+            {success}
+          </div>
+        )}
+
         {suggestions.map((suggestion) => (
-          <article key={suggestion.id}>
-            <header>
-              <strong>{suggestion.publicId}</strong>
-              <span>{suggestion.changeType}</span>
+          <article key={suggestion.id} className={cn(muriaeSurface, 'flex flex-col gap-2.5 p-4')}>
+            <header className="flex flex-wrap items-center gap-2">
+              <strong className="font-mono text-[14px] font-semibold text-[#1f2430]">
+                {suggestion.publicId}
+              </strong>
+              <Badge className="rounded-[5px] border-[#e4e1da] bg-[#f6f5f2] px-2 py-0.5 text-[11px] font-medium text-[#667085]">
+                {suggestion.changeType}
+              </Badge>
               <StatusBadge value={suggestion.status} />
               {suggestion.resultingCardVersionId && (
-                <span>v {suggestion.resultingCardVersionId.slice(0, 8)}</span>
+                <span className="text-[12px] text-[#98a2b3]">
+                  v {suggestion.resultingCardVersionId.slice(0, 8)}
+                </span>
               )}
             </header>
-            <p>{suggestion.message || 'Sem comentÃ¡rio adicional.'}</p>
-            <footer>
-              <small>{formatDate(suggestion.createdAt)}</small>
-              <button
-                type="button"
-                disabled={suggestion.status !== 'pending'}
-                onClick={() => convertSuggestion.mutate(suggestion)}
-              >
-                Converter em nova versÃ£o
-              </button>
-              <button
-                type="button"
-                disabled={suggestion.status !== 'pending'}
-                onClick={() => rejectSuggestion.mutate(suggestion)}
-              >
-                Rejeitar
-              </button>
+            <p className="text-[13.5px] leading-[1.55] text-[#667085]">
+              {suggestion.message || 'Sem comentário adicional.'}
+            </p>
+            <footer className="flex flex-wrap items-center gap-3">
+              <small className="text-[12px] text-[#98a2b3]">
+                {formatDate(suggestion.createdAt)}
+              </small>
+              <div className="ml-auto flex gap-2">
+                <button
+                  type="button"
+                  disabled={suggestion.status !== 'pending'}
+                  onClick={() => convertSuggestion.mutate(suggestion)}
+                  className="inline-flex h-[34px] items-center rounded-[6px] bg-[#231651] px-3 text-[12.5px] font-semibold text-white transition-colors hover:bg-[#1a1040] disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Converter em nova versão
+                </button>
+                <button
+                  type="button"
+                  disabled={suggestion.status !== 'pending'}
+                  onClick={() => rejectSuggestion.mutate(suggestion)}
+                  className="inline-flex h-[34px] items-center rounded-[6px] border border-[#e4e1da] bg-white px-3 text-[12.5px] font-semibold text-[#1f2430] transition-colors hover:bg-[#fbfaf8] disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Rejeitar
+                </button>
+              </div>
             </footer>
           </article>
         ))}
         {!suggestions.length && (
-          <EmptyPanel
-            title="Nenhuma sugestÃ£o pendente"
-            description="As sugestÃµes criadas no modal da nota aparecerÃ£o aqui."
-          />
+          <section className="flex flex-col items-start gap-2 rounded-[10px] border border-dashed border-[#e4e1da] bg-white p-8">
+            <strong className="text-[16px] font-semibold text-[#1f2430]">
+              Nenhuma sugestão pendente
+            </strong>
+            <p className="text-[14px] text-[#667085]">
+              As sugestões criadas no modal da nota aparecerão aqui.
+            </p>
+          </section>
         )}
       </div>
     </div>
@@ -924,32 +1249,40 @@ export function AdminSuggestionsPage() {
 }
 
 export function CommunityFuturePage() {
+  const features = [
+    {
+      icon: <MessageSquare size={20} />,
+      title: 'Discussões por nota',
+      desc: 'Comentários colaborativos conectados ao public_id da nota.',
+    },
+    {
+      icon: <Lightbulb size={20} />,
+      title: 'Dicas e mnemônicos',
+      desc: 'Conteúdo social separado do cartão oficial e moderado pela plataforma.',
+    },
+    {
+      icon: <Sparkles size={20} />,
+      title: 'Sugestões para curadoria',
+      desc: 'Correções relevantes podem virar reports e novas versões.',
+    },
+  ]
   return (
-    <div className="ac-page">
-      <section className="ac-community-hero">
-        <span className="ac-eyebrow">Community futura</span>
-        <h1>Comunidade Anki Concursos</h1>
-        <p>
-          EspaÃ§o planejado para comentÃ¡rios, dicas, mnemÃ´nicos e sugestÃµes pÃºblicas por
-          baralho e por nota.
-        </p>
-      </section>
-      <section className="ac-community-grid">
-        <article>
-          <MessageSquare size={24} />
-          <strong>DiscussÃµes por nota</strong>
-          <p>ComentÃ¡rios colaborativos conectados ao public_id da nota.</p>
-        </article>
-        <article>
-          <Lightbulb size={24} />
-          <strong>Dicas e mnemÃ´nicos</strong>
-          <p>ConteÃºdo social separado do cartÃ£o oficial e moderado pela plataforma.</p>
-        </article>
-        <article>
-          <Sparkles size={24} />
-          <strong>SugestÃµes para curadoria</strong>
-          <p>CorreÃ§Ãµes relevantes podem virar reports e novas versÃµes.</p>
-        </article>
+    <div className="ac-page ac-page-muriae">
+      <ExploreHero
+        eyebrow="Comunidade futura"
+        title="Comunidade Anki Concursos"
+        description="Espaço planejado para comentários, dicas, mnemônicos e sugestões públicas por baralho e por nota."
+      />
+      <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {features.map((feature) => (
+          <article key={feature.title} className={cn(muriaeSurface, 'flex flex-col gap-3 p-5')}>
+            <span className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#eeebfa] text-[#231651]">
+              {feature.icon}
+            </span>
+            <strong className="text-[15px] font-semibold text-[#1f2430]">{feature.title}</strong>
+            <p className="text-[13.5px] leading-[1.55] text-[#667085]">{feature.desc}</p>
+          </article>
+        ))}
       </section>
     </div>
   )
@@ -977,21 +1310,21 @@ const suggestionHistorySeed: DeckSuggestionHistory[] = [
     noteId: 'note-1',
     publicId: 'AC-CONST-0001',
     userName: 'Camila Ribeiro',
-    originalField: 'Habeas corpus protege a liberdade de locomoÃ§Ã£o.',
+    originalField: 'Habeas corpus protege a liberdade de locomoção.',
     suggestedField:
-      'Habeas corpus protege a liberdade de locomoÃ§Ã£o contra coaÃ§Ã£o ilegal.',
+      'Habeas corpus protege a liberdade de locomoção contra coação ilegal.',
     createdAt: '2026-06-16T10:15:00Z',
     discussion: [
       {
         id: 'comment-1',
         author: 'Equipe editorial',
-        body: 'Boa precisÃ£o. MantÃ©m o sentido sem confundir o enunciado original da nota.',
+        body: 'Boa precisão. Mantém o sentido sem confundir o enunciado original da nota.',
         createdAt: '2026-06-16T11:02:00Z',
       },
       {
         id: 'comment-2',
         author: 'Mariana S.',
-        body: 'A formulaÃ§Ã£o ficou mais fiel ao texto legal e continua legÃ­vel no preview.',
+        body: 'A formulação ficou mais fiel ao texto legal e continua legível no preview.',
         createdAt: '2026-06-16T11:26:00Z',
       },
     ],
@@ -1001,14 +1334,14 @@ const suggestionHistorySeed: DeckSuggestionHistory[] = [
     noteId: 'note-2',
     publicId: 'AC-CONST-0002',
     userName: 'Paulo Nogueira',
-    originalField: 'A ConstituiÃ§Ã£o admite habeas corpus.',
-    suggestedField: 'A ConstituiÃ§Ã£o admite habeas corpus para proteger a locomoÃ§Ã£o.',
+    originalField: 'A Constituição admite habeas corpus.',
+    suggestedField: 'A Constituição admite habeas corpus para proteger a locomoção.',
     createdAt: '2026-06-15T16:40:00Z',
     discussion: [
       {
         id: 'comment-3',
         author: 'Revisor',
-        body: 'A sugestÃ£o estÃ¡ correta, mas nÃ£o deve substituir o campo original sem contexto adicional.',
+        body: 'A sugestão está correta, mas não deve substituir o campo original sem contexto adicional.',
         createdAt: '2026-06-15T17:05:00Z',
       },
     ],
@@ -1043,7 +1376,7 @@ export function CommunitySuggestionHistoryPage() {
           ...item.discussion,
           {
             id: crypto.randomUUID(),
-            author: 'VocÃª',
+            author: 'Você',
             body: draftComment.trim(),
             createdAt: new Date().toISOString(),
           },
@@ -1067,120 +1400,160 @@ export function CommunitySuggestionHistoryPage() {
   if (!deck) {
     return (
       <EmptyState
-        title="Deck nÃ£o encontrado"
-        description="Volte para a lista de decks e abra novamente a Ã¡rea de sugestÃµes."
+        title="Deck não encontrado"
+        description="Volte para a lista de decks e abra novamente a área de sugestões."
       />
     )
   }
 
   return (
-    <div className="ac-page ac-suggestion-history-page">
-      <header className="ac-suggestion-history-hero">
-        <div>
-          <span className="ac-eyebrow">Comunidade do deck</span>
-          <h1>HistÃ³rico de mudanÃ§as e discussÃ£o</h1>
-          <p>
-            {deck.name} Â· acompanhe a nota original, a proposta do usuÃ¡rio, o ID da nota e a conversa editorial
-            sem perder o contexto da sugestÃ£o.
-          </p>
-        </div>
-        <Link className="ac-button ac-button-secondary" to={`/deck/${deck.deck_id}`}>
-          <ArrowRight size={17} />
+    <div className="ac-page ac-page-muriae">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <ExploreHero
+          eyebrow="Comunidade do deck"
+          title="Histórico de mudanças e discussão"
+          description={`${deck.name} · acompanhe a nota original, a proposta do usuário, o ID da nota e a conversa editorial sem perder o contexto da sugestão.`}
+        />
+        <Link to={`/deck/${deck.deck_id}`} className={cn(muriaeSecondaryBtn, 'shrink-0')}>
+          <ArrowLeft size={16} />
           Voltar ao deck
         </Link>
-      </header>
+      </div>
 
       {!visibleHistory.length ? (
-        <EmptyState
-          title="Nenhuma sugestÃ£o registrada"
-          description="As mudanÃ§as da comunidade aparecerÃ£o aqui assim que forem criadas."
-        />
+        <div className="mt-8">
+          <EmptyState
+            title="Nenhuma sugestão registrada"
+            description="As mudanças da comunidade aparecerão aqui assim que forem criadas."
+          />
+        </div>
       ) : (
-        <section className="ac-suggestion-history-layout">
-          <aside className="ac-suggestion-history-list" aria-label="HistÃ³rico de sugestÃµes">
+        <section className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="flex flex-col gap-2" aria-label="Histórico de sugestões">
             {visibleHistory.map((item) => {
               const active = item.id === selectedSuggestion?.id
               return (
                 <button
                   key={item.id}
                   type="button"
-                  className={active ? 'active' : ''}
                   onClick={() => setSelectedSuggestionId(item.id)}
+                  className={cn(
+                    'flex flex-col gap-0.5 rounded-[8px] border px-4 py-3 text-left transition-colors',
+                    active
+                      ? 'border-[#231651] bg-[#f3f1fb]'
+                      : 'border-[#e4e1da] bg-white hover:border-[#d4d0c7]',
+                  )}
                 >
-                  <span>Nota {item.noteId}</span>
-                  <strong>{item.publicId}</strong>
-                  <small>Por {item.userName}</small>
+                  <span className="text-[11px] text-[#98a2b3]">Nota {item.noteId}</span>
+                  <strong className="font-mono text-[13px] font-semibold text-[#1f2430]">
+                    {item.publicId}
+                  </strong>
+                  <small className="text-[12px] text-[#667085]">Por {item.userName}</small>
                 </button>
               )
             })}
           </aside>
 
           {selectedSuggestion && (
-            <main className="ac-suggestion-history-detail">
-              <section className="ac-suggestion-history-card">
-                <div className="ac-suggestion-history-card-header">
+            <main className="flex min-w-0 flex-col gap-5">
+              <section className={cn(muriaeSurface, 'p-5')}>
+                <div className="flex items-start justify-between gap-4">
                   <div>
-                    <span className="ac-eyebrow">SugestÃ£o selecionada</span>
-                    <h2>{selectedSuggestion.publicId}</h2>
+                    <span className={muriaeEyebrow}>Sugestão selecionada</span>
+                    <h2 className="mt-1.5 font-dm-serif text-[20px] font-normal text-[#1f2430]">
+                      {selectedSuggestion.publicId}
+                    </h2>
                   </div>
                   <StatusBadge value="published" />
                 </div>
-                <dl className="ac-suggestion-metadata">
+                <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div>
-                    <dt>ID da nota</dt>
-                    <dd>{selectedSuggestion.noteId}</dd>
+                    <dt className="text-[11px] uppercase tracking-[0.06em] text-[#98a2b3]">
+                      ID da nota
+                    </dt>
+                    <dd className="mt-0.5 text-[13.5px] text-[#1f2430]">
+                      {selectedSuggestion.noteId}
+                    </dd>
                   </div>
                   <div>
-                    <dt>UsuÃ¡rio</dt>
-                    <dd>{selectedSuggestion.userName}</dd>
+                    <dt className="text-[11px] uppercase tracking-[0.06em] text-[#98a2b3]">
+                      Usuário
+                    </dt>
+                    <dd className="mt-0.5 text-[13.5px] text-[#1f2430]">
+                      {selectedSuggestion.userName}
+                    </dd>
                   </div>
                   <div>
-                    <dt>Criada em</dt>
-                    <dd>{formatDate(selectedSuggestion.createdAt)}</dd>
+                    <dt className="text-[11px] uppercase tracking-[0.06em] text-[#98a2b3]">
+                      Criada em
+                    </dt>
+                    <dd className="mt-0.5 text-[13.5px] text-[#1f2430]">
+                      {formatDate(selectedSuggestion.createdAt)}
+                    </dd>
                   </div>
                 </dl>
-                <div className="ac-suggestion-comparison">
-                  <article>
-                    <span>Campo original</span>
-                    <p>{selectedSuggestion.originalField}</p>
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <article className="rounded-[8px] border border-[#e4e1da] bg-[#fafaf8] p-4">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#98a2b3]">
+                      Campo original
+                    </span>
+                    <p className="mt-1.5 text-[14px] leading-[1.55] text-[#1f2430]">
+                      {selectedSuggestion.originalField}
+                    </p>
                   </article>
-                  <article>
-                    <span>Novo campo sugerido</span>
-                    <p>{selectedSuggestion.suggestedField}</p>
+                  <article className="rounded-[8px] border border-[#abefc6] bg-[#ecfdf3] p-4">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#15803d]">
+                      Novo campo sugerido
+                    </span>
+                    <p className="mt-1.5 text-[14px] leading-[1.55] text-[#1f2430]">
+                      {selectedSuggestion.suggestedField}
+                    </p>
                   </article>
                 </div>
               </section>
 
-              <section className="ac-discussion-panel">
-                <div className="section-heading">
-                  <div>
-                    <p className="eyebrow">DiscussÃ£o</p>
-                    <h2>Conversa editorial</h2>
-                  </div>
+              <section className={cn(muriaeSurface, 'p-5')}>
+                <div>
+                  <span className={muriaeEyebrow}>Discussão</span>
+                  <h2 className="mt-1.5 font-dm-serif text-[20px] font-normal text-[#1f2430]">
+                    Conversa editorial
+                  </h2>
                 </div>
-                <div className="ac-discussion-list">
+                <div className="mt-4 flex flex-col gap-2.5">
                   {selectedSuggestion.discussion.map((comment) => (
-                    <article key={comment.id}>
-                      <header>
-                        <strong>{comment.author}</strong>
-                        <small>{formatDate(comment.createdAt)}</small>
+                    <article
+                      key={comment.id}
+                      className="rounded-[8px] border border-[#e4e1da] bg-[#fafaf8] p-3.5"
+                    >
+                      <header className="flex items-center justify-between gap-2">
+                        <strong className="text-[13px] font-semibold text-[#1f2430]">
+                          {comment.author}
+                        </strong>
+                        <small className="text-[11px] text-[#98a2b3]">
+                          {formatDate(comment.createdAt)}
+                        </small>
                       </header>
-                      <p>{comment.body}</p>
+                      <p className="mt-1.5 text-[13px] leading-[1.55] text-[#475467]">
+                        {comment.body}
+                      </p>
                     </article>
                   ))}
                 </div>
-                <label className="ac-discussion-form">
-                  <span>Adicionar comentÃ¡rio</span>
+                <label className="mt-4 flex flex-col gap-1.5">
+                  <span className="text-[13px] font-semibold text-[#1f2430]">
+                    Adicionar comentário
+                  </span>
                   <textarea
                     rows={4}
                     value={draftComment}
                     onChange={(event) => setDraftComment(event.target.value)}
-                    placeholder="Registre uma observaÃ§Ã£o sobre esta sugestÃ£o."
+                    placeholder="Registre uma observação sobre esta sugestão."
+                    className="w-full rounded-[6px] border border-[#e4e1da] bg-white px-3 py-2 text-[14px] leading-[1.5] text-[#1f2430] outline-none transition-colors placeholder:text-[#98a2b3] focus:border-[#231651]"
                   />
                 </label>
-                <button className="ac-button ac-button-primary" type="button" onClick={addComment}>
-                  <MessageSquare size={17} />
-                  Publicar comentÃ¡rio
+                <button type="button" onClick={addComment} className={cn(muriaePrimaryBtn, 'mt-3')}>
+                  <MessageSquare size={16} />
+                  Publicar comentário
                 </button>
               </section>
             </main>
@@ -1220,7 +1593,7 @@ function buildVersionPayload(suggestion: StudentSuggestion) {
 
   if (!front_text || !back_text || !answer_text || !explanation_text) {
     throw new Error(
-      'A sugestÃ£o nÃ£o contÃ©m campos suficientes para criar uma nova versÃ£o.',
+      'A sugestão não contém campos suficientes para criar uma nova versão.',
     )
   }
 
@@ -1231,31 +1604,6 @@ function buildVersionPayload(suggestion: StudentSuggestion) {
     explanation_text,
     change_reason,
   }
-}
-
-function DeckCard({ deck }: { deck: SubscribableDeck }) {
-  return (
-    <article className={`ac-deck-card ${deck.subscribed ? 'ac-deck-card-active' : ''}`}>
-      <div className="ac-deck-card-header">
-        <BookOpen size={24} />
-        <h2>{deck.name}</h2>
-        {deck.subscribed && <span>Inscrito</span>}
-      </div>
-      <p>{deck.description || 'Baralho publicado na plataforma.'}</p>
-      <div className="ac-deck-meta">
-        <span>{deck.active_card_count} notas</span>
-        <span>Ãšltima atualizaÃ§Ã£o: {formatDate(deck.updated_at)}</span>
-      </div>
-      {deck.subscribed ? (
-        <Link className="ac-button ac-button-primary" to={`/deck/${deck.deck_id}`}>
-          Abrir baralho
-          <ArrowRight size={18} />
-        </Link>
-      ) : (
-        <SubscriptionButton deck={deck} />
-      )}
-    </article>
-  )
 }
 
 function SubscriptionButton({ deck }: { deck: SubscribableDeck }) {
@@ -1282,28 +1630,29 @@ function SubscriptionButton({ deck }: { deck: SubscribableDeck }) {
 
   if (deck.subscribed) {
     return (
-      <button
-        className="ac-button ac-button-secondary"
+      <Button
         type="button"
+        variant="outline"
         disabled={unsubscribeMutation.isPending}
         onClick={() => unsubscribeMutation.mutate()}
+        className="h-[42px] gap-2 rounded-[6px] border-[#abefc6] bg-[#ecfdf3] px-4 text-[13.5px] font-semibold text-[#15803d] hover:bg-[#d7f7e3]"
       >
-        <Check size={18} className="text-secondary" />
-        Desinscrever
-      </button>
+        <Check size={16} weight="bold" />
+        Inscrito
+      </Button>
     )
   }
 
   return (
-    <button
-      className="ac-button ac-button-primary"
+    <Button
       type="button"
       disabled={subscribeMutation.isPending}
       onClick={() => subscribeMutation.mutate()}
+      className="h-[42px] gap-2 rounded-[6px] bg-[#231651] px-4 text-[13.5px] font-semibold text-white hover:bg-[#1a1040]"
     >
-      <Plus size={18} />
+      <Plus size={16} />
       Inscrever-se
-    </button>
+    </Button>
   )
 }
 
@@ -1314,33 +1663,42 @@ function SegmentedFilter({
   value: DeckFilter
   onChange: (value: DeckFilter) => void
 }) {
+  const options: Array<[DeckFilter, string]> = [
+    ['all', 'Todos'],
+    ['subscribed', 'Inscritos'],
+    ['available', 'Disponíveis'],
+  ]
   return (
-    <div className="ac-segmented">
-      {[
-        ['all', 'Todos'],
-        ['subscribed', 'Inscritos'],
-        ['available', 'DisponÃ­veis'],
-      ].map(([key, label]) => (
-        <button
+    <ToggleGroup
+      type="single"
+      value={value}
+      onValueChange={(next) => next && onChange(next as DeckFilter)}
+      className="h-[42px] items-center gap-0.5 rounded-[6px] border border-[#e4e1da] bg-white px-[5px]"
+    >
+      {options.map(([key, label]) => (
+        <ToggleGroupItem
           key={key}
-          className={value === key ? 'active' : ''}
-          type="button"
-          onClick={() => onChange(key as DeckFilter)}
+          value={key}
+          className="h-[31px] rounded-[4px] px-4 text-[13.5px] font-semibold text-[#667085] hover:bg-transparent hover:text-[#1f2430] data-[state=on]:bg-[#231651] data-[state=on]:text-white"
         >
           {label}
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   )
 }
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <article>
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>
-        <Clock3 size={14} />
+    <article className={cn(muriaeSurface, 'flex flex-col gap-1 p-5')}>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#98a2b3]">
+        {label}
+      </span>
+      <strong className="font-dm-serif text-[30px] font-normal leading-none tabular-nums text-[#1f2430]">
+        {value}
+      </strong>
+      <small className="mt-1 inline-flex items-center gap-1.5 text-[11px] text-[#98a2b3]">
+        <Clock3 size={13} />
         Atualizado agora
       </small>
     </article>
@@ -1376,7 +1734,4 @@ function EmptyPanel({
     </section>
   )
 }
-
-
-
 

@@ -10,7 +10,7 @@ import {
 import { useMemo, useState } from 'react'
 import { API_URL, ApiError, apiRequest } from '../api/client'
 import { useAuth } from '../auth/auth-context'
-import { EmptyState, ErrorState, LoadingState, PageHeader, StatusBadge } from '../components/ui'
+import { EmptyState, ErrorState, LoadingState, PageHeader, StatusBadge } from '../components/ui-primitives'
 import { formatDate } from '../lib/presentation'
 import type {
   AnkiDeckManifest,

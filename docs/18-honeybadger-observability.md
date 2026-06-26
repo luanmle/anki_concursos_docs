@@ -1,4 +1,4 @@
-# Honeybadger no Backend
+
 
 Este projeto integra o Honeybadger apenas no backend FastAPI. A API key deve
 ser fornecida exclusivamente pela variável de ambiente `HONEYBADGER_API_KEY`.

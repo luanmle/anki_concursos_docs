@@ -11,7 +11,7 @@ import {
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError, apiRequest } from '../api/client'
 import { useAuth } from '../auth/auth-context'
-import { ErrorState, LoadingState, PageHeader } from '../components/ui'
+import { ErrorState, LoadingState, PageHeader } from '../components/ui-primitives'
 import type {
   CardDetail,
   CardVersion,

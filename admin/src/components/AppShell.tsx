@@ -2,125 +2,157 @@ import {
   Pulse as Activity,
   BookOpenText as BookOpenCheck,
   CaretDown,
-  WarningCircle as FileWarning,
   Layout,
-  Books,
   SignOut,
   Plug as PlugZap,
   MagnifyingGlass as Search,
-  ShieldCheck,
-  Users,
-  List as Menu,
-  X,
+  UsersThree,
 } from '@phosphor-icons/react'
-import { useState } from 'react'
+import type { CSSProperties } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/auth-context'
 import { translateStatus } from '../lib/presentation'
+import { Avatar, AvatarFallback } from './ui/avatar'
+import { Button } from './ui/button'
+import { Separator } from './ui/separator'
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from './ui/sidebar'
 
 const studentNav = [
   { to: '/', label: 'Explore', icon: Search },
-  { to: '/my-decks', label: 'Meus Baralhos', icon: BookOpenCheck },
-  { to: '/community', label: 'Community', icon: PlugZap },
+  { to: '/my-decks', label: 'Meus baralhos', icon: BookOpenCheck },
+  { to: '/community', label: 'Comunidade', icon: UsersThree },
 ]
 
-export function AppShell() {
+function initials(name?: string) {
+  return (name || 'U').slice(0, 2).toUpperCase()
+}
+
+function ShellNavLink({
+  to,
+  label,
+  icon: Icon,
+  end = false,
+}: {
+  to: string
+  label: string
+  icon: typeof Search
+  end?: boolean
+}) {
+  const { setOpenMobile } = useSidebar()
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild className="muriae-sidebar-link">
+        <NavLink
+          to={to}
+          end={end}
+          onClick={() => setOpenMobile(false)}
+        >
+          <Icon size={19} aria-hidden="true" />
+          <span>{label}</span>
+        </NavLink>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  )
+}
+
+function AppShellLayout() {
   const { user, logout, hasRole } = useAuth()
-  const [open, setOpen] = useState(false)
   const environment = (
     window.__APP_CONFIG__?.APP_ENV ||
     import.meta.env.VITE_APP_ENV ||
     'STAGING'
   ).toUpperCase()
-  const nav = [
-    ...studentNav,
+  const teamNav = [
     ...(hasRole('admin', 'curator', 'reviewer')
-      ? [{ to: '/admin', label: 'Administracao', icon: Layout }]
+      ? [{ to: '/admin', label: 'Administração', icon: Layout }]
       : []),
-    ...(hasRole('admin', 'curator')
-      ? [{ to: '/admin/decks', label: 'Gerenciar Baralhos', icon: Books }]
-      : []),
-    ...(hasRole('admin', 'reviewer')
-      ? [{ to: '/admin/suggestions', label: 'Sugestoes', icon: FileWarning }]
-      : []),
-    ...(hasRole('admin', 'curator')
-      ? [{ to: '/cards', label: 'Cartoes internos', icon: Books }]
-      : []),
-    ...(hasRole('admin', 'curator')
-      ? [{ to: '/decks', label: 'Decks internos', icon: BookOpenCheck }]
-      : []),
-    ...(hasRole('admin', 'reviewer')
-      ? [{ to: '/reports', label: 'Reports', icon: FileWarning }]
-      : []),
-    ...(hasRole('admin')
-      ? [{ to: '/users', label: 'Usuarios', icon: Users }]
-      : []),
-    { to: '/addon', label: 'Add-on', icon: PlugZap },
-    { to: '/operation', label: 'Operacao', icon: Activity },
+    { to: '/addon', label: 'Add-on do Anki', icon: PlugZap },
+    { to: '/operation', label: 'Operação', icon: Activity },
   ]
 
   return (
-    <div className="app-shell">
-      <button
-        className="mobile-menu-button"
-        type="button"
-        aria-label="Abrir navegacao"
-        onClick={() => setOpen(true)}
-      >
-        <Menu size={22} />
-      </button>
-      {open && (
-        <button
-          className="sidebar-backdrop"
-          type="button"
-          aria-label="Fechar navegacao"
-          onClick={() => setOpen(false)}
-        />
-      )}
-      <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
-        <div className="brand">
-          <div className="brand-mark">
-            <ShieldCheck size={19} />
+    <>
+      <Sidebar collapsible="offcanvas" className="muriae-sidebar-container">
+        <SidebarHeader className="muriae-sidebar-header">
+          <div className="muriae-brand-mark" aria-hidden="true">
+            <span />
           </div>
-          <div>
-            <strong>Anki Concursos</strong>
-            <span>Web Interface</span>
+          <div className="muriae-brand-name">
+            <strong>Muriae</strong>
+            <span>concursos</span>
           </div>
-          <button
-            className="sidebar-close"
-            type="button"
-            aria-label="Fechar navegacao"
-            onClick={() => setOpen(false)}
-          >
-            <X size={20} />
-          </button>
-        </div>
-        <nav className="sidebar-nav" aria-label="Navegacao principal">
-          {nav.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              onClick={() => setOpen(false)}
+        </SidebarHeader>
+        <SidebarContent className="muriae-sidebar-content">
+          <SidebarGroup className="muriae-sidebar-group">
+            <SidebarGroupContent>
+              <SidebarMenu className="muriae-sidebar-menu">
+                {studentNav.map((item) => (
+                  <ShellNavLink key={item.to} {...item} end={item.to === '/'} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          <SidebarGroup className="muriae-sidebar-group muriae-team-group">
+            <SidebarGroupLabel className="muriae-sidebar-label">
+              Equipe
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="muriae-sidebar-menu">
+                {teamNav.map((item) => (
+                  <ShellNavLink key={item.to} {...item} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        <SidebarFooter className="muriae-sidebar-footer">
+          <Separator className="muriae-sidebar-footer-line" />
+          <div className="muriae-sidebar-user-row">
+            <Button
+              type="button"
+              variant="ghost"
+              className="muriae-sidebar-user"
+              aria-label="Abrir configurações"
             >
-              <Icon size={19} aria-hidden="true" />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-        <div className="sidebar-user">
-          <div className="avatar">{user?.display_name.slice(0, 2).toUpperCase()}</div>
-          <div>
-            <strong>{user?.display_name}</strong>
-            <span>{user && translateStatus(user.role)}</span>
+              <Avatar className="muriae-avatar">
+                <AvatarFallback>{initials(user?.display_name)}</AvatarFallback>
+              </Avatar>
+              <span className="muriae-user-copy">
+                <strong>{user?.display_name}</strong>
+                <span>{user && translateStatus(user.role)}</span>
+              </span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="muriae-sidebar-logout"
+              aria-label="Sair"
+              onClick={logout}
+            >
+              <SignOut size={18} />
+            </Button>
           </div>
-          <button type="button" aria-label="Sair" onClick={logout}>
-            <SignOut size={18} />
-          </button>
-        </div>
-      </aside>
-      <div className="content-frame">
+        </SidebarFooter>
+      </Sidebar>
+      <div className="content-frame muriae-content-frame">
         <header className="topbar">
+          <SidebarTrigger className="mobile-menu-button" aria-label="Abrir navegação" />
           <div className="topbar-context">
             <span className={`environment-badge environment-${environment.toLowerCase()}`}>
               {environment}
@@ -135,7 +167,7 @@ export function AppShell() {
               <strong>{user?.display_name}</strong>
               <span>{user && translateStatus(user.role)}</span>
             </div>
-            <div className="avatar">{user?.display_name.slice(0, 2).toUpperCase()}</div>
+            <div className="avatar">{initials(user?.display_name)}</div>
             <CaretDown size={15} aria-hidden="true" />
           </div>
         </header>
@@ -143,6 +175,19 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
-    </div>
+    </>
+  )
+}
+
+export function AppShell() {
+  return (
+    <SidebarProvider
+      className="app-shell"
+      style={{
+        '--sidebar-width': '264px',
+      } as CSSProperties}
+    >
+      <AppShellLayout />
+    </SidebarProvider>
   )
 }
