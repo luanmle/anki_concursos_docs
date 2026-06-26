@@ -23,6 +23,7 @@ from app.schemas.cards import (
 from app.schemas.decks import (
     AddonStatusResponse,
     AnkiDeckManifestResponse,
+    AnkiDeckStateResponse,
     AnkiDeckSyncResponse,
     AnkiDeckTemplateSyncResponse,
     AnkiDeckTemplateVersionResponse,
@@ -72,6 +73,7 @@ __all__ = [
     "PublicCardResponse",
     "AddonStatusResponse",
     "AnkiDeckManifestResponse",
+    "AnkiDeckStateResponse",
     "AnkiDeckSyncResponse",
     "AnkiDeckTemplateSyncResponse",
     "AnkiDeckTemplateVersionResponse",

@@ -10,6 +10,7 @@ from app.models import User
 from app.repositories import DeckRepository
 from app.schemas import (
     AnkiDeckManifestResponse,
+    AnkiDeckStateResponse,
     AnkiDeckSyncResponse,
     AnkiDeckTemplateSyncResponse,
 )
@@ -56,6 +57,7 @@ def sync_anki_deck(
     since_release: int = Query(default=0, ge=0),
     page: int | None = Query(default=None, ge=1),
     page_size: int | None = Query(default=None, ge=1, le=1000),
+    to_release: int | None = Query(default=None, ge=0),
     user: User = Depends(require_authenticated_user),
     service: DeckService = Depends(get_deck_service),
     ) -> AnkiDeckSyncResponse:
@@ -65,7 +67,17 @@ def sync_anki_deck(
         since_release=since_release,
         page=page,
         page_size=page_size,
+        to_release=to_release,
     )
+
+
+@router.get("/decks/{deck_id}/state", response_model=AnkiDeckStateResponse)
+def get_anki_deck_state(
+    deck_id: uuid.UUID,
+    user: User = Depends(require_authenticated_user),
+    service: DeckService = Depends(get_deck_service),
+) -> AnkiDeckStateResponse:
+    return service.anki_deck_state(deck_id, user_id=user.id)
 
 
 @router.get(

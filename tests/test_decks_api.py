@@ -653,6 +653,8 @@ def test_subscriber_can_fetch_manifest_and_initial_anki_snapshot(
                 "card_kind": "basic",
                 "note_type": "Anki Concursos Basic",
                 "template_name": None,
+                "native": False,
+                "content_hash": body["changes"][0]["content_hash"],
                 "fields": {
                     "Front": card["current_version"]["front_text"],
                     "Back": card["current_version"]["back_text"],
@@ -811,12 +813,78 @@ def test_addon_sync_returns_cloze_note_type(
         change = sync.json()["changes"][0]
         assert change["card_kind"] == "cloze"
         assert change["note_type"] == "Anki Concursos Cloze"
+        assert change["native"] is False
         assert change["fields"] == {
             "Text": "A Constituicao admite {{c1::habeas corpus}}.",
             "Extra": card["current_version"]["back_text"],
             "Answer": card["current_version"]["answer_text"],
             "Explanation": card["current_version"]["explanation_text"],
         }
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_addon_deck_state_lists_active_cards(
+    session: Session, client: TestClient
+) -> None:
+    discipline, topic = create_taxonomy(session, "Addon State")
+    card = approve_and_publish(
+        client,
+        create_card(client, discipline, topic, "addon-state-card"),
+    )
+    deck = create_deck(client, discipline, "Deck Addon State")
+    assert client.post(
+        f"/decks/{deck['deck_id']}/cards",
+        json={"card_id": card["card_id"]},
+    ).status_code == 200
+    assert client.post(
+        f"/decks/{deck['deck_id']}/publish-release",
+        json={},
+    ).status_code == 201
+
+    bearer_client = create_bearer_client(session)
+    try:
+        assert bearer_client.post(
+            f"/subscriptions/{deck['deck_id']}"
+        ).status_code == 200
+        state = bearer_client.get(f"/addon/decks/{deck['deck_id']}/state")
+        assert state.status_code == 200
+        body = state.json()
+        assert body["latest_release"] == 1
+        assert body["total_active"] == 1
+        assert len(body["cards"]) == 1
+        entry = body["cards"][0]
+        assert entry["card_id"] == card["card_id"]
+        assert entry["public_id"] == card["public_id"]
+        assert isinstance(entry["content_hash"], str) and entry["content_hash"]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_addon_deck_state_requires_active_subscription(
+    session: Session, client: TestClient
+) -> None:
+    discipline, topic = create_taxonomy(session, "Addon State Auth")
+    card = approve_and_publish(
+        client,
+        create_card(client, discipline, topic, "addon-state-auth-card"),
+    )
+    deck = create_deck(client, discipline, "Deck Addon State Auth")
+    assert client.post(
+        f"/decks/{deck['deck_id']}/cards",
+        json={"card_id": card["card_id"]},
+    ).status_code == 200
+    assert client.post(
+        f"/decks/{deck['deck_id']}/publish-release",
+        json={},
+    ).status_code == 201
+
+    bearer_client = create_bearer_client(session)
+    try:
+        # Not subscribed -> forbidden.
+        assert bearer_client.get(
+            f"/addon/decks/{deck['deck_id']}/state"
+        ).status_code == 403
     finally:
         app.dependency_overrides.clear()
 
@@ -1665,6 +1733,8 @@ def test_addon_upload_syncs_native_anki_fields_and_template(
     change = sync.json()["changes"][0]
     assert change["note_type"] == "Modelo Personalizado"
     assert change["template_name"] == "Modelo Personalizado"
+    assert change["native"] is True
+    assert isinstance(change["content_hash"], str) and change["content_hash"]
     assert change["fields"] == upload_payload["notes"][0]["fields"]
     assert change["template"]["front_html"] == "<section>{{Enunciado}}</section>"
     assert change["template"]["styling_css"] == ".card { color: #111827; }"
