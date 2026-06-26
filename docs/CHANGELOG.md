@@ -6,6 +6,43 @@ ADRs (decisões de arquitetura): `docs/adr/`.
 
 ---
 
+## 2026-06-26 — Endurecimento do contrato de sincronização addon ↔ backend
+
+**Branch:** `frontend-redesign` (alterações de backend + add-on `addon-anki`, repo separado em `main`)
+**Tipo:** fix + feature
+
+Revisão exaustiva do contrato de sync entre o backend (`app/`) e o add-on do Anki
+(`../addon-anki`). Corrigidos bugs de perda de dados / desync e divergências de
+contrato. Mudanças abrangem os dois repositórios.
+
+### O que mudou — Backend (`app/`)
+- `app/services/decks.py` `anki_sync` — novo parâmetro `to_release` (teto de release). Cliente paginado fixa o teto da página 1 e o repassa nas demais → snapshot estável mesmo com release publicado durante a paginação. `total_changes` agora retornado em toda resposta paginada (antes só quando `page` presente).
+- `app/services/decks.py` `_anki_change_response` — campo `native: bool` no change (True no path de upload nativo com `anki_fields`, False no derivado/CSV) e `content_hash` propagado de `card_version.content_hash`. Fim da inferência native/legacy por formato no cliente.
+- `app/services/decks.py` — extraído `_active_snapshot` (compartilhado por `_anki_snapshot_changes`); novo `anki_deck_state` retorna todos os card_ids ativos no `latest_release` (com `public_id`, `card_version_id`, `content_hash`). Exige assinatura ativa.
+- `app/api/routes/addon.py` — query `to_release` em `/sync`; novo endpoint `GET /addon/decks/{deck_id}/state`.
+- `app/schemas/decks.py` + `__init__.py` — `native`/`content_hash` em `AnkiSyncChangeResponse`; novos `AnkiDeckStateResponse`/`AnkiDeckStateCardResponse`.
+- `tests/test_decks_api.py` — testes de `/state` (lista ativos + content_hash; 403 sem assinatura); asserts `native`/`content_hash` nos testes de sync nativo, legado e snapshot.
+
+### O que mudou — Add-on (`../addon-anki`)
+- `sync/engine.py` — **watermark só avança após fetch completo** (cliente verifica `len(changes) == total_changes`, aborta antes do apply se incompleto). **Isolamento por-deck na fase de fetch**: um baralho com 403/404/rede não aborta os demais. **Version-check defensivo** (`_version_is_outdated`: parse com regex, segmento não-numérico → 0, padding de tuplas) — antes crashava o sync com `int()` em versão tipo `0.1.0b1`. **Mutações da coleção agrupadas em um único undo** (`add_custom_undo_entry`/`merge_undo_entries`, best-effort). **Skip de write no-op** quando `content_hash` local == remoto (evita bump de `mod` → churn no AnkiWeb). **Reconcile de deleções**: suspende cards locais ativos ausentes do `/state` upstream (hard-delete/squash que o delta nunca entregou), com guarda de `to_release == state.latest_release`.
+- `api/client.py` — `sync_deck(to_release=…)` + guarda de completude/drift em `sync_deck_all_pages`; `get_deck_state` (404 → None p/ compat com servidor antigo).
+- `api/models.py` — `native`/`content_hash` no change; dataclasses de state.
+- `services/note_manager.py` — `_apply_fields` não dropa mais campo omitido pelo mapping (aplica resto que casa com campo real da nota).
+- `sync/fields.py` — `field_mapping_for_change` confia na flag `native`; heurística vira só fallback.
+- `storage/database.py` — `get_active_cards_by_deck`.
+- `tests/` — `test_contract.py` (novo: flag native, `_apply_fields`); casos novos em `test_sync.py` (version parse, isolamento de fetch, undo agrupado, skip por hash, reconcile).
+
+### Decisões relevantes
+- **Atomicidade coleção+DB não existe na API do Anki** (ops não são transacionais). Melhor garantia: agrupar num único undo + idempotência por Card ID + watermark só após fetch completo. Não foi inventada API transacional.
+- **Reconcile via endpoint full-state separado**, não tombstones no snapshot (que cresceriam sem limite). Opcional: 404 → reconcile pulado.
+- **Flag `native` como contrato explícito** em vez de heurística de formato; cliente antigo (sem a flag) ainda cai no fallback heurístico.
+- **`note_type_manager.py`/`installer.py`** no add-on têm alterações não commitadas de sessão anterior — fora do escopo desta revisão, não tocados.
+
+### Impacto
+- Sync resiliente: sem gaps de release silenciosos, sem um baralho derrubar os outros, sem crash por string de versão atípica, menos churn no AnkiWeb, e deleções upstream agora refletidas localmente.
+- Endpoint `/addon/decks/{deck_id}/state` disponível para o add-on.
+- Pendência de ambiente: `tests/test_decks_api.py::test_addon_can_upload_full_deck_package_and_publish_release` exige Postgres rodando (falha de conexão pré-existente, não relacionada). Demais: backend 107 passed / 2 skipped; add-on 50 passed.
+
 ## 2026-06-25 — Frontend Muriae validado e ajustes de lint para publicação
 
 **Branch:** `frontend-redesign`

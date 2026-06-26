@@ -182,6 +182,10 @@ class AnkiSyncChangeResponse(BaseModel):
     card_kind: str | None = None
     note_type: str | None = None
     template_name: str | None = None
+    # True when `fields` carry the original Anki field names (native upload),
+    # so the client must NOT apply the legacy canonical field_mapping.
+    native: bool = False
+    content_hash: str | None = None
     fields: dict[str, str] | None = None
     template: dict[str, Any] | None = None
     source_note_id: str | None = None
@@ -199,6 +203,20 @@ class AnkiDeckSyncResponse(BaseModel):
     page: int | None = None
     pages: int | None = None
     total_changes: int | None = None
+
+
+class AnkiDeckStateCardResponse(BaseModel):
+    card_id: uuid.UUID
+    public_id: str
+    card_version_id: uuid.UUID
+    content_hash: str | None = None
+
+
+class AnkiDeckStateResponse(BaseModel):
+    deck_id: uuid.UUID
+    latest_release: int
+    total_active: int
+    cards: list[AnkiDeckStateCardResponse]
 
 
 class AnkiDeckTemplateVersionResponse(BaseModel):

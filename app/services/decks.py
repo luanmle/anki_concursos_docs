@@ -44,6 +44,8 @@ from app.schemas import (
 )
 from app.schemas.decks import (
     AnkiDeckManifestResponse,
+    AnkiDeckStateCardResponse,
+    AnkiDeckStateResponse,
     AnkiDeckSyncResponse,
     AnkiDeckTemplateSyncResponse,
     AnkiDeckTemplateVersionResponse,
@@ -391,6 +393,7 @@ class DeckService:
         since_release: int,
         page: int | None = None,
         page_size: int | None = None,
+        to_release: int | None = None,
     ) -> AnkiDeckSyncResponse:
         try:
             self._require_active_subscription(user_id, deck_id)
@@ -403,11 +406,25 @@ class DeckService:
                     detail="Release number not found in this deck",
                 )
 
+            # `to_release` pins the ceiling so a paginated client sees a stable
+            # snapshot even if new releases are published mid-pagination.
+            if to_release is None:
+                target_release = latest_release
+            else:
+                if to_release > 0 and not self.repository.release_number_exists(
+                    deck_id, to_release
+                ):
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Target release number not found in this deck",
+                    )
+                target_release = to_release
+
             if since_release == 0:
-                changes = self._anki_snapshot_changes(deck_id, latest_release)
+                changes = self._anki_snapshot_changes(deck_id, target_release)
             else:
                 changes = self._anki_delta_changes(
-                    deck_id, latest_release, since_release
+                    deck_id, target_release, since_release
                 )
 
             total_changes = len(changes)
@@ -422,12 +439,12 @@ class DeckService:
             return AnkiDeckSyncResponse(
                 deck_id=deck_id,
                 from_release=since_release,
-                to_release=latest_release,
+                to_release=target_release,
                 has_changes=total_changes > 0,
                 changes=changes,
                 page=page,
                 pages=pages,
-                total_changes=total_changes if page is not None else None,
+                total_changes=total_changes,
             )
         except Exception as exc:
             notify_exception(
@@ -438,6 +455,7 @@ class DeckService:
                     "since_release": since_release,
                     "page": page,
                     "page_size": page_size,
+                    "to_release": to_release,
                     "user_id": str(user_id),
                 },
                 tags=["addon", "sync"],
@@ -1358,9 +1376,9 @@ class DeckService:
             )
         return subscription
 
-    def _anki_snapshot_changes(
+    def _active_snapshot(
         self, deck_id: uuid.UUID, latest_release: int
-    ) -> list[AnkiSyncChangeResponse]:
+    ) -> dict[uuid.UUID, ReleaseItem]:
         snapshot: dict[uuid.UUID, ReleaseItem] = {}
         for item in self.repository.release_items_through(deck_id, latest_release):
             if item.action in (ReleaseAction.ADDED, ReleaseAction.UPDATED):
@@ -1371,6 +1389,48 @@ class DeckService:
                 snapshot[item.card_id] = item
             else:
                 snapshot.pop(item.card_id, None)
+        return snapshot
+
+    def anki_deck_state(
+        self, deck_id: uuid.UUID, *, user_id: uuid.UUID
+    ) -> AnkiDeckStateResponse:
+        try:
+            self._require_active_subscription(user_id, deck_id)
+            latest_release = self.repository.latest_release_number(deck_id)
+            snapshot = self._active_snapshot(deck_id, latest_release)
+            cards = [
+                AnkiDeckStateCardResponse(
+                    card_id=item.card_id,
+                    public_id=item.card.public_id,
+                    card_version_id=item.card_version.id,
+                    content_hash=item.card_version.content_hash,
+                )
+                for item in sorted(
+                    snapshot.values(), key=lambda value: value.card.public_id
+                )
+            ]
+            return AnkiDeckStateResponse(
+                deck_id=deck_id,
+                latest_release=latest_release,
+                total_active=len(cards),
+                cards=cards,
+            )
+        except Exception as exc:
+            notify_exception(
+                exc,
+                context={
+                    "operation": "anki_deck_state",
+                    "deck_id": str(deck_id),
+                    "user_id": str(user_id),
+                },
+                tags=["addon", "state"],
+            )
+            raise
+
+    def _anki_snapshot_changes(
+        self, deck_id: uuid.UUID, latest_release: int
+    ) -> list[AnkiSyncChangeResponse]:
+        snapshot = self._active_snapshot(deck_id, latest_release)
 
         return [
             self._anki_change_response(
@@ -1426,6 +1486,8 @@ class DeckService:
         card_kind = None
         note_type = None
         template_name = None
+        native = False
+        content_hash = None
         source_note_id = None
         source_note_guid = None
         source_deck_path = None
@@ -1439,14 +1501,19 @@ class DeckService:
             card_kind = item.card.card_kind
             note_type = item.card_version.note_type
             template_name = item.card_version.template_name
+            content_hash = item.card_version.content_hash
             template = item.card_version.anki_template or None
             source_note_id = item.card_version.source_note_id
             source_note_guid = item.card_version.source_note_guid
             source_deck_path = item.card_version.source_deck_path
             if item.card_version.anki_fields:
+                # Native fields keyed by the original Anki field names.
+                native = True
                 fields = dict(item.card_version.anki_fields)
                 tags = list(item.card_version.anki_tags or []) + tags
             else:
+                # Legacy/derived: fields keyed by canonical note-type names,
+                # client applies field_mapping.
                 note_config = self.ANKI_NOTE_TYPES[card_kind]
                 note_type = str(note_config["note_type"])
                 field_mapping = note_config["field_mapping"]
@@ -1467,6 +1534,8 @@ class DeckService:
             card_kind=card_kind.value if card_kind is not None else None,
             note_type=note_type,
             template_name=template_name,
+            native=native,
+            content_hash=content_hash,
             fields=fields,
             template=template,
             source_note_id=source_note_id,
