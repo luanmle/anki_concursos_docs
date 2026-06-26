@@ -189,21 +189,21 @@ export function ExplorePage() {
         <div className="relative min-w-0 flex-1 max-[720px]:basis-full">
           <Search
             size={18}
-            className="pointer-events-none absolute left-[14px] top-1/2 -translate-y-1/2 text-[#98a2b3]"
+            className="pointer-events-none absolute left-[14px] top-1/2 -translate-y-1/2 text-mu-muted-2"
           />
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Buscar baralhos..."
-            className="h-[42px] rounded-[6px] border-[#e4e1da] bg-white pl-[40px] text-[14px] text-[#1f2430] placeholder:text-[#98a2b3] focus-visible:ring-[#231651]/30"
+            className="h-[42px] rounded-[6px] border-mu-border bg-mu-surface pl-[40px] text-[14px] text-mu-text placeholder:text-mu-muted-2 focus-visible:ring-[#231651]/30"
           />
         </div>
 
         <SegmentedFilter value={filter} onChange={setFilter} />
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex h-[42px] items-center gap-2 whitespace-nowrap rounded-[6px] border border-[#e4e1da] bg-white px-4 text-[13.5px] font-semibold text-[#1f2430] outline-none transition-colors hover:border-[#d4d0c7] hover:bg-[#fbfaf8]">
-            <SlidersHorizontal size={16} className="text-[#667085]" />
+          <DropdownMenuTrigger className="inline-flex h-[42px] items-center gap-2 whitespace-nowrap rounded-[6px] border border-mu-border bg-mu-surface px-4 text-[13.5px] font-semibold text-mu-text outline-none transition-colors hover:border-mu-border-hover hover:bg-mu-surface-2">
+            <SlidersHorizontal size={16} className="text-mu-muted" />
             {SORT_LABELS[sort]}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -220,7 +220,7 @@ export function ExplorePage() {
       </div>
 
       {!decksQuery.isLoading && (
-        <p className="mt-[18px] mb-4 text-[13px] font-medium text-[#667085]">
+        <p className="mt-[18px] mb-4 text-[13px] font-medium text-mu-muted">
           {visibleDecks.length} {visibleDecks.length === 1 ? 'baralho' : 'baralhos'}
         </p>
       )}
@@ -264,11 +264,11 @@ export function MyDecksPage() {
           ))}
         </section>
       ) : (
-        <section className="mt-8 flex flex-col items-start gap-3 rounded-[10px] border border-dashed border-[#e4e1da] bg-white p-8">
-          <strong className="text-[16px] font-semibold text-[#1f2430]">
+        <section className="mt-8 flex flex-col items-start gap-3 rounded-[10px] border border-dashed border-mu-border bg-mu-surface p-8">
+          <strong className="text-[16px] font-semibold text-mu-text">
             Você ainda não está inscrito em baralhos
           </strong>
-          <p className="max-w-[420px] text-[14px] leading-[1.55] text-[#667085]">
+          <p className="max-w-[420px] text-[14px] leading-[1.55] text-mu-muted">
             Explore os baralhos disponíveis e inscreva-se para sincronizar pelo add-on.
           </p>
           <Button
@@ -280,15 +280,15 @@ export function MyDecksPage() {
         </section>
       )}
 
-      <section className="mt-6 flex items-start gap-3.5 rounded-[10px] border border-[#e4e1da] bg-white p-5">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[#eeebfa] text-[#231651]">
+      <section className="mt-6 flex items-start gap-3.5 rounded-[10px] border border-mu-border bg-mu-surface p-5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-mu-brand-bg text-mu-brand">
           <BookOpen size={20} />
         </span>
         <div>
-          <strong className="block text-[15px] font-semibold text-[#1f2430]">
+          <strong className="block text-[15px] font-semibold text-mu-text">
             Sincronização com o Anki
           </strong>
-          <p className="mt-1 text-[13.5px] leading-[1.55] text-[#667085]">
+          <p className="mt-1 text-[13.5px] leading-[1.55] text-mu-muted">
             O add-on usa suas inscrições para baixar manifestos, notas e releases incrementais.
           </p>
         </div>
@@ -323,30 +323,30 @@ export function DeckPage() {
 
   const category = deckCategory(deck)
   const secondaryButton =
-    'h-[42px] gap-2 rounded-[6px] border-[#e4e1da] bg-white px-4 text-[13.5px] font-semibold text-[#1f2430] hover:border-[#d4d0c7] hover:bg-[#fbfaf8]'
+    'h-[42px] gap-2 rounded-[6px] border-mu-border bg-mu-surface px-4 text-[13.5px] font-semibold text-mu-text hover:border-mu-border-hover hover:bg-mu-surface-2'
 
   return (
     <div className="ac-page ac-page-muriae">
       <Link
         to="/"
-        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#667085] transition-colors hover:text-[#1f2430]"
+        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-mu-muted transition-colors hover:text-mu-text"
       >
         <ArrowLeft size={16} />
         Voltar ao Explore
       </Link>
 
-      <section className="mt-5 flex flex-col gap-6 border-b border-[#e4e1da] pb-8 lg:flex-row lg:items-start lg:justify-between">
+      <section className="mt-5 flex flex-col gap-6 border-b border-mu-border pb-8 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#231651]">
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-mu-brand">
             Baralho
           </span>
-          <h1 className="mt-2 font-dm-serif text-[34px] font-normal leading-[1.1] tracking-[-0.01em] text-[#1f2430]">
+          <h1 className="mt-2 font-dm-serif text-[34px] font-normal leading-[1.1] tracking-[-0.01em] text-mu-text">
             {deck.name}
           </h1>
-          <p className="mt-3 max-w-[640px] text-[15px] leading-[1.6] text-[#667085]">
+          <p className="mt-3 max-w-[640px] text-[15px] leading-[1.6] text-mu-muted">
             {deck.description || 'Deck publicado na plataforma Anki Concursos.'}
           </p>
-          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-[#667085]">
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-mu-muted">
             <Badge
               className={cn(
                 'rounded-[5px] border px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em]',
@@ -356,11 +356,11 @@ export function DeckPage() {
               {CATEGORY[category].label}
             </Badge>
             <span className="inline-flex items-center gap-1.5">
-              <Stack size={14} className="text-[#98a2b3]" />
+              <Stack size={14} className="text-mu-muted-2" />
               {deck.active_card_count.toLocaleString('pt-BR')} notas
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <ArrowClockwise size={14} className="text-[#98a2b3]" />
+              <ArrowClockwise size={14} className="text-mu-muted-2" />
               Versão {deck.latest_release}
             </span>
             <span>Atualizado {formatDeckDate(deck.updated_at)}</span>
@@ -382,7 +382,7 @@ export function DeckPage() {
           <Button
             asChild
             variant="ghost"
-            className="h-[42px] px-3 text-[13.5px] font-semibold text-[#667085] hover:bg-transparent hover:text-[#231651]"
+            className="h-[42px] px-3 text-[13.5px] font-semibold text-mu-muted hover:bg-transparent hover:text-mu-brand"
           >
             <Link to="/community">Ver na Comunidade</Link>
           </Button>
@@ -392,23 +392,23 @@ export function DeckPage() {
       <section className="mt-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#231651]">
+            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-mu-brand">
               Notas
             </span>
-            <h2 className="mt-1.5 font-dm-serif text-[22px] font-normal text-[#1f2430]">
+            <h2 className="mt-1.5 font-dm-serif text-[22px] font-normal text-mu-text">
               Preview do baralho
             </h2>
           </div>
           <div className="relative w-full sm:w-[280px]">
             <Search
               size={18}
-              className="pointer-events-none absolute left-[14px] top-1/2 -translate-y-1/2 text-[#98a2b3]"
+              className="pointer-events-none absolute left-[14px] top-1/2 -translate-y-1/2 text-mu-muted-2"
             />
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar notas..."
-              className="h-[42px] rounded-[6px] border-[#e4e1da] bg-white pl-[40px] text-[14px] text-[#1f2430] placeholder:text-[#98a2b3] focus-visible:ring-[#231651]/30"
+              className="h-[42px] rounded-[6px] border-mu-border bg-mu-surface pl-[40px] text-[14px] text-mu-text placeholder:text-mu-muted-2 focus-visible:ring-[#231651]/30"
             />
           </div>
         </div>
@@ -442,44 +442,44 @@ function NoteRow({ note, onOpen }: { note: AnkiSyncChange; onOpen: () => void })
     <button
       type="button"
       onClick={onOpen}
-      className="group flex items-center gap-4 rounded-[8px] border border-[#e4e1da] bg-white px-4 py-3.5 text-left shadow-[0_1px_2px_-1px_rgba(31,36,48,0.05),0_2px_6px_-2px_rgba(31,36,48,0.06)] transition-[border-color,box-shadow,transform] duration-200 ease-out hover:-translate-y-[2px] hover:border-[#cdbfae] hover:shadow-[0_5px_10px_-3px_rgba(31,36,48,0.10),0_14px_26px_-8px_rgba(35,22,81,0.16)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#231651]"
+      className="group flex items-center gap-4 rounded-[8px] border border-mu-border bg-mu-surface px-4 py-3.5 text-left shadow-[0_1px_2px_-1px_rgba(31,36,48,0.05),0_2px_6px_-2px_rgba(31,36,48,0.06)] transition-[border-color,box-shadow,transform] duration-200 ease-out hover:-translate-y-[2px] hover:border-mu-border-hover hover:shadow-[0_5px_10px_-3px_rgba(31,36,48,0.10),0_14px_26px_-8px_rgba(35,22,81,0.16)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#231651]"
     >
-      <Badge className="shrink-0 rounded-[5px] border-[#e4e1da] bg-[#f6f5f2] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#667085]">
+      <Badge className="shrink-0 rounded-[5px] border-mu-border bg-mu-surface-2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-mu-muted">
         {note.card_kind || 'basic'}
       </Badge>
       <div className="min-w-0 flex-1">
-        <strong className="block truncate text-[14px] font-semibold text-[#1f2430]">
+        <strong className="block truncate text-[14px] font-semibold text-mu-text">
           {noteTitle(note)}
         </strong>
-        <p className="mt-0.5 truncate text-[13px] text-[#667085]">{noteSummary(note)}</p>
+        <p className="mt-0.5 truncate text-[13px] text-mu-muted">{noteSummary(note)}</p>
       </div>
       {/* "Validado" é apresentação: notas de baralho publicado são tidas como validadas. */}
-      <Badge className="hidden shrink-0 items-center gap-1 rounded-[5px] border-[#abefc6] bg-[#ecfdf3] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-[#15803d] sm:inline-flex">
+      <Badge className="hidden shrink-0 items-center gap-1 rounded-[5px] border-mu-validated-border bg-mu-validated-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-mu-validated sm:inline-flex">
         <Check size={11} weight="bold" />
         Validado
       </Badge>
-      <code className="hidden shrink-0 font-mono text-[12px] text-[#98a2b3] md:block">
+      <code className="hidden shrink-0 font-mono text-[12px] text-mu-muted-2 md:block">
         {note.public_id}
       </code>
       <ArrowRight
         size={18}
-        className="shrink-0 text-[#98a2b3] transition-colors group-hover:text-[#231651]"
+        className="shrink-0 text-mu-muted-2 transition-colors group-hover:text-mu-brand"
       />
     </button>
   )
 }
 
 const modalTab =
-  'h-11 flex-none rounded-none border-0 border-b-2 border-b-transparent bg-transparent px-0 text-[14px] font-semibold text-[#667085] shadow-none transition-colors hover:text-[#1f2430] focus-visible:outline-none focus-visible:ring-0 data-[state=active]:border-b-[#231651] data-[state=active]:text-[#1f2430]'
+  'h-11 flex-none rounded-none border-0 border-b-2 border-b-transparent bg-transparent px-0 text-[14px] font-semibold text-mu-muted shadow-none transition-colors hover:text-mu-text focus-visible:outline-none focus-visible:ring-0 data-[state=active]:border-b-mu-brand data-[state=active]:text-mu-text'
 
 const muriaePrimaryBtn =
   'inline-flex h-[42px] items-center gap-2 rounded-[6px] bg-[#231651] px-4 text-[13.5px] font-semibold !text-white transition-colors hover:bg-[#1a1040]'
 const muriaeSecondaryBtn =
-  'inline-flex h-[42px] items-center gap-2 rounded-[6px] border border-[#e4e1da] bg-white px-4 text-[13.5px] font-semibold text-[#1f2430] transition-colors hover:border-[#d4d0c7] hover:bg-[#fbfaf8]'
+  'inline-flex h-[42px] items-center gap-2 rounded-[6px] border border-mu-border bg-mu-surface px-4 text-[13.5px] font-semibold text-mu-text transition-colors hover:border-mu-border-hover hover:bg-mu-surface-2'
 const muriaeSurface =
-  'rounded-[10px] border border-[#e4e1da] bg-white shadow-[0_1px_2px_-1px_rgba(31,36,48,0.05),0_2px_6px_-2px_rgba(31,36,48,0.05)]'
+  'rounded-[10px] border border-mu-border bg-mu-surface shadow-[0_1px_2px_-1px_rgba(31,36,48,0.05),0_2px_6px_-2px_rgba(31,36,48,0.05)]'
 const muriaeEyebrow =
-  'text-[11px] font-bold uppercase tracking-[0.14em] text-[#231651]'
+  'text-[11px] font-bold uppercase tracking-[0.14em] text-mu-brand'
 
 function NoteModal({
   deck,
@@ -504,7 +504,7 @@ function NoteModal({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          'grid-cols-[minmax(0,1fr)] gap-0 overflow-hidden rounded-[14px] border-[#e4e1da] bg-white p-0 text-[#1f2430] sm:max-w-[720px]',
+          'grid-cols-[minmax(0,1fr)] gap-0 overflow-hidden rounded-[14px] border-mu-border bg-mu-surface p-0 text-mu-text sm:max-w-[720px]',
           showComments && 'sm:max-w-[1160px]',
         )}
       >
@@ -512,10 +512,10 @@ function NoteModal({
 
         <div className="flex items-start justify-between gap-4 px-6 pt-5">
           <div className="min-w-0">
-            <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#667085]">
+            <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-mu-muted">
               {note.card_kind || 'basic'}
             </span>
-            <h2 className="mt-0.5 truncate font-mono text-[20px] font-semibold text-[#1f2430]">
+            <h2 className="mt-0.5 truncate font-mono text-[20px] font-semibold text-mu-text">
               {note.public_id}
             </h2>
           </div>
@@ -528,7 +528,7 @@ function NoteModal({
             >
               {category.label}
             </Badge>
-            <Badge className="inline-flex items-center gap-1 rounded-[5px] border-[#abefc6] bg-[#ecfdf3] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-[#15803d]">
+            <Badge className="inline-flex items-center gap-1 rounded-[5px] border-mu-validated-border bg-mu-validated-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-mu-validated">
               <Check size={10} weight="bold" />
               Validado
             </Badge>
@@ -536,7 +536,7 @@ function NoteModal({
               type="button"
               onClick={() => navigator.clipboard?.writeText(note.public_id)}
               aria-label="Copiar identificador"
-              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#667085] transition-colors hover:bg-[#f1f0ec] hover:text-[#1f2430]"
+              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-mu-muted transition-colors hover:bg-mu-surface-2 hover:text-mu-text"
             >
               <Copy size={16} />
             </button>
@@ -544,7 +544,7 @@ function NoteModal({
               type="button"
               onClick={onClose}
               aria-label="Fechar"
-              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[#667085] transition-colors hover:bg-[#f1f0ec] hover:text-[#1f2430]"
+              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-mu-muted transition-colors hover:bg-mu-surface-2 hover:text-mu-text"
             >
               <X size={18} />
             </button>
@@ -552,7 +552,7 @@ function NoteModal({
         </div>
 
         <Tabs defaultValue="content" className="mt-3 gap-0">
-          <div className="flex flex-col gap-2 border-b border-[#e4e1da] px-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex flex-col gap-2 border-b border-mu-border px-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <TabsList variant="line" className="h-auto gap-6 rounded-none bg-transparent p-0">
               <TabsTrigger value="content" className={modalTab}>
                 Conteúdo
@@ -569,7 +569,7 @@ function NoteModal({
                 'inline-flex shrink-0 items-center gap-1.5 rounded-[6px] px-3 py-1.5 text-[13px] font-semibold transition-colors',
                 showComments
                   ? 'bg-[#231651] text-white'
-                  : 'text-[#667085] hover:text-[#231651]',
+                  : 'text-mu-muted hover:text-mu-brand',
               )}
             >
               <MessageSquare size={15} />
@@ -578,7 +578,7 @@ function NoteModal({
                 <span
                   className={cn(
                     'inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold',
-                    showComments ? 'bg-white/20 text-white' : 'bg-[#eeebfa] text-[#231651]',
+                    showComments ? 'bg-mu-surface/20 text-white' : 'bg-mu-brand-bg text-mu-brand',
                   )}
                 >
                   {commentCount}
@@ -594,12 +594,12 @@ function NoteModal({
                   {Object.entries(fields).map(([label, value]) => (
                     <article
                       key={label}
-                      className="rounded-[8px] border border-[#e4e1da] bg-[#fafaf8] p-4"
+                      className="rounded-[8px] border border-mu-border bg-mu-bg p-4"
                     >
-                      <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#98a2b3]">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-mu-muted-2">
                         {label}
                       </span>
-                      <p className="mt-1.5 text-[14px] leading-[1.55] text-[#1f2430]">{value}</p>
+                      <p className="mt-1.5 text-[14px] leading-[1.55] text-mu-text">{value}</p>
                     </article>
                   ))}
                 </div>
@@ -608,7 +608,7 @@ function NoteModal({
                     {note.tags.map((tag) => (
                       <Badge
                         key={tag}
-                        className="rounded-[5px] border-[#e4e1da] bg-[#f6f5f2] px-2 py-0.5 text-[11px] font-medium text-[#667085]"
+                        className="rounded-[5px] border-mu-border bg-mu-surface-2 px-2 py-0.5 text-[11px] font-medium text-mu-muted"
                       >
                         {tag}
                       </Badge>
@@ -622,7 +622,7 @@ function NoteModal({
             </div>
 
             {showComments && (
-              <aside className="w-full shrink-0 overflow-y-auto border-t border-[#e4e1da] bg-[#fafaf8] px-6 py-6 md:w-[448px] md:border-l md:border-t-0">
+              <aside className="w-full shrink-0 overflow-y-auto border-t border-mu-border bg-mu-bg px-6 py-6 md:w-[448px] md:border-l md:border-t-0">
                 <NoteCommentsPanel publicId={note.public_id} />
               </aside>
             )}
@@ -722,22 +722,22 @@ function SuggestChangePanel({
     { icon: <TextAlignJustify size={15} />, label: 'Justificar' },
   ]
   const toolbarButton =
-    'inline-flex h-7 min-w-7 items-center justify-center rounded-[4px] px-1 text-[#667085] transition-colors hover:bg-[#eceae4] hover:text-[#1f2430]'
+    'inline-flex h-7 min-w-7 items-center justify-center rounded-[4px] px-1 text-mu-muted transition-colors hover:bg-mu-border-hover hover:text-mu-text'
   const fieldTextarea =
-    'min-h-[88px] w-full rounded-[6px] border border-[#e4e1da] bg-white px-3 py-2 text-[14px] leading-[1.5] text-[#1f2430] outline-none transition-colors placeholder:text-[#98a2b3] focus:border-[#231651]'
+    'min-h-[88px] w-full rounded-[6px] border border-mu-border bg-mu-surface px-3 py-2 text-[14px] leading-[1.5] text-mu-text outline-none transition-colors placeholder:text-mu-muted-2 focus:border-mu-brand'
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start gap-2 rounded-[8px] border border-[rgba(35,22,81,0.16)] bg-[#f3f1fb] px-3.5 py-2.5 text-[13px] leading-[1.5] text-[#3b2f6b]">
+      <div className="flex items-start gap-2 rounded-[8px] border border-mu-brand/25 bg-mu-brand-bg px-3.5 py-2.5 text-[13px] leading-[1.5] text-mu-brand">
         <Info size={17} className="mt-px shrink-0" />
         Sua sugestão será enviada para revisão da comunidade. Ela não altera automaticamente a
         nota publicada.
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-[13px] font-semibold text-[#1f2430]">Tipo de mudança</span>
+        <span className="text-[13px] font-semibold text-mu-text">Tipo de mudança</span>
         <Select value={changeType} onValueChange={setChangeType}>
-          <SelectTrigger className="h-[42px] w-full rounded-[6px] border-[#e4e1da] bg-white text-[14px] text-[#1f2430] focus-visible:ring-[#231651]/30">
+          <SelectTrigger className="h-[42px] w-full rounded-[6px] border-mu-border bg-mu-surface text-[14px] text-mu-text focus-visible:ring-[#231651]/30">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -753,10 +753,10 @@ function SuggestChangePanel({
       <div className="grid gap-4 sm:grid-cols-2">
         {Object.entries(fields).map(([label, value]) => (
           <div className="flex flex-col gap-1.5" key={label}>
-            <span className="text-[13px] font-semibold text-[#1f2430]">{label}</span>
+            <span className="text-[13px] font-semibold text-mu-text">{label}</span>
             {activeField === label && (
               <div
-                className="flex flex-wrap items-center gap-0.5 rounded-[6px] border border-[#e4e1da] bg-[#fafaf8] p-1"
+                className="flex flex-wrap items-center gap-0.5 rounded-[6px] border border-mu-border bg-mu-bg p-1"
                 aria-label={`Barra de formatação de ${label}`}
               >
                 {toolbarItems(label).map((item, index) => (
@@ -782,14 +782,14 @@ function SuggestChangePanel({
               className={fieldTextarea}
             />
             {activeField === label && (
-              <p className="text-[12px] text-[#98a2b3]">A barra acima edita este campo da nota.</p>
+              <p className="text-[12px] text-mu-muted-2">A barra acima edita este campo da nota.</p>
             )}
           </div>
         ))}
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-[13px] font-semibold text-[#1f2430]">Comentário para o revisor</span>
+        <span className="text-[13px] font-semibold text-mu-text">Comentário para o revisor</span>
         <textarea
           value={message}
           onChange={(event) => setMessage(event.target.value)}
@@ -809,7 +809,7 @@ function SuggestChangePanel({
       </div>
 
       {sent && (
-        <div className="flex items-center gap-2 rounded-[8px] border border-[#abefc6] bg-[#ecfdf3] px-3.5 py-2.5 text-[13px] font-medium text-[#15803d]">
+        <div className="flex items-center gap-2 rounded-[8px] border border-mu-validated-border bg-mu-validated-bg px-3.5 py-2.5 text-[13px] font-medium text-mu-validated">
           <Check size={16} weight="bold" />
           Sugestão enviada para revisão.
         </div>
@@ -858,24 +858,24 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <div className="flex items-center gap-2 text-[15px] font-semibold text-[#1f2430]">
-          <MessageSquare size={17} className="text-[#231651]" />
+        <div className="flex items-center gap-2 text-[15px] font-semibold text-mu-text">
+          <MessageSquare size={17} className="text-mu-brand" />
           Comentários
-          <span className="ml-0.5 inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-[#eeebfa] px-1.5 text-[11px] font-bold text-[#231651]">
+          <span className="ml-0.5 inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-mu-brand-bg px-1.5 text-[11px] font-bold text-mu-brand">
             {noteComments.length}
           </span>
         </div>
-        <p className="mt-1.5 text-[12.5px] leading-[1.5] text-[#667085]">
+        <p className="mt-1.5 text-[12.5px] leading-[1.5] text-mu-muted">
           Compartilhe dicas, mnemônicos e dúvidas para ajudar outros estudantes.
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-[10px] border border-[#e4e1da] bg-white p-3.5 shadow-[0_1px_2px_-1px_rgba(31,36,48,0.05),0_2px_6px_-2px_rgba(31,36,48,0.05)]">
+      <div className="flex flex-col gap-3 rounded-[10px] border border-mu-border bg-mu-surface p-3.5 shadow-[0_1px_2px_-1px_rgba(31,36,48,0.05),0_2px_6px_-2px_rgba(31,36,48,0.05)]">
         <textarea
           value={body}
           onChange={(event) => setBody(event.target.value)}
           placeholder="Escreva um comentário sobre esta nota..."
-          className="min-h-[84px] w-full resize-none rounded-[8px] border border-[#e4e1da] bg-[#fafaf8] px-3.5 py-2.5 text-[14px] leading-[1.55] text-[#1f2430] outline-none transition-colors placeholder:text-[#98a2b3] focus:border-[#231651] focus:bg-white"
+          className="min-h-[84px] w-full resize-none rounded-[8px] border border-mu-border bg-mu-bg px-3.5 py-2.5 text-[14px] leading-[1.55] text-mu-text outline-none transition-colors placeholder:text-mu-muted-2 focus:border-mu-brand focus:bg-mu-surface"
         />
         <Button
           type="button"
@@ -887,44 +887,44 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-4 border-t border-[#e4e1da] pt-6">
+      <div className="flex flex-col gap-4 border-t border-mu-border pt-6">
         {noteComments
           .slice()
           .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
           .map((comment) => {
             return (
               <div key={comment.id} className="flex gap-3">
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eeebfa] text-[12px] font-bold uppercase text-[#231651]">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-mu-brand-bg text-[12px] font-bold uppercase text-mu-brand">
                   {comment.author.slice(0, 2)}
                 </span>
-                <article className="min-w-0 flex-1 rounded-[12px] border border-[#e4e1da] bg-white p-4 shadow-[0_1px_2px_-1px_rgba(31,36,48,0.06),0_4px_10px_-4px_rgba(31,36,48,0.08)]">
+                <article className="min-w-0 flex-1 rounded-[12px] border border-mu-border bg-mu-surface p-4 shadow-[0_1px_2px_-1px_rgba(31,36,48,0.06),0_4px_10px_-4px_rgba(31,36,48,0.08)]">
                   <header className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <strong className="text-[13.5px] font-semibold text-[#1f2430]">
+                    <strong className="text-[13.5px] font-semibold text-mu-text">
                       {comment.author}
                     </strong>
-                    <Badge className="rounded-full border-[#e4e1da] bg-[#f6f5f2] px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.06em] text-[#667085]">
+                    <Badge className="rounded-full border-mu-border bg-mu-surface-2 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.06em] text-mu-muted">
                       {COMMENT_KIND_LABELS[comment.kind]}
                     </Badge>
-                    <small className="ml-auto text-[11px] text-[#98a2b3]">
+                    <small className="ml-auto text-[11px] text-mu-muted-2">
                       {formatDate(comment.createdAt)}
                     </small>
                   </header>
-                  <p className="mt-2.5 text-[13.5px] leading-[1.65] text-[#3f4754]">
+                  <p className="mt-2.5 text-[13.5px] leading-[1.65] text-mu-text-soft">
                     {comment.body}
                   </p>
-                  <footer className="mt-3.5 flex items-center gap-2 border-t border-[#f1efe9] pt-3">
+                  <footer className="mt-3.5 flex items-center gap-2 border-t border-mu-surface-2 pt-3">
                     <button
                       type="button"
                       onClick={() => handleUpvote(comment.id)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-[#e4e1da] bg-white px-3 py-1 text-[12px] font-semibold text-[#475467] transition-colors hover:border-[#231651] hover:bg-[#f3f1fb] hover:text-[#231651]"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-mu-border bg-mu-surface px-3 py-1 text-[12px] font-semibold text-mu-text-soft transition-colors hover:border-mu-brand hover:bg-mu-brand-bg hover:text-mu-brand"
                     >
-                      <ThumbsUp size={13} weight="fill" className="text-[#98a2b3]" />
+                      <ThumbsUp size={13} weight="fill" className="text-mu-muted-2" />
                       Útil
                       <span className="tabular-nums">{comment.score}</span>
                     </button>
                     <button
                       type="button"
-                      className="ml-auto text-[12px] font-medium text-[#98a2b3] transition-colors hover:text-[#1f2430]"
+                      className="ml-auto text-[12px] font-medium text-mu-muted-2 transition-colors hover:text-mu-text"
                     >
                       Denunciar
                     </button>
@@ -934,14 +934,14 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
             )
           })}
         {!noteComments.length && (
-          <div className="flex flex-col items-center gap-2 rounded-[12px] border border-dashed border-[#d8d3c8] bg-white px-4 py-10 text-center">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eeebfa] text-[#231651]">
+          <div className="flex flex-col items-center gap-2 rounded-[12px] border border-dashed border-mu-border-hover bg-mu-surface px-4 py-10 text-center">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-mu-brand-bg text-mu-brand">
               <MessageSquare size={20} />
             </span>
-            <strong className="text-[13.5px] font-semibold text-[#1f2430]">
+            <strong className="text-[13.5px] font-semibold text-mu-text">
               Ainda não há comentários
             </strong>
-            <p className="max-w-[240px] text-[12.5px] leading-[1.5] text-[#98a2b3]">
+            <p className="max-w-[240px] text-[12.5px] leading-[1.5] text-mu-muted-2">
               Seja o primeiro a contribuir com uma dica ou observação sobre esta nota.
             </p>
           </div>
@@ -983,13 +983,13 @@ export function AdminDashboardPage() {
             to={action.to}
             className={cn(
               muriaeSurface,
-              'group flex items-center justify-between gap-4 p-5 transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px hover:border-[#d4d0c7]',
+              'group flex items-center justify-between gap-4 p-5 transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px hover:border-mu-border-hover',
             )}
           >
-            <strong className="text-[15px] font-semibold text-[#1f2430]">{action.label}</strong>
+            <strong className="text-[15px] font-semibold text-mu-text">{action.label}</strong>
             <ArrowRight
               size={18}
-              className="shrink-0 text-[#98a2b3] transition-colors group-hover:text-[#231651]"
+              className="shrink-0 text-mu-muted-2 transition-colors group-hover:text-mu-brand"
             />
           </Link>
         ))}
@@ -1022,20 +1022,20 @@ export function AdminDecksPage() {
             className={cn(muriaeSurface, 'flex flex-wrap items-center gap-x-5 gap-y-2 p-4')}
           >
             <div className="min-w-0 flex-1">
-              <strong className="block text-[15px] font-semibold text-[#1f2430]">
+              <strong className="block text-[15px] font-semibold text-mu-text">
                 {deck.name}
               </strong>
-              <p className="mt-0.5 truncate text-[13px] text-[#667085]">
+              <p className="mt-0.5 truncate text-[13px] text-mu-muted">
                 {deck.description || 'Sem descrição.'}
               </p>
             </div>
-            <Badge className="shrink-0 rounded-[5px] border-[#e4e1da] bg-[#f6f5f2] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-[#667085]">
+            <Badge className="shrink-0 rounded-[5px] border-mu-border bg-mu-surface-2 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-mu-muted">
               {deck.status}
             </Badge>
-            <span className="shrink-0 text-[13px] text-[#667085]">
+            <span className="shrink-0 text-[13px] text-mu-muted">
               {deck.active_card_count} notas
             </span>
-            <span className="shrink-0 text-[13px] text-[#667085]">
+            <span className="shrink-0 text-[13px] text-mu-muted">
               Release {deck.latest_release}
             </span>
             <Link
@@ -1178,12 +1178,12 @@ export function AdminSuggestionsPage() {
 
       <div className="mt-8 flex flex-col gap-2.5">
         {error && (
-          <div className="flex items-center gap-2 rounded-[8px] border border-[#fecaca] bg-[#fef2f2] px-3.5 py-2.5 text-[13px] font-medium text-[#b42318]">
+          <div className="flex items-center gap-2 rounded-[8px] border border-mu-danger-border bg-mu-danger-bg px-3.5 py-2.5 text-[13px] font-medium text-mu-danger">
             {error}
           </div>
         )}
         {success && (
-          <div className="flex items-center gap-2 rounded-[8px] border border-[#abefc6] bg-[#ecfdf3] px-3.5 py-2.5 text-[13px] font-medium text-[#15803d]">
+          <div className="flex items-center gap-2 rounded-[8px] border border-mu-validated-border bg-mu-validated-bg px-3.5 py-2.5 text-[13px] font-medium text-mu-validated">
             <Check size={16} weight="bold" />
             {success}
           </div>
@@ -1192,24 +1192,24 @@ export function AdminSuggestionsPage() {
         {suggestions.map((suggestion) => (
           <article key={suggestion.id} className={cn(muriaeSurface, 'flex flex-col gap-2.5 p-4')}>
             <header className="flex flex-wrap items-center gap-2">
-              <strong className="font-mono text-[14px] font-semibold text-[#1f2430]">
+              <strong className="font-mono text-[14px] font-semibold text-mu-text">
                 {suggestion.publicId}
               </strong>
-              <Badge className="rounded-[5px] border-[#e4e1da] bg-[#f6f5f2] px-2 py-0.5 text-[11px] font-medium text-[#667085]">
+              <Badge className="rounded-[5px] border-mu-border bg-mu-surface-2 px-2 py-0.5 text-[11px] font-medium text-mu-muted">
                 {suggestion.changeType}
               </Badge>
               <StatusBadge value={suggestion.status} />
               {suggestion.resultingCardVersionId && (
-                <span className="text-[12px] text-[#98a2b3]">
+                <span className="text-[12px] text-mu-muted-2">
                   v {suggestion.resultingCardVersionId.slice(0, 8)}
                 </span>
               )}
             </header>
-            <p className="text-[13.5px] leading-[1.55] text-[#667085]">
+            <p className="text-[13.5px] leading-[1.55] text-mu-muted">
               {suggestion.message || 'Sem comentário adicional.'}
             </p>
             <footer className="flex flex-wrap items-center gap-3">
-              <small className="text-[12px] text-[#98a2b3]">
+              <small className="text-[12px] text-mu-muted-2">
                 {formatDate(suggestion.createdAt)}
               </small>
               <div className="ml-auto flex gap-2">
@@ -1225,7 +1225,7 @@ export function AdminSuggestionsPage() {
                   type="button"
                   disabled={suggestion.status !== 'pending'}
                   onClick={() => rejectSuggestion.mutate(suggestion)}
-                  className="inline-flex h-[34px] items-center rounded-[6px] border border-[#e4e1da] bg-white px-3 text-[12.5px] font-semibold text-[#1f2430] transition-colors hover:bg-[#fbfaf8] disabled:cursor-not-allowed disabled:opacity-45"
+                  className="inline-flex h-[34px] items-center rounded-[6px] border border-mu-border bg-mu-surface px-3 text-[12.5px] font-semibold text-mu-text transition-colors hover:bg-mu-surface-2 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   Rejeitar
                 </button>
@@ -1234,11 +1234,11 @@ export function AdminSuggestionsPage() {
           </article>
         ))}
         {!suggestions.length && (
-          <section className="flex flex-col items-start gap-2 rounded-[10px] border border-dashed border-[#e4e1da] bg-white p-8">
-            <strong className="text-[16px] font-semibold text-[#1f2430]">
+          <section className="flex flex-col items-start gap-2 rounded-[10px] border border-dashed border-mu-border bg-mu-surface p-8">
+            <strong className="text-[16px] font-semibold text-mu-text">
               Nenhuma sugestão pendente
             </strong>
-            <p className="text-[14px] text-[#667085]">
+            <p className="text-[14px] text-mu-muted">
               As sugestões criadas no modal da nota aparecerão aqui.
             </p>
           </section>
@@ -1276,11 +1276,11 @@ export function CommunityFuturePage() {
       <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {features.map((feature) => (
           <article key={feature.title} className={cn(muriaeSurface, 'flex flex-col gap-3 p-5')}>
-            <span className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#eeebfa] text-[#231651]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-mu-brand-bg text-mu-brand">
               {feature.icon}
             </span>
-            <strong className="text-[15px] font-semibold text-[#1f2430]">{feature.title}</strong>
-            <p className="text-[13.5px] leading-[1.55] text-[#667085]">{feature.desc}</p>
+            <strong className="text-[15px] font-semibold text-mu-text">{feature.title}</strong>
+            <p className="text-[13.5px] leading-[1.55] text-mu-muted">{feature.desc}</p>
           </article>
         ))}
       </section>
@@ -1440,15 +1440,15 @@ export function CommunitySuggestionHistoryPage() {
                   className={cn(
                     'flex flex-col gap-0.5 rounded-[8px] border px-4 py-3 text-left transition-colors',
                     active
-                      ? 'border-[#231651] bg-[#f3f1fb]'
-                      : 'border-[#e4e1da] bg-white hover:border-[#d4d0c7]',
+                      ? 'border-mu-brand bg-mu-brand-bg'
+                      : 'border-mu-border bg-mu-surface hover:border-mu-border-hover',
                   )}
                 >
-                  <span className="text-[11px] text-[#98a2b3]">Nota {item.noteId}</span>
-                  <strong className="font-mono text-[13px] font-semibold text-[#1f2430]">
+                  <span className="text-[11px] text-mu-muted-2">Nota {item.noteId}</span>
+                  <strong className="font-mono text-[13px] font-semibold text-mu-text">
                     {item.publicId}
                   </strong>
-                  <small className="text-[12px] text-[#667085]">Por {item.userName}</small>
+                  <small className="text-[12px] text-mu-muted">Por {item.userName}</small>
                 </button>
               )
             })}
@@ -1460,7 +1460,7 @@ export function CommunitySuggestionHistoryPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <span className={muriaeEyebrow}>Sugestão selecionada</span>
-                    <h2 className="mt-1.5 font-dm-serif text-[20px] font-normal text-[#1f2430]">
+                    <h2 className="mt-1.5 font-dm-serif text-[20px] font-normal text-mu-text">
                       {selectedSuggestion.publicId}
                     </h2>
                   </div>
@@ -1468,44 +1468,44 @@ export function CommunitySuggestionHistoryPage() {
                 </div>
                 <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div>
-                    <dt className="text-[11px] uppercase tracking-[0.06em] text-[#98a2b3]">
+                    <dt className="text-[11px] uppercase tracking-[0.06em] text-mu-muted-2">
                       ID da nota
                     </dt>
-                    <dd className="mt-0.5 text-[13.5px] text-[#1f2430]">
+                    <dd className="mt-0.5 text-[13.5px] text-mu-text">
                       {selectedSuggestion.noteId}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[11px] uppercase tracking-[0.06em] text-[#98a2b3]">
+                    <dt className="text-[11px] uppercase tracking-[0.06em] text-mu-muted-2">
                       Usuário
                     </dt>
-                    <dd className="mt-0.5 text-[13.5px] text-[#1f2430]">
+                    <dd className="mt-0.5 text-[13.5px] text-mu-text">
                       {selectedSuggestion.userName}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[11px] uppercase tracking-[0.06em] text-[#98a2b3]">
+                    <dt className="text-[11px] uppercase tracking-[0.06em] text-mu-muted-2">
                       Criada em
                     </dt>
-                    <dd className="mt-0.5 text-[13.5px] text-[#1f2430]">
+                    <dd className="mt-0.5 text-[13.5px] text-mu-text">
                       {formatDate(selectedSuggestion.createdAt)}
                     </dd>
                   </div>
                 </dl>
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <article className="rounded-[8px] border border-[#e4e1da] bg-[#fafaf8] p-4">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#98a2b3]">
+                  <article className="rounded-[8px] border border-mu-border bg-mu-bg p-4">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-mu-muted-2">
                       Campo original
                     </span>
-                    <p className="mt-1.5 text-[14px] leading-[1.55] text-[#1f2430]">
+                    <p className="mt-1.5 text-[14px] leading-[1.55] text-mu-text">
                       {selectedSuggestion.originalField}
                     </p>
                   </article>
-                  <article className="rounded-[8px] border border-[#abefc6] bg-[#ecfdf3] p-4">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#15803d]">
+                  <article className="rounded-[8px] border border-mu-validated-border bg-mu-validated-bg p-4">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-mu-validated">
                       Novo campo sugerido
                     </span>
-                    <p className="mt-1.5 text-[14px] leading-[1.55] text-[#1f2430]">
+                    <p className="mt-1.5 text-[14px] leading-[1.55] text-mu-text">
                       {selectedSuggestion.suggestedField}
                     </p>
                   </article>
@@ -1515,7 +1515,7 @@ export function CommunitySuggestionHistoryPage() {
               <section className={cn(muriaeSurface, 'p-5')}>
                 <div>
                   <span className={muriaeEyebrow}>Discussão</span>
-                  <h2 className="mt-1.5 font-dm-serif text-[20px] font-normal text-[#1f2430]">
+                  <h2 className="mt-1.5 font-dm-serif text-[20px] font-normal text-mu-text">
                     Conversa editorial
                   </h2>
                 </div>
@@ -1523,24 +1523,24 @@ export function CommunitySuggestionHistoryPage() {
                   {selectedSuggestion.discussion.map((comment) => (
                     <article
                       key={comment.id}
-                      className="rounded-[8px] border border-[#e4e1da] bg-[#fafaf8] p-3.5"
+                      className="rounded-[8px] border border-mu-border bg-mu-bg p-3.5"
                     >
                       <header className="flex items-center justify-between gap-2">
-                        <strong className="text-[13px] font-semibold text-[#1f2430]">
+                        <strong className="text-[13px] font-semibold text-mu-text">
                           {comment.author}
                         </strong>
-                        <small className="text-[11px] text-[#98a2b3]">
+                        <small className="text-[11px] text-mu-muted-2">
                           {formatDate(comment.createdAt)}
                         </small>
                       </header>
-                      <p className="mt-1.5 text-[13px] leading-[1.55] text-[#475467]">
+                      <p className="mt-1.5 text-[13px] leading-[1.55] text-mu-text-soft">
                         {comment.body}
                       </p>
                     </article>
                   ))}
                 </div>
                 <label className="mt-4 flex flex-col gap-1.5">
-                  <span className="text-[13px] font-semibold text-[#1f2430]">
+                  <span className="text-[13px] font-semibold text-mu-text">
                     Adicionar comentário
                   </span>
                   <textarea
@@ -1548,7 +1548,7 @@ export function CommunitySuggestionHistoryPage() {
                     value={draftComment}
                     onChange={(event) => setDraftComment(event.target.value)}
                     placeholder="Registre uma observação sobre esta sugestão."
-                    className="w-full rounded-[6px] border border-[#e4e1da] bg-white px-3 py-2 text-[14px] leading-[1.5] text-[#1f2430] outline-none transition-colors placeholder:text-[#98a2b3] focus:border-[#231651]"
+                    className="w-full rounded-[6px] border border-mu-border bg-mu-surface px-3 py-2 text-[14px] leading-[1.5] text-mu-text outline-none transition-colors placeholder:text-mu-muted-2 focus:border-mu-brand"
                   />
                 </label>
                 <button type="button" onClick={addComment} className={cn(muriaePrimaryBtn, 'mt-3')}>
@@ -1635,7 +1635,7 @@ function SubscriptionButton({ deck }: { deck: SubscribableDeck }) {
         variant="outline"
         disabled={unsubscribeMutation.isPending}
         onClick={() => unsubscribeMutation.mutate()}
-        className="h-[42px] gap-2 rounded-[6px] border-[#abefc6] bg-[#ecfdf3] px-4 text-[13.5px] font-semibold text-[#15803d] hover:bg-[#d7f7e3]"
+        className="h-[42px] gap-2 rounded-[6px] border-mu-validated-border bg-mu-validated-bg px-4 text-[13.5px] font-semibold text-mu-validated hover:bg-mu-validated-bg"
       >
         <Check size={16} weight="bold" />
         Inscrito
@@ -1673,13 +1673,13 @@ function SegmentedFilter({
       type="single"
       value={value}
       onValueChange={(next) => next && onChange(next as DeckFilter)}
-      className="h-[42px] items-center gap-0.5 rounded-[6px] border border-[#e4e1da] bg-white px-[5px]"
+      className="h-[42px] items-center gap-0.5 rounded-[6px] border border-mu-border bg-mu-surface px-[5px]"
     >
       {options.map(([key, label]) => (
         <ToggleGroupItem
           key={key}
           value={key}
-          className="h-[31px] rounded-[4px] px-4 text-[13.5px] font-semibold text-[#667085] hover:bg-transparent hover:text-[#1f2430] data-[state=on]:bg-[#231651] data-[state=on]:text-white"
+          className="h-[31px] rounded-[4px] px-4 text-[13.5px] font-semibold text-mu-muted hover:bg-transparent hover:text-mu-text data-[state=on]:bg-[#231651] data-[state=on]:text-white"
         >
           {label}
         </ToggleGroupItem>
@@ -1691,13 +1691,13 @@ function SegmentedFilter({
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
     <article className={cn(muriaeSurface, 'flex flex-col gap-1 p-5')}>
-      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#98a2b3]">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-mu-muted-2">
         {label}
       </span>
-      <strong className="font-dm-serif text-[30px] font-normal leading-none tabular-nums text-[#1f2430]">
+      <strong className="font-dm-serif text-[30px] font-normal leading-none tabular-nums text-mu-text">
         {value}
       </strong>
-      <small className="mt-1 inline-flex items-center gap-1.5 text-[11px] text-[#98a2b3]">
+      <small className="mt-1 inline-flex items-center gap-1.5 text-[11px] text-mu-muted-2">
         <Clock3 size={13} />
         Atualizado agora
       </small>

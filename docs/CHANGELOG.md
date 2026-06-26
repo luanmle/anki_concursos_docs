@@ -6,7 +6,70 @@ ADRs (decisões de arquitetura): `docs/adr/`.
 
 ---
 
-## 2026-06-26 — Endurecimento do contrato de sincronização addon ↔ backend
+## 2026-06-26 — Modo noturno (dark mode) na superfície Muriae
+
+**Branch:** `frontend-redesign`
+**Tipo:** feature + design
+
+Implementado o **modo noturno** presente em `design-reference/redesign.html` para a
+superfície já migrada ao design system Muriae (shell + Explore/deck/modal/admin/community).
+Paleta dark extraída 1:1 do protótipo via Playwright (computed styles do `[data-theme]`).
+
+### O que mudou
+- `admin/src/index.css` — novo sistema de **tokens semânticos `--mu-*`** escopados em
+  `:root`, com swap claro→escuro via `html[data-theme="dark"]`. Mapas de
+  utilitários Tailwind no `@theme` (`bg-mu-bg`, `text-mu-text`, `border-mu-border`,
+  `text-mu-brand`, `bg-mu-brand-bg`, categorias `mu-cat-comm/ai`, status validated/danger).
+  Reescrita do chrome do shell (`.topbar`, `.muriae-sidebar-*`, brand, hero, `.ac-page-muriae`,
+  `.ac-main-content`) de hex literal para `var(--mu-*)`. Tokens dark: bg `#100B24`,
+  surface `#191238`, text `#ECE9F7`, muted `#9D97B8`, border `#2C2552`, brand `#c7bbf0`.
+- `admin/src/pages/CommunityInterfacePages.tsx` — ~242 utilitários de cor hard-coded
+  (`bg-[#fafaf8]`, `text-[#1f2430]`, `bg-white`, `text-[#231651]`…) convertidos para os
+  utilitários de token. **Substituição prefix-aware**: `bg-[#231651]`/`hover:bg-[#1a1040]`
+  (preenchimento sólido da marca + texto branco) **mantidos literais** nos dois temas
+  — só os usos de `#231651` como texto/borda viraram `text-mu-brand`/`border-mu-brand`
+  (que clareia para `#c7bbf0` no escuro). Underline de aba ativa e banner de sugestão também.
+- `admin/src/components/MuriaeDeckCard.tsx` — `CATEGORY` (faixas Oficial/Comunidade/IA)
+  migrado para tokens `mu-brand-bg`/`mu-official-border`/`mu-cat-comm-*`/`mu-cat-ai-*`,
+  que invertem para tons escuros traslúcidos no dark.
+- `admin/src/lib/theme.ts` (novo) + `theme.test.ts` — `getStoredTheme`/`setTheme`/
+  `applyTheme`/`initTheme`; padrão **claro**, persistência em `localStorage`
+  (`anki-concursos-theme`), aplica `data-theme` no `<html>`.
+- `admin/src/components/ThemeToggle.tsx` (novo) — botão lua/sol no topbar (aria
+  "Ativar modo claro/noturno", `aria-pressed`). Adicionado em `AppShell.tsx` (topbar) e
+  estilo `.muriae-theme-toggle` no CSS.
+- `admin/src/main.tsx` — `initTheme()` antes do render (evita flash na carga com tema salvo).
+
+### Decisões relevantes
+- **Tokens semânticos em vez de variantes `dark:` por elemento** — a superfície Muriae
+  usava hex arbitrário em ~290 pontos; mapear cada um com `dark:` seria disperso e frágil.
+  Tokens `--mu-*` trocados num único `[data-theme]` espelham a arquitetura do protótipo
+  (que faz o mesmo) e isolam o tema num só lugar.
+- **Escopo: só a superfície Muriae** (decisão do usuário). Páginas legadas ainda no tema
+  escuro antigo (`:root` global) ficam fora do toggle; seus tokens não colidem com `--mu-*`.
+- **Preenchimento sólido da marca não inverte** — no protótipo o controle ativo
+  (`#231651` + texto branco) permanece igual no escuro; só a marca usada como *texto/borda*
+  clareia. Replicado para manter contraste e fidelidade.
+- **Padrão claro + lembrar escolha** (decisão do usuário) — ignora `prefers-color-scheme`;
+  comportamento previsível, igual ao protótipo.
+
+### Impacto
+- A superfície Muriae passa a ter modo claro/escuro alternável pelo topbar, persistente.
+  Verificado claro e escuro (paridade com o protótipo) renderizando os utilitários do build
+  com os tokens — faixas de categoria, sidebar ativa, botões e badges corretos nos dois temas.
+- Backend não tocado. Validado **no app real** (backend `:8000` + login): Explore claro/escuro
+  e **modal de nota** (Dialog) corretos nos dois temas.
+
+### Correção pós-implementação — modal de nota vazio
+- **Bug:** o modal de nota (shadcn `Dialog`) renderizava **transparente/vazio** — o conteúdo
+  aparecia, mas a superfície sumia. Causa: tokens `--mu-*` estavam escopados em `.app-shell`,
+  e o `Dialog` (assim como `DropdownMenu`/`Select`) renderiza num **portal no `<body>`**, fora
+  do shell → `bg-mu-surface`/`text-mu-text` resolviam para vazio. Afetava os dois temas.
+- **Fix:** mover a definição dos tokens de `.app-shell` → `:root` (e o override dark de
+  `html[data-theme="dark"] .app-shell` → `html[data-theme="dark"]`). Mesmos valores, só o
+  escopo alargou; páginas legadas não consomem `mu-*`, sem regressão.
+
+
 
 **Branch:** `frontend-redesign` (alterações de backend + add-on `addon-anki`, repo separado em `main`)
 **Tipo:** fix + feature

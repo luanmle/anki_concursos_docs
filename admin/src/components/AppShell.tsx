@@ -15,6 +15,7 @@ import { translateStatus } from '../lib/presentation'
 import { Avatar, AvatarFallback } from './ui/avatar'
 import { Button } from './ui/button'
 import { Separator } from './ui/separator'
+import { ThemeToggle } from './ThemeToggle'
 import {
   Sidebar,
   SidebarContent,
@@ -163,6 +164,7 @@ function AppShellLayout() {
             </span>
           </div>
           <div className="topbar-user">
+            <ThemeToggle />
             <div>
               <strong>{user?.display_name}</strong>
               <span>{user && translateStatus(user.role)}</span>

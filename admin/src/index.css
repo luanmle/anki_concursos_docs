@@ -37,6 +37,97 @@
   --radius-lg: calc(var(--radius) + 4px);
   --radius-xl: calc(var(--radius) + 8px);
   --font-dm-serif: "DM Serif Display", Georgia, "Times New Roman", serif;
+  /* Muriae semantic palette — light/dark swap via [data-theme] on the shell */
+  --color-mu-bg: var(--mu-bg);
+  --color-mu-surface: var(--mu-surface);
+  --color-mu-surface-2: var(--mu-surface-2);
+  --color-mu-text: var(--mu-text);
+  --color-mu-text-soft: var(--mu-text-soft);
+  --color-mu-muted: var(--mu-muted);
+  --color-mu-muted-2: var(--mu-muted-2);
+  --color-mu-border: var(--mu-border);
+  --color-mu-border-hover: var(--mu-border-hover);
+  --color-mu-brand: var(--mu-brand);
+  --color-mu-brand-bg: var(--mu-brand-bg);
+  --color-mu-validated: var(--mu-validated);
+  --color-mu-validated-bg: var(--mu-validated-bg);
+  --color-mu-validated-border: var(--mu-validated-border);
+  --color-mu-danger: var(--mu-danger);
+  --color-mu-danger-bg: var(--mu-danger-bg);
+  --color-mu-danger-border: var(--mu-danger-border);
+  --color-mu-official-border: var(--mu-official-bd);
+  --color-mu-cat-comm: var(--mu-cat-comm);
+  --color-mu-cat-comm-bg: var(--mu-cat-comm-bg);
+  --color-mu-cat-comm-border: var(--mu-cat-comm-bd);
+  --color-mu-cat-ai: var(--mu-cat-ai);
+  --color-mu-cat-ai-bg: var(--mu-cat-ai-bg);
+  --color-mu-cat-ai-border: var(--mu-cat-ai-bd);
+}
+
+/* ── Muriae theme tokens (light default + dark) ──────────────────
+   Scoped to :root (not .app-shell) so portaled UI — shadcn Dialog,
+   DropdownMenu, Select — também resolve os tokens fora do shell. */
+:root {
+  --mu-bg: #fafaf8;
+  --mu-surface: #ffffff;
+  --mu-surface-2: #f6f5f2;
+  --mu-text: #1f2430;
+  --mu-text-soft: #475467;
+  --mu-muted: #667085;
+  --mu-muted-2: #98a2b3;
+  --mu-border: #e4e1da;
+  --mu-border-hover: #d4d0c7;
+  --mu-brand: #231651;
+  --mu-brand-bg: #eeebfa;
+  --mu-validated: #15803d;
+  --mu-validated-bg: #dcfce7;
+  --mu-validated-border: #abefc6;
+  --mu-danger: #b42318;
+  --mu-danger-bg: #fef2f2;
+  --mu-danger-border: #fecaca;
+  --mu-topbar: rgba(250, 250, 248, 0.92);
+  --mu-sidebar: #ffffff;
+  --mu-sidebar-hover: #f6f3ff;
+  --mu-shadow-card: 0 1px 2px -1px rgba(31, 36, 48, 0.06),
+    0 3px 8px -3px rgba(31, 36, 48, 0.08);
+  --mu-official-bd: rgba(35, 22, 81, 0.18);
+  --mu-cat-comm: oklch(0.42 0.14 220);
+  --mu-cat-comm-bg: oklch(0.95 0.04 220);
+  --mu-cat-comm-bd: oklch(0.82 0.07 220);
+  --mu-cat-ai: oklch(0.44 0.16 52);
+  --mu-cat-ai-bg: oklch(0.97 0.05 60);
+  --mu-cat-ai-bd: oklch(0.84 0.1 56);
+}
+
+html[data-theme="dark"] {
+  --mu-bg: #100b24;
+  --mu-surface: #191238;
+  --mu-surface-2: #1f1746;
+  --mu-text: #ece9f7;
+  --mu-text-soft: #c3bdd8;
+  --mu-muted: #9d97b8;
+  --mu-muted-2: #7e7799;
+  --mu-border: #2c2552;
+  --mu-border-hover: #3b2f6b;
+  --mu-brand: #c7bbf0;
+  --mu-brand-bg: rgba(120, 95, 211, 0.22);
+  --mu-validated: #4ade80;
+  --mu-validated-bg: rgba(34, 197, 94, 0.15);
+  --mu-validated-border: rgba(74, 222, 128, 0.28);
+  --mu-danger: #f87171;
+  --mu-danger-bg: rgba(248, 113, 113, 0.15);
+  --mu-danger-border: rgba(248, 113, 113, 0.28);
+  --mu-topbar: rgba(16, 11, 36, 0.92);
+  --mu-sidebar: #140d2e;
+  --mu-sidebar-hover: rgba(130, 167, 227, 0.1);
+  --mu-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.45), 0 6px 18px rgba(0, 0, 0, 0.5);
+  --mu-official-bd: rgba(154, 135, 222, 0.34);
+  --mu-cat-comm: #93c5fd;
+  --mu-cat-comm-bg: rgba(96, 165, 250, 0.15);
+  --mu-cat-comm-bd: rgba(147, 197, 253, 0.28);
+  --mu-cat-ai: #fbbf24;
+  --mu-cat-ai-bg: rgba(251, 191, 36, 0.15);
+  --mu-cat-ai-bd: rgba(251, 191, 36, 0.28);
 }
 
 :root {
@@ -270,6 +361,18 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
   box-shadow: 0 0 10px rgba(52, 211, 153, .55);
 }
 .topbar-user { gap: 9px; }
+.muriae-theme-toggle {
+  width: 34px;
+  height: 34px;
+  margin-right: 4px;
+  border-radius: 8px;
+  color: var(--mu-muted);
+  background: transparent;
+}
+.muriae-theme-toggle:hover {
+  color: var(--mu-brand);
+  background: var(--mu-brand-bg);
+}
 .topbar-user > div:first-child { text-align: right; }
 .topbar-user strong, .topbar-user span { display: block; }
 .topbar-user strong { font-size: 11px; }
@@ -282,28 +385,28 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
 }
 
 .app-shell {
-  --sidebar: #fff;
-  --sidebar-foreground: #1f2430;
-  --sidebar-border: #e4e1da;
-  --sidebar-accent: #eeebfa;
-  --sidebar-accent-foreground: #231651;
+  --sidebar: var(--mu-sidebar);
+  --sidebar-foreground: var(--mu-text);
+  --sidebar-border: var(--mu-border);
+  --sidebar-accent: var(--mu-brand-bg);
+  --sidebar-accent-foreground: var(--mu-brand);
   font-family: "DM Sans Variable", system-ui, -apple-system, sans-serif;
 }
 
 .app-shell [data-slot="sidebar-inner"] {
-  color: #1f2430;
-  background: #fff;
+  color: var(--mu-text);
+  background: var(--mu-sidebar);
 }
 
 .muriae-sidebar-container {
   z-index: 30;
-  border-right-color: #e4e1da;
+  border-right-color: var(--mu-border);
 }
 
 .app-shell [data-mobile="true"] {
-  color: #1f2430;
-  border-right: 1px solid #e4e1da;
-  background: #fff;
+  color: var(--mu-text);
+  border-right: 1px solid var(--mu-border);
+  background: var(--mu-sidebar);
 }
 
 .muriae-sidebar-header {
@@ -348,7 +451,7 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
 }
 
 .muriae-brand-name strong {
-  color: #1f2430;
+  color: var(--mu-text);
   font-family: "DM Serif Display", Georgia, "Times New Roman", serif;
   font-size: 21px;
   font-weight: 400;
@@ -358,7 +461,7 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
 
 .muriae-brand-name span {
   margin-top: 0;
-  color: #667085;
+  color: var(--mu-muted);
   font-size: 12px;
   font-weight: 600;
   line-height: 12px;
@@ -382,20 +485,20 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
   gap: 12px;
   padding: 10px 12px;
   border-radius: 6px;
-  color: #667085;
+  color: var(--mu-muted);
   font-size: 14.5px;
   font-weight: 500;
   line-height: normal;
 }
 
 .muriae-sidebar-link:hover {
-  color: #231651;
-  background: #f6f3ff;
+  color: var(--mu-brand);
+  background: var(--mu-sidebar-hover);
 }
 
 .muriae-sidebar-link.active {
-  color: #231651;
-  background: #eeebfa;
+  color: var(--mu-brand);
+  background: var(--mu-brand-bg);
   font-weight: 600;
 }
 
@@ -412,7 +515,7 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
   height: 14px;
   padding: 0;
   margin-bottom: 10px;
-  color: #667085;
+  color: var(--mu-muted);
   font-size: 12px;
   font-weight: 600;
   line-height: 14px;
@@ -431,7 +534,7 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
   left: 0;
   width: auto;
   margin: 0;
-  background: #e4e1da;
+  background: var(--mu-border);
 }
 
 .muriae-sidebar-user-row {
@@ -447,12 +550,12 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
   gap: 12px;
   padding: 6px;
   border-radius: 6px;
-  color: #1f2430;
+  color: var(--mu-text);
   background: transparent;
 }
 
 .muriae-sidebar-user:hover {
-  background: #fafaf8;
+  background: var(--mu-bg);
 }
 
 .muriae-avatar {
@@ -461,8 +564,8 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
 }
 
 .muriae-avatar [data-slot="avatar-fallback"] {
-  color: #231651;
-  background: #eeebfa;
+  color: var(--mu-brand);
+  background: var(--mu-brand-bg);
   font-size: 12px;
   font-weight: 700;
 }
@@ -476,7 +579,7 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
 .muriae-user-copy strong {
   max-width: 114px;
   overflow: hidden;
-  color: #1f2430;
+  color: var(--mu-text);
   font-size: 13.5px;
   font-weight: 700;
   line-height: 17px;
@@ -485,7 +588,7 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
 }
 
 .muriae-user-copy span {
-  color: #667085;
+  color: var(--mu-muted);
   font-size: 12.5px;
   font-weight: 500;
   line-height: 14px;
@@ -495,13 +598,13 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
   width: 32px;
   height: 32px;
   border-radius: 6px;
-  color: #667085;
+  color: var(--mu-muted);
   background: transparent;
 }
 
 .muriae-sidebar-logout:hover {
-  color: #b91c1c;
-  background: #fee2e2;
+  color: var(--mu-danger);
+  background: var(--mu-danger-bg);
 }
 
 .main-content {
@@ -2255,14 +2358,28 @@ body:has(.ac-page-muriae) .topbar {
   min-height: 64px;
   padding-left: 36px;
   padding-right: 36px;
-  border-bottom-color: #e4e1da;
-  background: rgba(250, 250, 248, .92);
+  border-bottom-color: var(--mu-border);
+  background: var(--mu-topbar);
+  color: var(--mu-text);
+}
+
+body:has(.ac-page-muriae) .topbar-user strong {
+  color: var(--mu-text);
+}
+
+body:has(.ac-page-muriae) .topbar-user span {
+  color: var(--mu-muted);
+}
+
+body:has(.ac-page-muriae) .topbar .avatar {
+  color: var(--mu-brand);
+  background: var(--mu-brand-bg);
 }
 
 .ac-main-content:has(.ac-page-muriae) {
   min-height: calc(100vh - 64px);
   padding: 48px 36px 72px;
-  background: #fafaf8;
+  background: var(--mu-bg);
 }
 
 .ac-main-content:has(.ac-page-muriae) > * {
@@ -2271,18 +2388,18 @@ body:has(.ac-page-muriae) .topbar {
 
 .ac-page-muriae {
   display: block;
-  color: #1f2430;
+  color: var(--mu-text);
   font-family: "DM Sans Variable", system-ui, -apple-system, sans-serif;
 }
 
 .muriae-explore-hero {
-  color: #1f2430;
+  color: var(--mu-text);
 }
 
 .muriae-eyebrow {
   display: block;
   margin-bottom: 10px;
-  color: #231651;
+  color: var(--mu-brand);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: .14em;
@@ -2292,7 +2409,7 @@ body:has(.ac-page-muriae) .topbar {
 
 .muriae-display {
   margin: 0;
-  color: #1f2430;
+  color: var(--mu-text);
   font-family: "DM Serif Display", Georgia, "Times New Roman", serif;
   font-size: 42px;
   font-weight: 400;
@@ -2303,7 +2420,7 @@ body:has(.ac-page-muriae) .topbar {
 .muriae-lede {
   max-width: 654px;
   margin: 14px 0 0;
-  color: #667085;
+  color: var(--mu-muted);
   font-size: 17px;
   line-height: 1.55;
 }
