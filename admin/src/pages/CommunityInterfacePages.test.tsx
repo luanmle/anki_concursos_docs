@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { apiRequest } from '../api/client'
 import { AdminSuggestionsPage, DeckPage } from './CommunityInterfacePages'
 import { fallbackDecks, fallbackNotes } from '../data/communityData'
 
@@ -15,9 +16,22 @@ const createTestQueryClient = () =>
   })
 
 vi.mock('../api/client', () => ({
-  apiRequest: vi.fn(async (path: string) => {
+  apiRequest: vi.fn(async (path: string, options?: RequestInit) => {
     if (path.includes('/subscriptions/decks')) {
       return { items: fallbackDecks }
+    }
+    if (path.includes('/subscriptions/') && options?.method === 'POST') {
+      return {
+        subscription_id: 'sub-1',
+        deck_id: 'demo-constitucional',
+        deck_name: 'Direito Constitucional',
+        latest_release: 18,
+        active_card_count: 1200,
+        subscribed_at: '2026-06-01T12:00:00Z',
+        unsubscribed_at: path.endsWith('/cancel')
+          ? '2026-06-26T12:00:00Z'
+          : null,
+      }
     }
     if (path.includes('/addon/decks/')) {
       return { changes: fallbackNotes }
@@ -136,5 +150,29 @@ describe('DeckPage comments panel', () => {
     expect(screen.getByText(/Mariana S\./i)).toBeInTheDocument()
     expect(screen.getByText(/Joao P\./i)).toBeInTheDocument()
   })
-})
 
+  it('cancels a subscription through the backend cancel endpoint', async () => {
+    const apiRequestMock = vi.mocked(apiRequest)
+    apiRequestMock.mockClear()
+
+    render(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <MemoryRouter initialEntries={['/deck/demo-constitucional']}>
+          <Routes>
+            <Route path="/deck/:deckId" element={<DeckPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: /desinscrever/i }))
+
+    await waitFor(() =>
+      expect(apiRequestMock).toHaveBeenCalledWith(
+        '/subscriptions/demo-constitucional/cancel',
+        { method: 'POST' },
+        null,
+      ),
+    )
+  })
+})

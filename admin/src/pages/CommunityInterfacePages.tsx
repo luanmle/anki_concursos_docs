@@ -1621,7 +1621,8 @@ function SubscriptionButton({ deck }: { deck: SubscribableDeck }) {
   })
 
   const unsubscribeMutation = useMutation({
-    mutationFn: () => apiRequest(`/subscriptions/${deck.deck_id}`, { method: 'DELETE' }, token),
+    mutationFn: () =>
+      apiRequest(`/subscriptions/${deck.deck_id}/cancel`, { method: 'POST' }, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['community-decks'] })
       queryClient.invalidateQueries({ queryKey: ['deck-subscriptions'] })
@@ -1637,8 +1638,8 @@ function SubscriptionButton({ deck }: { deck: SubscribableDeck }) {
         onClick={() => unsubscribeMutation.mutate()}
         className="h-[42px] gap-2 rounded-[6px] border-mu-validated-border bg-mu-validated-bg px-4 text-[13.5px] font-semibold text-mu-validated hover:bg-mu-validated-bg"
       >
-        <Check size={16} weight="bold" />
-        Inscrito
+        <X size={16} weight="bold" />
+        Desinscrever
       </Button>
     )
   }
@@ -1734,4 +1735,3 @@ function EmptyPanel({
     </section>
   )
 }
-
