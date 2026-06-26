@@ -11,21 +11,21 @@ export const CATEGORY: Record<
 > = {
   official: {
     label: 'Oficial',
-    strip: 'bg-[#eeebfa] border-b-[rgba(35,22,81,0.18)]',
-    text: 'text-[#231651]',
-    badge: 'bg-[#eeebfa] border-[rgba(35,22,81,0.18)] text-[#231651]',
+    strip: 'bg-mu-brand-bg border-b-mu-official-border',
+    text: 'text-mu-brand',
+    badge: 'bg-mu-brand-bg border-mu-official-border text-mu-brand',
   },
   community: {
     label: 'Comunidade',
-    strip: 'bg-[oklch(0.95_0.04_220)] border-b-[oklch(0.82_0.07_220)]',
-    text: 'text-[oklch(0.42_0.14_220)]',
-    badge: 'bg-[oklch(0.95_0.04_220)] border-[oklch(0.82_0.07_220)] text-[oklch(0.42_0.14_220)]',
+    strip: 'bg-mu-cat-comm-bg border-b-mu-cat-comm-border',
+    text: 'text-mu-cat-comm',
+    badge: 'bg-mu-cat-comm-bg border-mu-cat-comm-border text-mu-cat-comm',
   },
   ai: {
     label: 'IA',
-    strip: 'bg-[oklch(0.97_0.05_60)] border-b-[oklch(0.84_0.1_56)]',
-    text: 'text-[oklch(0.44_0.16_52)]',
-    badge: 'bg-[oklch(0.97_0.05_60)] border-[oklch(0.84_0.1_56)] text-[oklch(0.44_0.16_52)]',
+    strip: 'bg-mu-cat-ai-bg border-b-mu-cat-ai-border',
+    text: 'text-mu-cat-ai',
+    badge: 'bg-mu-cat-ai-bg border-mu-cat-ai-border text-mu-cat-ai',
   },
 }
 
@@ -76,10 +76,10 @@ export function MuriaeDeckCard({ deck }: { deck: SubscribableDeck }) {
         }
       }}
       className={cn(
-        'flex cursor-pointer flex-col overflow-hidden rounded-[8px] border border-[#e4e1da] bg-white text-left',
+        'flex cursor-pointer flex-col overflow-hidden rounded-[8px] border border-mu-border bg-mu-surface text-left',
         'shadow-[0_1px_2px_-1px_rgba(31,36,48,0.06),0_3px_8px_-3px_rgba(31,36,48,0.08)]',
         'transition-[border-color,box-shadow,transform] duration-200 ease-out',
-        'hover:-translate-y-[3px] hover:border-[#cdc6ba] hover:shadow-[0_6px_12px_-3px_rgba(31,36,48,0.10),0_18px_32px_-10px_rgba(35,22,81,0.18)]',
+        'hover:-translate-y-[3px] hover:border-mu-border-hover hover:shadow-[0_6px_12px_-3px_rgba(31,36,48,0.10),0_18px_32px_-10px_rgba(35,22,81,0.18)]',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#231651]',
       )}
     >
@@ -104,35 +104,35 @@ export function MuriaeDeckCard({ deck }: { deck: SubscribableDeck }) {
       </div>
 
       <div className="flex flex-1 flex-col gap-2 px-[18px] pt-[18px]">
-        <h3 className="font-dm-serif text-[18px] font-normal leading-[1.25] tracking-[-0.01em] text-[#1f2430]">
+        <h3 className="font-dm-serif text-[18px] font-normal leading-[1.25] tracking-[-0.01em] text-mu-text">
           {deck.name}
         </h3>
-        <p className="text-[13.5px] leading-[1.55] text-[#667085]">
+        <p className="text-[13.5px] leading-[1.55] text-mu-muted">
           {deck.description || 'Baralho publicado na plataforma.'}
         </p>
       </div>
 
-      <hr className="mx-[18px] mt-[14px] border-0 border-t border-dashed border-[#e4e1da]" />
+      <hr className="mx-[18px] mt-[14px] border-0 border-t border-dashed border-mu-border" />
 
       <div className="flex flex-col gap-[7px] px-[18px] py-3">
         <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-[7px] text-[12.5px] text-[#667085] [&>svg]:shrink-0 [&>svg]:text-[#98a2b3]">
+          <span className="inline-flex items-center gap-[7px] text-[12.5px] text-mu-muted [&>svg]:shrink-0 [&>svg]:text-mu-muted-2">
             <Stack size={14} />
             {deck.active_card_count.toLocaleString('pt-BR')} notas
           </span>
           {deck.subscribed && (
-            <span className="inline-flex items-center gap-[5px] text-[12.5px] font-semibold text-[#231651]">
+            <span className="inline-flex items-center gap-[5px] text-[12.5px] font-semibold text-mu-brand">
               <Check size={13} weight="bold" />
               Inscrito
             </span>
           )}
         </div>
         <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-[7px] text-[12.5px] text-[#667085] [&>svg]:shrink-0 [&>svg]:text-[#98a2b3]">
+          <span className="inline-flex items-center gap-[7px] text-[12.5px] text-mu-muted [&>svg]:shrink-0 [&>svg]:text-mu-muted-2">
             <ArrowClockwise size={14} />
             Versão {deck.latest_release}
           </span>
-          <span className="text-[12.5px] text-[#98a2b3]">{formatDeckDate(deck.updated_at)}</span>
+          <span className="text-[12.5px] text-mu-muted-2">{formatDeckDate(deck.updated_at)}</span>
         </div>
       </div>
     </article>
