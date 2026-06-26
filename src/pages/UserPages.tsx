@@ -7,7 +7,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError, apiRequest } from '../api/client'
 import { useAuth } from '../auth/auth-context'
-import { ErrorState, LoadingState, PageHeader, StatusBadge } from '../components/ui'
+import { ErrorState, LoadingState, PageHeader, StatusBadge } from '../components/ui-primitives'
 import { formatDate } from '../lib/presentation'
 import type { Paginated, User, UserRole } from '../types'
 

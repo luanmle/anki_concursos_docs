@@ -128,9 +128,9 @@ describe('DeckPage comments panel', () => {
     )
 
     fireEvent.click(await screen.findByRole('button', { name: /Qual rem/i }))
-    fireEvent.click(screen.getByRole('button', { name: /mostrar/i }))
+    fireEvent.click(screen.getByRole('button', { name: /coment/i }))
 
-    expect(screen.getByPlaceholderText(/escreva um comentÃ¡rio sobre esta nota/i)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/escreva um comentário sobre esta nota/i)).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /todos/i })).not.toBeInTheDocument()
     expect(screen.getByText(/Mariana S\./i)).toBeInTheDocument()

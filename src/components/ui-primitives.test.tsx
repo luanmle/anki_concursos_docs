@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { translateStatus } from '../lib/presentation'
-import { StatusBadge } from './ui'
+import { StatusBadge } from './ui-primitives'
 
 describe('status presentation', () => {
   it('translates known API states', () => {

@@ -30,7 +30,7 @@ export const fallbackDecks: SubscribableDeck[] = [
     deck_id: 'demo-constitucional',
     name: 'Direito Constitucional',
     description:
-      'Artigo 5o, direitos e garantias fundamentais, organizacao do Estado e poderes da Uniao.',
+      'Artigo 5º, direitos e garantias fundamentais, organização do Estado e poderes da União.',
     discipline_id: null,
     status: 'published',
     active_card_count: 1200,
@@ -41,9 +41,9 @@ export const fallbackDecks: SubscribableDeck[] = [
   },
   {
     deck_id: 'demo-logico',
-    name: 'Raciocinio Logico',
+    name: 'Raciocínio Lógico',
     description:
-      'Proposicoes logicas, tabelas-verdade, equivalencias e diagramas logicos complexos.',
+      'Proposições, tabelas-verdade, equivalências e diagramas lógicos para bancas como Cebraspe e FGV.',
     discipline_id: null,
     status: 'published',
     active_card_count: 850,
@@ -54,9 +54,9 @@ export const fallbackDecks: SubscribableDeck[] = [
   },
   {
     deck_id: 'demo-portugues',
-    name: 'Lingua Portuguesa',
+    name: 'Língua Portuguesa',
     description:
-      'Sintaxe, morfologia, crase, concordancia verbal e interpretacao de texto.',
+      'Sintaxe, morfologia, crase, concordância verbal e interpretação de texto.',
     discipline_id: null,
     status: 'published',
     active_card_count: 2100,
@@ -131,10 +131,10 @@ export const initialComments: StudentComment[] = [
 ]
 
 export const changeTypes = [
-  'Novo conteudo',
-  'Ortografia/Gramatica',
-  'Erro de conteudo',
-  'Novo cartao para adicionar',
+  'Novo conteúdo',
+  'Ortografia/Gramática',
+  'Erro de conteúdo',
+  'Novo cartão para adicionar',
   'Novas tags',
   'Tags atualizadas',
   'Excluir nota',

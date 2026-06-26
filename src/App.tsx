@@ -3,7 +3,8 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthContext'
 import { useAuth } from './auth/auth-context'
 import { AppShell } from './components/AppShell'
-import { LoadingState } from './components/ui'
+import { TooltipProvider } from './components/ui/tooltip'
+import { LoadingState } from './components/ui-primitives'
 import { DashboardPage } from './pages/DashboardPage'
 import {
   CardsPage,
@@ -202,7 +203,9 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AppRoutes />
+        <TooltipProvider>
+          <AppRoutes />
+        </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
   )

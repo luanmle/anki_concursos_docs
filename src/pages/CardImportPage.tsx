@@ -4,7 +4,7 @@ import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, apiRequest } from '../api/client'
 import { useAuth } from '../auth/auth-context'
-import { ErrorState, PageHeader, StatusBadge } from '../components/ui'
+import { ErrorState, PageHeader, StatusBadge } from '../components/ui-primitives'
 import type { CardCsvImportResponse } from '../types'
 
 const CSV_TEMPLATE = [

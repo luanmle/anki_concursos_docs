@@ -26,7 +26,7 @@ import {
   LoadingState,
   PageHeader,
   StatusBadge,
-} from '../components/ui'
+} from '../components/ui-primitives'
 import { formatDate } from '../lib/presentation'
 import type {
   CardSummary,
