@@ -44,7 +44,6 @@ import {
   initialComments,
   type CommentKind,
   type StudentComment,
-  type StudentSuggestion,
 } from '../data/communityData'
 import {
   EmptyState,
@@ -99,6 +98,10 @@ import {
   SUGGESTION_STATUS_LABEL,
   SUGGESTION_TYPE_LABEL,
 } from '../components/suggestions/labels'
+import {
+  buildChangedFields,
+  mapChangeType,
+} from '../components/suggestions/payload'
 
 type DeckFilter = 'all' | 'subscribed' | 'available'
 
@@ -639,30 +642,40 @@ function SuggestChangePanel({
   deckId: string
   note: AnkiSyncChange
 }) {
-  const [suggestions, setSuggestions] = useLocalStorageState<StudentSuggestion[]>(
-    'anki-concursos-suggestions',
-    [],
-  )
+  const { token } = useAuth()
+  const queryClient = useQueryClient()
   const [changeType, setChangeType] = useState(changeTypes[0])
   const [message, setMessage] = useState('')
   const [fields, setFields] = useState<Record<string, string>>(note.fields || {})
   const [sent, setSent] = useState(false)
 
-  function submitSuggestion() {
-    const suggestion: StudentSuggestion = {
-      id: crypto.randomUUID(),
-      deckId,
-      cardId: note.card_id,
-      publicId: note.public_id,
-      changeType,
-      message,
-      proposedFields: fields,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    }
-    setSuggestions([suggestion, ...suggestions])
-    setSent(true)
-  }
+  const changedFields = buildChangedFields(note.fields || {}, fields)
+  const suggestionType = mapChangeType(changeType)
+  const hasPayload =
+    suggestionType === 'delete' || Object.keys(changedFields).length > 0
+  const canSubmit = Boolean(message.trim()) && hasPayload
+
+  const submit = useMutation({
+    mutationFn: () =>
+      apiRequest(
+        `/addon/cards/${note.card_id}/suggestions`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            suggestion_type: suggestionType,
+            fields: changedFields,
+            comment: message.trim(),
+            source: 'web',
+          }),
+        },
+        token,
+      ),
+    onSuccess: () => {
+      setSent(true)
+      queryClient.invalidateQueries({ queryKey: ['deck-note-suggestions', deckId] })
+      queryClient.invalidateQueries({ queryKey: ['note-suggestions'] })
+    },
+  })
 
   const htmlToolbar = [
     { icon: <ArrowCounterClockwise size={15} />, label: 'Desfazer', cmd: 'undo' },
@@ -735,12 +748,28 @@ function SuggestChangePanel({
       <div>
         <Button
           type="button"
-          onClick={submitSuggestion}
-          className="h-[42px] gap-2 rounded-[6px] bg-[#231651] px-4 text-[13.5px] font-semibold text-white hover:bg-[#1a1040]"
+          onClick={() => submit.mutate()}
+          disabled={!canSubmit || submit.isPending}
+          className="h-[42px] gap-2 rounded-[6px] bg-[#231651] px-4 text-[13.5px] font-semibold text-white hover:bg-[#1a1040] disabled:opacity-50"
         >
-          Enviar sugestão
+          {submit.isPending ? 'Enviando...' : 'Enviar sugestão'}
         </Button>
+        {!canSubmit && (
+          <p className="mt-1.5 text-[12px] text-mu-muted-2">
+            {message.trim()
+              ? 'Edite ao menos um campo para enviar.'
+              : 'Escreva um comentário para o revisor.'}
+          </p>
+        )}
       </div>
+
+      {submit.error && (
+        <div className="flex items-center gap-2 rounded-[8px] border border-mu-danger-border bg-mu-danger-bg px-3.5 py-2.5 text-[13px] font-medium text-mu-danger">
+          {submit.error instanceof Error
+            ? submit.error.message
+            : 'Falha ao enviar a sugestão.'}
+        </div>
+      )}
 
       {sent && (
         <div className="flex items-center gap-2 rounded-[8px] border border-mu-validated-border bg-mu-validated-bg px-3.5 py-2.5 text-[13px] font-medium text-mu-validated">
@@ -886,11 +915,17 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
 }
 
 export function AdminDashboardPage() {
-  const [suggestions] = useLocalStorageState<StudentSuggestion[]>(
-    'anki-concursos-suggestions',
-    [],
-  )
-  const pendingSuggestions = suggestions.filter((item) => item.status === 'pending')
+  const { token } = useAuth()
+  const pendingQuery = useQuery({
+    queryKey: ['note-suggestions-count', 'pending'],
+    queryFn: () =>
+      apiRequest<NoteSuggestionList>(
+        '/admin/note-suggestions?status=pending&page_size=1',
+        {},
+        token,
+      ),
+  })
+  const pendingCount = pendingQuery.data?.total ?? 0
   const actions = [
     { to: '/admin/decks', label: 'Gerenciar baralhos' },
     { to: '/admin/suggestions', label: 'Revisar sugestões' },
@@ -906,7 +941,7 @@ export function AdminDashboardPage() {
       />
       <section className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard label="Baralhos publicados" value="12" />
-        <MetricCard label="Sugestões pendentes" value={String(pendingSuggestions.length)} />
+        <MetricCard label="Sugestões pendentes" value={String(pendingCount)} />
         <MetricCard label="Versões em revisão" value="25" />
         <MetricCard label="Releases pendentes" value="3" />
       </section>

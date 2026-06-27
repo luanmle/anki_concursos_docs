@@ -6,6 +6,33 @@ ADRs (decisões de arquitetura): `docs/adr/`.
 
 ---
 
+## 2026-06-27 — Fix: sugestões do web app gravavam em localStorage (não no backend)
+
+**Branch:** `fix/suggestion-create-backend`
+**Tipo:** fix
+
+### Causa
+`SuggestChangePanel` (modal de nota → "Sugerir mudanças") salvava a sugestão em
+`localStorage` (`anki-concursos-suggestions`), nunca no backend. Admin
+(`/admin/note-suggestions`) e a página do baralho (`/decks/{id}/note-suggestions`)
+leem do backend → as sugestões criadas pelo web app nunca apareciam.
+
+### O que mudou
+- `admin/src/pages/CommunityInterfacePages.tsx` — `SuggestChangePanel` agora faz
+  `POST /addon/cards/{card_id}/suggestions` (via mutation) com diff `{old,new}`
+  por campo alterado, tipo mapeado e comentário; valida comentário + alteração
+  antes de habilitar o envio; invalida as queries de sugestões. `AdminDashboardPage`
+  passou a contar "Sugestões pendentes" do backend (era localStorage).
+- `admin/src/components/suggestions/payload.ts` (novo) + `payload.test.ts` —
+  `mapChangeType` (rótulo PT → enum) e `buildChangedFields` (diff `{old,new}` só
+  dos campos alterados), extraídos como funções puras testáveis.
+
+### Impacto
+- Sugestões criadas pelo web app agora persistem no backend e aparecem tanto no
+  painel admin quanto na seção de sugestões do baralho. Lint limpo, 23 testes, build OK.
+
+---
+
 ## 2026-06-27 — Sugestões visíveis à comunidade no baralho + discussão
 
 **Branch:** `codex/publish-admin` (trabalho local; ver git)
