@@ -81,10 +81,10 @@ export const fallbackNotes: AnkiSyncChange[] = [
     note_type: 'Anki Concursos Basic',
     fields: {
       Front: 'Qual remédio constitucional protege a liberdade de locomoção?',
-      Back: 'Habeas corpus.',
+      Back: 'O <b>habeas corpus</b>.',
       Answer: 'Habeas corpus.',
       Explanation:
-        'O habeas corpus protege a liberdade de locomoção quando alguém sofre ou se acha ameaçado de sofrer violência ou coação ilegal.',
+        'O <b>habeas corpus</b> protege a liberdade de locomoção quando alguém sofre ou se acha ameaçado de sofrer <i>violência ou coação ilegal</i>.&nbsp;<span style="color: #231651;">(Art. 5º, LXVIII, CF/88)</span>',
     },
     tags: ['deck::demo-constitucional', 'card::AC-CONST-0001'],
   },
