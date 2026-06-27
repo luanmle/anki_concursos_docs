@@ -87,11 +87,13 @@ import { StatusBadge } from '../components/ui-primitives'
 import type {
   AnkiDeckSync,
   AnkiSyncChange,
-  CardSummary,
-  CardVersion,
+  NoteSuggestion,
+  NoteSuggestionList,
+  NoteSuggestionStatus,
   SubscribableDeck,
   SubscribableDeckList,
 } from '../types'
+import { SuggestionList } from '../components/suggestions/SuggestionList'
 
 type DeckFilter = 'all' | 'subscribed' | 'available'
 
@@ -981,117 +983,60 @@ export function AdminDecksPage() {
 export function AdminSuggestionsPage() {
   const { token } = useAuth()
   const queryClient = useQueryClient()
-  const [suggestions, setSuggestions] = useLocalStorageState<StudentSuggestion[]>(
-    'anki-concursos-suggestions',
-    [],
-  )
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [activeStatus, setActiveStatus] = useState<NoteSuggestionStatus>('pending')
 
-  function updateSuggestionStatus(
-    suggestionId: string,
-    status: StudentSuggestion['status'],
-    extra?: Partial<StudentSuggestion>,
-  ) {
-    setSuggestions((current) =>
-      current.map((item) =>
-        item.id === suggestionId ? { ...item, status, ...extra } : item,
-      ),
-    )
+  function useStatusQuery(status: NoteSuggestionStatus) {
+    return useQuery({
+      queryKey: ['note-suggestions', status],
+      queryFn: () =>
+        apiRequest<NoteSuggestionList>(
+          `/admin/note-suggestions?status=${status}&page_size=100`,
+          {},
+          token,
+        ),
+    })
   }
 
-  const convertSuggestion = useMutation({
-    mutationFn: async (suggestion: StudentSuggestion) => {
-      setError(null)
-      setSuccess(null)
+  const pendingQuery = useStatusQuery('pending')
+  const acceptedQuery = useStatusQuery('accepted')
+  const rejectedQuery = useStatusQuery('rejected')
 
-      if (!token) {
-        updateSuggestionStatus(suggestion.id, 'converted_to_new_version')
-        return { cardId: suggestion.cardId ?? null, versionId: null, deckId: suggestion.deckId }
-      }
+  const queryByStatus: Record<NoteSuggestionStatus, typeof pendingQuery> = {
+    pending: pendingQuery,
+    accepted: acceptedQuery,
+    rejected: rejectedQuery,
+  }
+  const activeQuery = queryByStatus[activeStatus]
 
-      const cardId = await resolveSuggestionCardId(suggestion, token)
-      const payload = buildVersionPayload(suggestion)
-      const created = await apiRequest<CardVersion>(
-        `/cards/${cardId}/versions`,
-        {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        },
-        token,
-      )
+  const counts = {
+    pending: pendingQuery.data?.total ?? 0,
+    accepted: acceptedQuery.data?.total ?? 0,
+    rejected: rejectedQuery.data?.total ?? 0,
+  }
 
-      await apiRequest(
-        `/cards/${cardId}/versions/${created.card_version_id}/approve`,
-        { method: 'POST' },
-        token,
-      )
-      await apiRequest(
-        `/cards/${cardId}/versions/${created.card_version_id}/publish`,
-        { method: 'POST' },
-        token,
-      )
-
-      await apiRequest(
-        `/decks/${suggestion.deckId}/cards`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ card_id: cardId }),
-        },
-        token,
-      )
-      await apiRequest(
-        `/decks/${suggestion.deckId}/publish-release`,
+  const review = useMutation({
+    mutationFn: ({
+      id,
+      status,
+      comment,
+    }: {
+      id: string
+      status: 'accepted' | 'rejected'
+      comment: string
+    }) =>
+      apiRequest<NoteSuggestion>(
+        `/admin/note-suggestions/${id}/review`,
         {
           method: 'POST',
           body: JSON.stringify({
-            description: `Sugestão aceita: ${suggestion.changeType}`,
+            status,
+            review_comment: comment.trim() ? comment.trim() : null,
           }),
         },
         token,
-      )
-
-      return { cardId, versionId: created.card_version_id, deckId: suggestion.deckId }
-    },
-    onSuccess: ({ cardId, versionId, deckId }, suggestion) => {
-      updateSuggestionStatus(suggestion.id, 'converted_to_new_version', {
-        resultingCardVersionId: versionId,
-      })
-      queryClient.invalidateQueries({ queryKey: ['cards'] })
-      if (cardId) {
-        queryClient.invalidateQueries({ queryKey: ['card', cardId] })
-      }
-      queryClient.invalidateQueries({ queryKey: ['decks'] })
-      if (deckId) {
-        queryClient.invalidateQueries({ queryKey: ['deck', deckId] })
-      }
-      setSuccess('Sugestão convertida e publicada.')
-    },
-    onError: (mutationError) => {
-      setError(
-        mutationError instanceof Error
-          ? mutationError.message
-          : 'Falha ao processar a sugestão.',
-      )
-    },
-  })
-
-  const rejectSuggestion = useMutation({
-    mutationFn: async (suggestion: StudentSuggestion) => {
-      setError(null)
-      setSuccess(null)
-      updateSuggestionStatus(suggestion.id, 'rejected')
-      return suggestion.id
-    },
+      ),
     onSuccess: () => {
-      setSuccess('Sugestão rejeitada.')
-    },
-    onError: (mutationError) => {
-      setError(
-        mutationError instanceof Error
-          ? mutationError.message
-          : 'Falha ao rejeitar a sugestão.',
-      )
+      queryClient.invalidateQueries({ queryKey: ['note-suggestions'] })
     },
   })
 
@@ -1099,77 +1044,25 @@ export function AdminSuggestionsPage() {
     <div className="ac-page ac-page-muriae">
       <ExploreHero
         eyebrow="Curadoria"
-        title="Sugestões dos estudantes"
-        description="Revise propostas enviadas a partir das notas sem editar conteúdo publicado diretamente."
+        title="Sugestões de mudanças"
+        description="Revise propostas de edição enviadas pela comunidade a partir das notas, com comparação entre o conteúdo atual e o sugerido."
       />
 
-      <div className="mt-8 flex flex-col gap-2.5">
-        {error && (
-          <div className="flex items-center gap-2 rounded-[8px] border border-mu-danger-border bg-mu-danger-bg px-3.5 py-2.5 text-[13px] font-medium text-mu-danger">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="flex items-center gap-2 rounded-[8px] border border-mu-validated-border bg-mu-validated-bg px-3.5 py-2.5 text-[13px] font-medium text-mu-validated">
-            <Check size={16} weight="bold" />
-            {success}
-          </div>
-        )}
-
-        {suggestions.map((suggestion) => (
-          <article key={suggestion.id} className={cn(muriaeSurface, 'flex flex-col gap-2.5 p-4')}>
-            <header className="flex flex-wrap items-center gap-2">
-              <strong className="font-mono text-[14px] font-semibold text-mu-text">
-                {suggestion.publicId}
-              </strong>
-              <Badge className="rounded-[5px] border-mu-border bg-mu-surface-2 px-2 py-0.5 text-[11px] font-medium text-mu-muted">
-                {suggestion.changeType}
-              </Badge>
-              <StatusBadge value={suggestion.status} />
-              {suggestion.resultingCardVersionId && (
-                <span className="text-[12px] text-mu-muted-2">
-                  v {suggestion.resultingCardVersionId.slice(0, 8)}
-                </span>
-              )}
-            </header>
-            <p className="text-[13.5px] leading-[1.55] text-mu-muted">
-              {suggestion.message || 'Sem comentário adicional.'}
-            </p>
-            <footer className="flex flex-wrap items-center gap-3">
-              <small className="text-[12px] text-mu-muted-2">
-                {formatDate(suggestion.createdAt)}
-              </small>
-              <div className="ml-auto flex gap-2">
-                <button
-                  type="button"
-                  disabled={suggestion.status !== 'pending'}
-                  onClick={() => convertSuggestion.mutate(suggestion)}
-                  className="inline-flex h-[34px] items-center rounded-[6px] bg-[#231651] px-3 text-[12.5px] font-semibold text-white transition-colors hover:bg-[#1a1040] disabled:cursor-not-allowed disabled:opacity-45"
-                >
-                  Converter em nova versão
-                </button>
-                <button
-                  type="button"
-                  disabled={suggestion.status !== 'pending'}
-                  onClick={() => rejectSuggestion.mutate(suggestion)}
-                  className="inline-flex h-[34px] items-center rounded-[6px] border border-mu-border bg-mu-surface px-3 text-[12.5px] font-semibold text-mu-text transition-colors hover:bg-mu-surface-2 disabled:cursor-not-allowed disabled:opacity-45"
-                >
-                  Rejeitar
-                </button>
-              </div>
-            </footer>
-          </article>
-        ))}
-        {!suggestions.length && (
-          <section className="flex flex-col items-start gap-2 rounded-[10px] border border-dashed border-mu-border bg-mu-surface p-8">
-            <strong className="text-[16px] font-semibold text-mu-text">
-              Nenhuma sugestão pendente
-            </strong>
-            <p className="text-[14px] text-mu-muted">
-              As sugestões criadas no modal da nota aparecerão aqui.
-            </p>
-          </section>
-        )}
+      <div className="mt-8">
+        <SuggestionList
+          activeStatus={activeStatus}
+          counts={counts}
+          items={activeQuery.data?.items ?? []}
+          loading={activeQuery.isLoading}
+          error={
+            activeQuery.error instanceof Error ? activeQuery.error.message : null
+          }
+          onStatusChange={setActiveStatus}
+          reviewingId={review.isPending ? (review.variables?.id ?? null) : null}
+          onReview={(id, status, comment) =>
+            review.mutate({ id, status, comment })
+          }
+        />
       </div>
     </div>
   )
@@ -1489,48 +1382,6 @@ export function CommunitySuggestionHistoryPage() {
       )}
     </div>
   )
-}
-
-async function resolveSuggestionCardId(
-  suggestion: StudentSuggestion,
-  token: string,
-) {
-  if (suggestion.cardId) return suggestion.cardId
-  const card = await apiRequest<CardSummary>(
-    `/cards/public/${encodeURIComponent(suggestion.publicId)}`,
-    {},
-    token,
-  )
-  return card.card_id
-}
-
-function buildVersionPayload(suggestion: StudentSuggestion) {
-  const fields = suggestion.proposedFields
-  const front_text =
-    fields.Front || fields.Text || fields.front_text || fields.question || ''
-  const back_text =
-    fields.Back || fields.Extra || fields.back_text || fields.extra || fields.answer || ''
-  const answer_text =
-    fields.Answer || fields.answer_text || back_text || front_text
-  const explanation_text =
-    fields.Explanation || fields.explanation_text || fields.Extra || back_text
-  const change_reason = suggestion.message.trim()
-    ? `${suggestion.changeType}: ${suggestion.message.trim()}`
-    : suggestion.changeType
-
-  if (!front_text || !back_text || !answer_text || !explanation_text) {
-    throw new Error(
-      'A sugestão não contém campos suficientes para criar uma nova versão.',
-    )
-  }
-
-  return {
-    front_text,
-    back_text,
-    answer_text,
-    explanation_text,
-    change_reason,
-  }
 }
 
 function SubscriptionButton({ deck }: { deck: SubscribableDeck }) {

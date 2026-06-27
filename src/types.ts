@@ -303,6 +303,45 @@ export interface Report {
   updated_at: string
 }
 
+export type NoteSuggestionType =
+  | 'updated_content'
+  | 'new_content'
+  | 'spelling/grammar'
+  | 'content_error'
+  | 'new_card_to_add'
+  | 'new_tags'
+  | 'updated_tags'
+  | 'delete'
+  | 'other'
+
+export type NoteSuggestionStatus = 'pending' | 'accepted' | 'rejected'
+
+export interface NoteSuggestion {
+  suggestion_id: string
+  deck_id: string | null
+  card_id: string | null
+  public_id: string | null
+  card_version_id: string | null
+  version_number: number | null
+  submitted_by_user_id: string
+  submitted_by_email: string
+  suggestion_type: NoteSuggestionType
+  status: NoteSuggestionStatus
+  fields: Record<string, unknown>
+  added_tags: string[]
+  removed_tags: string[]
+  comment: string
+  source: string | null
+  reviewed_by: string | null
+  review_comment: string | null
+  reviewed_at: string | null
+  resulting_card_version_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type NoteSuggestionList = Paginated<NoteSuggestion>
+
 export interface OperationStatus {
   service: 'online' | 'offline'
   database: 'online' | 'offline' | 'checking'
