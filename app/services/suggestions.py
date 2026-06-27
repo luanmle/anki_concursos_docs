@@ -5,8 +5,8 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
-from app.models import NoteSuggestion, NoteSuggestionComment, User
-from app.models.enums import NoteSuggestionStatus
+from app.models import CardVersion, NoteSuggestion, NoteSuggestionComment, User
+from app.models.enums import CardVersionStatus, NoteSuggestionStatus
 from app.repositories import NoteSuggestionRepository
 from app.schemas import (
     NoteSuggestionCommentCreateRequest,
@@ -17,6 +17,7 @@ from app.schemas import (
     NoteSuggestionResponse,
     NoteSuggestionReviewRequest,
 )
+from app.services.cards import calculate_content_hash
 
 
 class NoteSuggestionService:
@@ -196,7 +197,14 @@ class NoteSuggestionService:
             suggestion.status = payload.status
             suggestion.reviewed_by = reviewed_by
             suggestion.review_comment = payload.review_comment
-            suggestion.resulting_card_version_id = payload.resulting_card_version_id
+            resulting_id = payload.resulting_card_version_id
+            if (
+                resulting_id is None
+                and payload.status == NoteSuggestionStatus.ACCEPTED
+            ):
+                # ADR-0004: aprovar cria nova versão em needs_review (não publica).
+                resulting_id = self._create_review_version(suggestion, reviewed_by)
+            suggestion.resulting_card_version_id = resulting_id
             suggestion.reviewed_at = datetime.now(UTC)
             self.session.commit()
         except IntegrityError as exc:
@@ -206,6 +214,59 @@ class NoteSuggestionService:
                 detail="Suggestion review could not be completed",
             ) from exc
         return self.get(suggestion_id)
+
+    def _create_review_version(
+        self, suggestion: NoteSuggestion, reviewed_by: str
+    ) -> uuid.UUID | None:
+        """Cria CardVersion(needs_review) a partir do diff da sugestão.
+
+        ponytail: campos do Anki são mapeados por heurística de nome para os 4
+        campos da CardVersion; campos não tocados herdam a versão publicada.
+        Só vale para sugestão de card existente (deck/tag-only → None).
+        """
+        if suggestion.card_id is None:
+            return None
+        card = self.repository.get_published_card(suggestion.card_id)
+        if card is None or card.current_version is None:
+            return None
+        base = card.current_version
+        fields = suggestion.fields or {}
+
+        def suggested(*names: str) -> str | None:
+            for name in names:
+                if name in fields:
+                    value = fields[name]
+                    return value.get("new", "") if isinstance(value, dict) else value
+            return None
+
+        new_fields = {
+            "front_text": suggested("Front", "Text", "front_text") or base.front_text,
+            "back_text": suggested("Back", "Extra", "back_text") or base.back_text,
+            "answer_text": suggested("Answer", "answer_text") or base.answer_text,
+            "explanation_text": suggested("Explanation", "explanation_text")
+            or base.explanation_text,
+        }
+        if all(
+            new_fields[key] == getattr(base, key) for key in new_fields
+        ):
+            return None  # nada mapeável mudou (ex.: só tags)
+
+        content_hash = calculate_content_hash(card_kind=card.card_kind, **new_fields)
+        if content_hash in self.repository.card_version_hashes(card.id):
+            return None  # versão idêntica já existe — no-op
+
+        version = self.repository.add_card_version(
+            CardVersion(
+                card_id=card.id,
+                version_number=self.repository.next_card_version_number(card.id),
+                change_reason=suggestion.comment or "Sugestão aceita",
+                created_by=reviewed_by,
+                status=CardVersionStatus.NEEDS_REVIEW,
+                content_hash=content_hash,
+                **new_fields,
+            )
+        )
+        return version.id
 
     @staticmethod
     def _response(suggestion: NoteSuggestion) -> NoteSuggestionResponse:

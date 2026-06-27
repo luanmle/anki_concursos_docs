@@ -6,6 +6,43 @@ ADRs (decisões de arquitetura): `docs/adr/`.
 
 ---
 
+## 2026-06-27 — Aprovar sugestão cria nova versão do card em revisão (ADR-0004)
+
+**Branch:** `feat/suggestion-approval-creates-version`
+**Tipo:** feature
+
+### Contexto
+Aprovar uma sugestão só marcava `status=accepted` — a nota nunca mudava. Decisão
+do usuário: aprovar deve **propagar** a mudança, respeitando o gate de qualidade
+do ADR-0004 (sem publicar direto).
+
+### O que mudou
+- `app/services/suggestions.py` — `review()` agora, ao aceitar (sem
+  `resulting_card_version_id` informado), chama `_create_review_version`: cria
+  uma `CardVersion(status=needs_review)` a partir do diff da sugestão e grava o
+  `resulting_card_version_id`. Campos do Anki são mapeados por heurística de nome
+  (Front/Text→front, Back/Extra→back, Answer→answer, Explanation→explanation);
+  campos não tocados herdam a versão publicada. No-op se: sugestão de deck/tag,
+  nada mapeável mudou, ou já existe versão com o mesmo `content_hash`.
+- `app/repositories/suggestions.py` — `next_card_version_number`,
+  `card_version_hashes`, `add_card_version`.
+- `tests/test_suggestions_api.py` — aceitar card cria versão needs_review com os
+  campos certos; rejeitar e aceitar-só-tags não criam versão.
+
+### Decisões relevantes
+- **ADR-0004** — aprovação cria versão em `needs_review`, **não** publica. A nota
+  só muda depois que um curador aprova + publica + gera release dessa versão
+  (fluxo de cards existente). Mantém a porta de qualidade.
+- **Sem migration** — usa a coluna `resulting_card_version_id` já existente.
+- **Mapeamento heurístico** de campos Anki → 4 campos da CardVersion (lossy,
+  marcado com `ponytail:`).
+
+### Impacto
+- Aprovar uma sugestão de card agora gera a versão corrigida em revisão, pronta
+  para o curador publicar. Backend: 120 passed, ruff limpo. Sem mudança no add-on.
+
+---
+
 ## 2026-06-27 — Fix: sugestões do web app gravavam em localStorage (não no backend)
 
 **Branch:** `fix/suggestion-create-backend`
