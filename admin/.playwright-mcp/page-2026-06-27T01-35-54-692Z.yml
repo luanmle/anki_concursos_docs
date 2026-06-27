@@ -1,0 +1,141 @@
+- generic [ref=e21]:
+  - generic [ref=e24]:
+    - generic [ref=e28]:
+      - strong [ref=e29]: Muriae
+      - generic [ref=e30]: concursos
+    - generic [ref=e31]:
+      - list [ref=e34]:
+        - listitem [ref=e35]:
+          - link "Explore" [ref=e36] [cursor=pointer]:
+            - /url: /
+            - img [ref=e37]
+            - generic [ref=e39]: Explore
+        - listitem [ref=e40]:
+          - link "Meus baralhos" [ref=e41] [cursor=pointer]:
+            - /url: /my-decks
+            - img [ref=e42]
+            - generic [ref=e44]: Meus baralhos
+        - listitem [ref=e45]:
+          - link "Comunidade" [ref=e46] [cursor=pointer]:
+            - /url: /community
+            - img [ref=e47]
+            - generic [ref=e49]: Comunidade
+      - generic [ref=e50]:
+        - generic [ref=e51]: Equipe
+        - list [ref=e53]:
+          - listitem [ref=e54]:
+            - link "Administração" [ref=e55] [cursor=pointer]:
+              - /url: /admin
+              - img [ref=e56]
+              - generic [ref=e58]: Administração
+          - listitem [ref=e59]:
+            - link "Add-on do Anki" [ref=e60] [cursor=pointer]:
+              - /url: /addon
+              - img [ref=e61]
+              - generic [ref=e63]: Add-on do Anki
+          - listitem [ref=e64]:
+            - link "Operação" [ref=e65] [cursor=pointer]:
+              - /url: /operation
+              - img [ref=e66]
+              - generic [ref=e68]: Operação
+    - generic [ref=e70]:
+      - button "Abrir configurações" [ref=e71]:
+        - generic [ref=e73]: SY
+        - generic [ref=e74]:
+          - strong [ref=e75]: System administrator
+          - generic [ref=e76]: Administrador
+      - button "Sair" [ref=e77]:
+        - img
+  - generic [ref=e78]:
+    - banner [ref=e79]:
+      - generic [ref=e80]:
+        - generic [ref=e81]: STAGING
+        - generic [ref=e82]: API conectada
+      - generic [ref=e84]:
+        - button "Ativar modo noturno" [ref=e85]:
+          - img
+        - generic [ref=e86]:
+          - strong [ref=e87]: System administrator
+          - generic [ref=e88]: Administrador
+        - generic [ref=e89]: SY
+        - img [ref=e90]
+    - main [ref=e92]:
+      - generic [ref=e93]:
+        - generic [ref=e94]:
+          - generic [ref=e95]: Explore
+          - heading "Explore baralhos" [level=1] [ref=e96]
+          - paragraph [ref=e97]: Encontre e inscreva-se nos melhores baralhos focados em concursos públicos, construídos e revisados em comunidade.
+        - generic [ref=e98]:
+          - generic [ref=e99]:
+            - img
+            - textbox "Buscar baralhos..." [ref=e100]
+          - radiogroup [ref=e101]:
+            - radio "Todos" [checked] [ref=e102]
+            - radio "Inscritos" [ref=e103]
+            - radio "Disponíveis" [ref=e104]
+          - button "Mais recentes" [ref=e105]:
+            - img [ref=e106]
+            - text: Mais recentes
+        - paragraph [ref=e108]: 3 baralhos
+        - generic [ref=e109]:
+          - button "Oficial Validado Direito Constitucional Artigo 5º, direitos e garantias fundamentais, organização do Estado e poderes da União. 1.200 notas Inscrito Versão 18 16 jun 2026" [ref=e110] [cursor=pointer]:
+            - generic [ref=e111]:
+              - generic [ref=e112]: Oficial
+              - generic [ref=e113]:
+                - img [ref=e114]
+                - text: Validado
+            - generic [ref=e116]:
+              - heading "Direito Constitucional" [level=3] [ref=e117]
+              - paragraph [ref=e118]: Artigo 5º, direitos e garantias fundamentais, organização do Estado e poderes da União.
+            - separator [ref=e119]
+            - generic [ref=e120]:
+              - generic [ref=e121]:
+                - generic [ref=e122]:
+                  - img [ref=e123]
+                  - text: 1.200 notas
+                - generic [ref=e125]:
+                  - img [ref=e126]
+                  - text: Inscrito
+              - generic [ref=e128]:
+                - generic [ref=e129]:
+                  - img [ref=e130]
+                  - text: Versão 18
+                - generic [ref=e132]: 16 jun 2026
+          - button "Oficial Validado Língua Portuguesa Sintaxe, morfologia, crase, concordância verbal e interpretação de texto. 2.100 notas Versão 11 15 jun 2026" [ref=e133] [cursor=pointer]:
+            - generic [ref=e134]:
+              - generic [ref=e135]: Oficial
+              - generic [ref=e136]:
+                - img [ref=e137]
+                - text: Validado
+            - generic [ref=e139]:
+              - heading "Língua Portuguesa" [level=3] [ref=e140]
+              - paragraph [ref=e141]: Sintaxe, morfologia, crase, concordância verbal e interpretação de texto.
+            - separator [ref=e142]
+            - generic [ref=e143]:
+              - generic [ref=e145]:
+                - img [ref=e146]
+                - text: 2.100 notas
+              - generic [ref=e148]:
+                - generic [ref=e149]:
+                  - img [ref=e150]
+                  - text: Versão 11
+                - generic [ref=e152]: 15 jun 2026
+          - button "Comunidade Validado Raciocínio Lógico Proposições, tabelas-verdade, equivalências e diagramas lógicos para bancas como Cebraspe e FGV. 850 notas Versão 7 12 jun 2026" [ref=e153] [cursor=pointer]:
+            - generic [ref=e154]:
+              - generic [ref=e155]: Comunidade
+              - generic [ref=e156]:
+                - img [ref=e157]
+                - text: Validado
+            - generic [ref=e159]:
+              - heading "Raciocínio Lógico" [level=3] [ref=e160]
+              - paragraph [ref=e161]: Proposições, tabelas-verdade, equivalências e diagramas lógicos para bancas como Cebraspe e FGV.
+            - separator [ref=e162]
+            - generic [ref=e163]:
+              - generic [ref=e165]:
+                - img [ref=e166]
+                - text: 850 notas
+              - generic [ref=e168]:
+                - generic [ref=e169]:
+                  - img [ref=e170]
+                  - text: Versão 7
+                - generic [ref=e172]: 12 jun 2026

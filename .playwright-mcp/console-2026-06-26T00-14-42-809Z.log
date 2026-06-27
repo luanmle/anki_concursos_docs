@@ -1,0 +1,23 @@
+[    2249ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=9d028343:14337
+[    7392ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/auth/me:0
+[    7419ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/auth/me:0
+[    8182ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[    9262ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  392320ms] ReferenceError: COMMENT_KIND is not defined
+    at http://localhost:5173/src/pages/CommunityInterfacePages.tsx?t=1782433271690:1513:19
+    at Array.map (<anonymous>)
+    at NoteCommentsPanel (http://localhost:5173/src/pages/CommunityInterfacePages.tsx?t=1782433271690:1512:106)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=9d028343:12868:12)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=9d028343:4213:19)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=9d028343:5569:16)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=9d028343:6140:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=9d028343:851:66)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=9d028343:8429:92)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=9d028343:8325:37)
+[  392182ms] [WARNING] %s
+
+%s
+ An error occurred in the <NoteCommentsPanel> component. Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries. @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=9d028343:5257
+[  425739ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  426832ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0

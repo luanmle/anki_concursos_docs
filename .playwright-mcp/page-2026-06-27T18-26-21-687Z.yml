@@ -1,0 +1,180 @@
+- generic [ref=e3]:
+  - generic [ref=e6]:
+    - generic [ref=e10]:
+      - strong [ref=e11]: Muriae
+      - generic [ref=e12]: concursos
+    - generic [ref=e13]:
+      - list [ref=e16]:
+        - listitem [ref=e17]:
+          - link "Explore" [ref=e18] [cursor=pointer]:
+            - /url: /
+            - img [ref=e19]
+            - generic [ref=e21]: Explore
+        - listitem [ref=e22]:
+          - link "Meus baralhos" [ref=e23] [cursor=pointer]:
+            - /url: /my-decks
+            - img [ref=e24]
+            - generic [ref=e26]: Meus baralhos
+        - listitem [ref=e27]:
+          - link "Comunidade" [ref=e28] [cursor=pointer]:
+            - /url: /community
+            - img [ref=e29]
+            - generic [ref=e31]: Comunidade
+      - generic [ref=e32]:
+        - generic [ref=e33]: Equipe
+        - list [ref=e35]:
+          - listitem [ref=e36]:
+            - link "Administração" [ref=e37] [cursor=pointer]:
+              - /url: /admin
+              - img [ref=e38]
+              - generic [ref=e40]: Administração
+          - listitem [ref=e41]:
+            - link "Add-on do Anki" [ref=e42] [cursor=pointer]:
+              - /url: /addon
+              - img [ref=e43]
+              - generic [ref=e45]: Add-on do Anki
+          - listitem [ref=e46]:
+            - link "Operação" [ref=e47] [cursor=pointer]:
+              - /url: /operation
+              - img [ref=e48]
+              - generic [ref=e50]: Operação
+    - generic [ref=e52]:
+      - button "Abrir configurações" [ref=e53]:
+        - generic [ref=e55]: SY
+        - generic [ref=e56]:
+          - strong [ref=e57]: System administrator
+          - generic [ref=e58]: Administrador
+      - button "Sair" [ref=e59]:
+        - img
+  - generic [ref=e60]:
+    - banner [ref=e61]:
+      - generic [ref=e62]:
+        - generic [ref=e63]: STAGING
+        - generic [ref=e64]: API conectada
+      - generic [ref=e66]:
+        - button "Ativar modo claro" [pressed] [ref=e67]:
+          - img
+        - generic [ref=e68]:
+          - strong [ref=e69]: System administrator
+          - generic [ref=e70]: Administrador
+        - generic [ref=e71]: SY
+        - img [ref=e72]
+    - main [ref=e74]:
+      - generic [ref=e75]:
+        - generic [ref=e76]:
+          - generic [ref=e77]: Curadoria
+          - heading "Sugestões de mudanças" [level=1] [ref=e78]
+          - paragraph [ref=e79]: Revise propostas de edição enviadas pela comunidade a partir das notas, com comparação entre o conteúdo atual e o sugerido.
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - button "Aguardando 2" [ref=e253]:
+              - text: Aguardando
+              - generic [ref=e84]: "2"
+            - button "Aceitas 1" [ref=e254]:
+              - text: Aceitas
+              - generic [ref=e86]: "1"
+            - button "Rejeitadas 0" [ref=e87]:
+              - text: Rejeitadas
+              - generic [ref=e88]: "0"
+          - generic [ref=e92]:
+            - article [ref=e93]:
+              - generic [ref=e94]:
+                - generic [ref=e95]:
+                  - generic [ref=e96]: JP
+                  - generic [ref=e97]:
+                    - generic [ref=e98]: joao.pereira@example.com
+                    - generic [ref=e99]: 27/06/2026, 15:24 · 0ac19a1f
+                - generic [ref=e101]: Aguardando
+              - generic [ref=e102]:
+                - heading "Conteúdo atualizado" [level=3] [ref=e103]
+                - generic "Votação em breve" [ref=e104]:
+                  - generic [ref=e105]:
+                    - img [ref=e106]
+                    - text: "0"
+                  - generic [ref=e108]:
+                    - img [ref=e109]
+                    - text: "0"
+              - generic [ref=e111]:
+                - generic [ref=e112]: Justificativa
+                - paragraph [ref=e113]: Adiciona contexto de absorção e atualiza a legenda da imagem.
+              - generic [ref=e114]:
+                - generic [ref=e115]:
+                  - generic [ref=e116]: Text
+                  - generic [ref=e117]:
+                    - generic [ref=e118]:
+                      - generic [ref=e119]:
+                        - generic [ref=e120]: Atual
+                        - button "Ver HTML" [ref=e121]:
+                          - img [ref=e122]
+                      - generic [ref=e124]: O duodeno é a primeira porção do intestino delgado.
+                    - generic [ref=e125]:
+                      - generic [ref=e126]:
+                        - generic [ref=e127]: Sugerido
+                        - button "Ver HTML" [ref=e128]:
+                          - img [ref=e129]
+                      - generic [ref=e131]: O duodeno é a primeira porção do intestino delgado, envolvida na absorção.
+                - generic [ref=e132]:
+                  - generic [ref=e133]: Extra
+                  - generic [ref=e134]:
+                    - generic [ref=e135]:
+                      - generic [ref=e136]:
+                        - generic [ref=e137]: Atual
+                        - button "Ver HTML" [ref=e138]:
+                          - img [ref=e139]
+                      - generic [ref=e141]:
+                        - img [ref=e255]
+                        - text: Esquema antigo.
+                    - generic [ref=e143]:
+                      - generic [ref=e144]:
+                        - generic [ref=e145]: Sugerido
+                        - button "Ver HTML" [ref=e146]:
+                          - img [ref=e147]
+                      - generic [ref=e149]:
+                        - img [ref=e256]
+                        - text: Esquema atualizado com legenda.
+                - generic [ref=e151]:
+                  - generic [ref=e152]: Tags
+                  - generic [ref=e154]: anatomia
+              - generic [ref=e155]:
+                - textbox "Comentário de revisão (opcional)" [ref=e156]
+                - generic [ref=e157]:
+                  - button "Aceitar" [ref=e158]:
+                    - img [ref=e159]
+                    - text: Aceitar
+                  - button "Rejeitar" [ref=e161]:
+                    - img [ref=e162]
+                    - text: Rejeitar
+            - article [ref=e164]:
+              - generic [ref=e165]:
+                - generic [ref=e166]:
+                  - generic [ref=e167]: AC
+                  - generic [ref=e168]:
+                    - generic [ref=e169]: ana.costa@example.com
+                    - generic [ref=e170]: 27/06/2026, 15:24 · 8193b39d
+                - generic [ref=e172]: Aguardando
+              - generic [ref=e173]:
+                - heading "Novas tags" [level=3] [ref=e174]
+                - generic "Votação em breve" [ref=e175]:
+                  - generic [ref=e176]:
+                    - img [ref=e177]
+                    - text: "0"
+                  - generic [ref=e179]:
+                    - img [ref=e180]
+                    - text: "0"
+              - generic [ref=e182]:
+                - generic [ref=e183]: Justificativa
+                - paragraph [ref=e184]: Tags para facilitar a busca no concurso de 2026.
+              - generic [ref=e186]:
+                - generic [ref=e187]: Tags
+                - generic [ref=e188]:
+                  - generic [ref=e189]: concurso::2026
+                  - generic [ref=e190]: alta-prioridade
+              - generic [ref=e191]:
+                - textbox "Comentário de revisão (opcional)" [ref=e192]
+                - generic [ref=e193]:
+                  - button "Aceitar" [ref=e194]:
+                    - img [ref=e195]
+                    - text: Aceitar
+                  - button "Rejeitar" [ref=e197]:
+                    - img [ref=e198]
+                    - text: Rejeitar

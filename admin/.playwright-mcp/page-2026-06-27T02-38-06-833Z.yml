@@ -1,0 +1,338 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - strong: Muriae
+                - generic: concursos
+            - generic:
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /
+                        - img
+                        - generic: Explore
+                    - listitem:
+                      - link:
+                        - /url: /my-decks
+                        - img
+                        - generic: Meus baralhos
+                    - listitem:
+                      - link:
+                        - /url: /community
+                        - img
+                        - generic: Comunidade
+              - generic:
+                - generic: Equipe
+                - generic:
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /admin
+                        - img
+                        - generic: Administração
+                    - listitem:
+                      - link:
+                        - /url: /addon
+                        - img
+                        - generic: Add-on do Anki
+                    - listitem:
+                      - link:
+                        - /url: /operation
+                        - img
+                        - generic: Operação
+            - generic:
+              - generic:
+                - button:
+                  - generic:
+                    - generic: SY
+                  - generic:
+                    - strong: System administrator
+                    - generic: Administrador
+                - button:
+                  - img
+      - generic:
+        - banner:
+          - generic:
+            - generic: STAGING
+            - generic: API conectada
+          - generic:
+            - button:
+              - img
+            - generic:
+              - strong: System administrator
+              - generic: Administrador
+            - generic: SY
+            - img
+        - main:
+          - generic:
+            - link:
+              - /url: /
+              - img
+              - text: Voltar ao Explore
+            - generic:
+              - generic:
+                - text: Baralho
+                - heading [level=1]: Direito Constitucional
+                - paragraph: Artigo 5º, direitos e garantias fundamentais, organização do Estado e poderes da União.
+                - generic:
+                  - generic: Oficial
+                  - generic:
+                    - img
+                    - text: 1.200 notas
+                  - generic:
+                    - img
+                    - text: Versão 18
+                  - generic: Atualizado 16 jun 2026
+              - generic:
+                - button:
+                  - img
+                  - text: Desinscrever
+                - button:
+                  - img
+                  - text: Compartilhar
+                - link:
+                  - /url: /deck/demo-constitucional/suggestions
+                  - img
+                  - text: Sugestões
+                - link:
+                  - /url: /community
+                  - text: Ver na Comunidade
+            - generic:
+              - generic:
+                - generic:
+                  - text: Notas
+                  - heading [level=2]: Preview do baralho
+                - generic:
+                  - img
+                  - textbox:
+                    - /placeholder: Buscar notas...
+              - generic:
+                - button:
+                  - generic: basic
+                  - generic:
+                    - strong: Qual remédio constitucional protege a liberdade de locomoção?
+                    - paragraph: O habeas corpus protege a liberdade de locomoção quando alguém sofre ou se acha ameaçado de sofrer violência ou coação ilegal. (Art. 5º, LXVIII, CF/88)
+                  - generic:
+                    - img
+                    - text: Validado
+                  - code: AC-CONST-0001
+                  - img
+                - button:
+                  - generic: cloze
+                  - generic:
+                    - strong: "A Constituição admite {{c1::habeas corpus}} para proteger a liberdade de locomoção."
+                    - paragraph: O cloze preserva a memorização ativa do instituto jurídico.
+                  - generic:
+                    - img
+                    - text: Validado
+                  - code: AC-CONST-0002
+                  - img
+  - dialog "AC-CONST-0002" [ref=e6]:
+    - heading "AC-CONST-0002" [level=2] [ref=e7]
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - text: cloze
+        - heading "AC-CONST-0002" [level=2] [ref=e10]
+      - generic [ref=e11]:
+        - generic [ref=e12]: Oficial
+        - generic [ref=e13]:
+          - img
+          - text: Validado
+        - button "Copiar identificador" [ref=e14]:
+          - img [ref=e15]
+        - button "Fechar" [ref=e17]:
+          - img [ref=e18]
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - tablist [ref=e22]:
+          - tab "Conteúdo" [ref=e23]
+          - tab "Sugerir mudanças" [active] [selected] [ref=e24]
+        - button "Comentários" [ref=e25]:
+          - img [ref=e26]
+          - text: Comentários
+      - tabpanel "Sugerir mudanças" [ref=e63]:
+        - generic [ref=e64]:
+          - generic [ref=e65]:
+            - img [ref=e66]
+            - text: Sua sugestão será enviada para revisão da comunidade. Ela não altera automaticamente a nota publicada.
+          - generic [ref=e68]:
+            - generic [ref=e69]: Tipo de mudança
+            - combobox [ref=e70]:
+              - generic: Novo conteúdo
+              - img
+          - generic [ref=e71]:
+            - generic [ref=e72]:
+              - generic [ref=e73]:
+                - generic [ref=e74]: Text
+                - button "Editar HTML de Text" [ref=e75]:
+                  - img [ref=e76]
+              - generic "Barra de formatação de Text" [ref=e78]:
+                - button "Desfazer" [ref=e79]:
+                  - img [ref=e80]
+                - button "Refazer" [ref=e82]:
+                  - img [ref=e83]
+                - button "Negrito" [ref=e85]:
+                  - img [ref=e86]
+                - button "Itálico" [ref=e88]:
+                  - img [ref=e89]
+                - button "Sublinhado" [ref=e91]:
+                  - img [ref=e92]
+                - button "Tachado" [ref=e94]:
+                  - img [ref=e95]
+                - button "Título" [ref=e97]:
+                  - img [ref=e98]
+                - button "Link" [ref=e100]:
+                  - img [ref=e101]
+                - button "Lista com marcadores" [ref=e103]:
+                  - img [ref=e104]
+                - button "Lista numerada" [ref=e106]:
+                  - img [ref=e107]
+                - button "Citação" [ref=e109]:
+                  - img [ref=e110]
+                - button "Linha horizontal" [ref=e112]:
+                  - generic [ref=e113]: —
+                - button "Alinhar à esquerda" [ref=e114]:
+                  - img [ref=e115]
+                - button "Centralizar" [ref=e117]:
+                  - img [ref=e118]
+                - button "Alinhar à direita" [ref=e120]:
+                  - img [ref=e121]
+                - button "Justificar" [ref=e123]:
+                  - img [ref=e124]
+                - button "Lacuna cloze c1" [ref=e127]: "[...]"
+                - button "Próxima lacuna cloze (cN+1)" [ref=e128]: "[...]+"
+              - textbox "Text" [ref=e129]
+            - generic [ref=e130]:
+              - generic [ref=e131]:
+                - generic [ref=e132]: Extra
+                - button "Editar HTML de Extra" [ref=e133]:
+                  - img [ref=e134]
+              - generic "Barra de formatação de Extra" [ref=e136]:
+                - button "Desfazer" [ref=e137]:
+                  - img [ref=e138]
+                - button "Refazer" [ref=e140]:
+                  - img [ref=e141]
+                - button "Negrito" [ref=e143]:
+                  - img [ref=e144]
+                - button "Itálico" [ref=e146]:
+                  - img [ref=e147]
+                - button "Sublinhado" [ref=e149]:
+                  - img [ref=e150]
+                - button "Tachado" [ref=e152]:
+                  - img [ref=e153]
+                - button "Título" [ref=e155]:
+                  - img [ref=e156]
+                - button "Link" [ref=e158]:
+                  - img [ref=e159]
+                - button "Lista com marcadores" [ref=e161]:
+                  - img [ref=e162]
+                - button "Lista numerada" [ref=e164]:
+                  - img [ref=e165]
+                - button "Citação" [ref=e167]:
+                  - img [ref=e168]
+                - button "Linha horizontal" [ref=e170]:
+                  - generic [ref=e171]: —
+                - button "Alinhar à esquerda" [ref=e172]:
+                  - img [ref=e173]
+                - button "Centralizar" [ref=e175]:
+                  - img [ref=e176]
+                - button "Alinhar à direita" [ref=e178]:
+                  - img [ref=e179]
+                - button "Justificar" [ref=e181]:
+                  - img [ref=e182]
+                - button "Lacuna cloze c1" [ref=e185]: "[...]"
+                - button "Próxima lacuna cloze (cN+1)" [ref=e186]: "[...]+"
+              - textbox "Extra" [ref=e187]
+            - generic [ref=e188]:
+              - generic [ref=e189]:
+                - generic [ref=e190]: Answer
+                - button "Editar HTML de Answer" [ref=e191]:
+                  - img [ref=e192]
+              - generic "Barra de formatação de Answer" [ref=e194]:
+                - button "Desfazer" [ref=e195]:
+                  - img [ref=e196]
+                - button "Refazer" [ref=e198]:
+                  - img [ref=e199]
+                - button "Negrito" [ref=e201]:
+                  - img [ref=e202]
+                - button "Itálico" [ref=e204]:
+                  - img [ref=e205]
+                - button "Sublinhado" [ref=e207]:
+                  - img [ref=e208]
+                - button "Tachado" [ref=e210]:
+                  - img [ref=e211]
+                - button "Título" [ref=e213]:
+                  - img [ref=e214]
+                - button "Link" [ref=e216]:
+                  - img [ref=e217]
+                - button "Lista com marcadores" [ref=e219]:
+                  - img [ref=e220]
+                - button "Lista numerada" [ref=e222]:
+                  - img [ref=e223]
+                - button "Citação" [ref=e225]:
+                  - img [ref=e226]
+                - button "Linha horizontal" [ref=e228]:
+                  - generic [ref=e229]: —
+                - button "Alinhar à esquerda" [ref=e230]:
+                  - img [ref=e231]
+                - button "Centralizar" [ref=e233]:
+                  - img [ref=e234]
+                - button "Alinhar à direita" [ref=e236]:
+                  - img [ref=e237]
+                - button "Justificar" [ref=e239]:
+                  - img [ref=e240]
+                - button "Lacuna cloze c1" [ref=e243]: "[...]"
+                - button "Próxima lacuna cloze (cN+1)" [ref=e244]: "[...]+"
+              - textbox "Answer" [ref=e245]
+            - generic [ref=e246]:
+              - generic [ref=e247]:
+                - generic [ref=e248]: Explanation
+                - button "Editar HTML de Explanation" [ref=e249]:
+                  - img [ref=e250]
+              - generic "Barra de formatação de Explanation" [ref=e252]:
+                - button "Desfazer" [ref=e253]:
+                  - img [ref=e254]
+                - button "Refazer" [ref=e256]:
+                  - img [ref=e257]
+                - button "Negrito" [ref=e259]:
+                  - img [ref=e260]
+                - button "Itálico" [ref=e262]:
+                  - img [ref=e263]
+                - button "Sublinhado" [ref=e265]:
+                  - img [ref=e266]
+                - button "Tachado" [ref=e268]:
+                  - img [ref=e269]
+                - button "Título" [ref=e271]:
+                  - img [ref=e272]
+                - button "Link" [ref=e274]:
+                  - img [ref=e275]
+                - button "Lista com marcadores" [ref=e277]:
+                  - img [ref=e278]
+                - button "Lista numerada" [ref=e280]:
+                  - img [ref=e281]
+                - button "Citação" [ref=e283]:
+                  - img [ref=e284]
+                - button "Linha horizontal" [ref=e286]:
+                  - generic [ref=e287]: —
+                - button "Alinhar à esquerda" [ref=e288]:
+                  - img [ref=e289]
+                - button "Centralizar" [ref=e291]:
+                  - img [ref=e292]
+                - button "Alinhar à direita" [ref=e294]:
+                  - img [ref=e295]
+                - button "Justificar" [ref=e297]:
+                  - img [ref=e298]
+                - button "Lacuna cloze c1" [ref=e301]: "[...]"
+                - button "Próxima lacuna cloze (cN+1)" [ref=e302]: "[...]+"
+              - textbox "Explanation" [ref=e303]
+          - generic [ref=e304]:
+            - generic [ref=e305]: Comentário para o revisor
+            - textbox "Comentário para o revisor" [ref=e306]:
+              - /placeholder: Explique o motivo da sugestão.
+          - button "Enviar sugestão" [ref=e308]
