@@ -93,6 +93,24 @@ class ReviewDecision(StrEnum):
     CONVERTED_TO_NEW_VERSION = "converted_to_new_version"
 
 
+class NoteSuggestionType(StrEnum):
+    UPDATED_CONTENT = "updated_content"
+    NEW_CONTENT = "new_content"
+    SPELLING_GRAMMAR = "spelling/grammar"
+    CONTENT_ERROR = "content_error"
+    NEW_CARD_TO_ADD = "new_card_to_add"
+    NEW_TAGS = "new_tags"
+    UPDATED_TAGS = "updated_tags"
+    DELETE = "delete"
+    OTHER = "other"
+
+
+class NoteSuggestionStatus(StrEnum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+
+
 class UserRole(StrEnum):
     ADMIN = "admin"
     CURATOR = "curator"

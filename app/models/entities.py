@@ -30,6 +30,8 @@ from app.models.enums import (
     CardVersionStatus,
     DeckStatus,
     DocumentExtractionStatus,
+    NoteSuggestionStatus,
+    NoteSuggestionType,
     ProcessingJobStatus,
     QuestionStatus,
     ReleaseAction,
@@ -372,6 +374,74 @@ class CardReport(TimestampMixin, Base):
     __table_args__ = (
         CheckConstraint("length(message) > 0", name="message_not_empty"),
         Index("ix_card_reports_status_created", "status", "created_at"),
+    )
+
+
+class NoteSuggestion(TimestampMixin, Base):
+    __tablename__ = "note_suggestions"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    deck_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("decks.id", ondelete="RESTRICT"), index=True
+    )
+    card_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("cards.id", ondelete="RESTRICT"), index=True
+    )
+    card_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("card_versions.id", ondelete="RESTRICT"), index=True
+    )
+    submitted_by_user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    submitted_by_email: Mapped[str] = mapped_column(String(320), nullable=False)
+    suggestion_type: Mapped[NoteSuggestionType] = mapped_column(
+        enum_column(NoteSuggestionType, "note_suggestion_type"),
+        nullable=False,
+    )
+    status: Mapped[NoteSuggestionStatus] = mapped_column(
+        enum_column(NoteSuggestionStatus, "note_suggestion_status"),
+        default=NoteSuggestionStatus.PENDING,
+        server_default=NoteSuggestionStatus.PENDING.value,
+        nullable=False,
+    )
+    fields: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    added_tags: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    removed_tags: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    comment: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str | None] = mapped_column(String(255))
+    reviewed_by: Mapped[str | None] = mapped_column(String(255))
+    review_comment: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resulting_card_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("card_versions.id", ondelete="RESTRICT"), index=True
+    )
+
+    deck: Mapped["Deck | None"] = relationship(foreign_keys=[deck_id])
+    card: Mapped["Card | None"] = relationship(foreign_keys=[card_id])
+    card_version: Mapped["CardVersion | None"] = relationship(
+        foreign_keys=[card_version_id]
+    )
+    submitted_by: Mapped["User"] = relationship(foreign_keys=[submitted_by_user_id])
+    resulting_card_version: Mapped["CardVersion | None"] = relationship(
+        foreign_keys=[resulting_card_version_id]
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "(card_id IS NOT NULL AND card_version_id IS NOT NULL) "
+            "OR deck_id IS NOT NULL",
+            name="note_suggestion_has_target",
+        ),
+        CheckConstraint(
+            "length(submitted_by_email) > 3",
+            name="suggestion_email_not_empty",
+        ),
+        CheckConstraint("length(comment) > 0", name="suggestion_comment_not_empty"),
+        CheckConstraint(
+            "review_comment IS NULL OR length(review_comment) > 0",
+            name="suggestion_review_comment_not_empty",
+        ),
+        Index("ix_note_suggestions_status_created", "status", "created_at"),
     )
 
 

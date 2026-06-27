@@ -22,6 +22,12 @@ from app.api.routes.reports import (
     router as reports_router,
 )
 from app.api.routes.subscriptions import router as subscriptions_router
+from app.api.routes.suggestions import (
+    addon_router as addon_suggestions_router,
+)
+from app.api.routes.suggestions import (
+    admin_router as admin_note_suggestions_router,
+)
 from app.api.routes.taxonomy import router as taxonomy_router
 from app.core.config import get_settings
 from app.core.honeybadger import configure_honeybadger, notify_exception
@@ -83,7 +89,7 @@ if settings.cors_origins:
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=False,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
         expose_headers=[
             "Content-Disposition",
@@ -102,5 +108,7 @@ app.include_router(card_imports_router)
 app.include_router(cards_router)
 app.include_router(decks_router)
 app.include_router(addon_router)
+app.include_router(addon_suggestions_router)
 app.include_router(reports_router)
 app.include_router(admin_reports_router)
+app.include_router(admin_note_suggestions_router)
