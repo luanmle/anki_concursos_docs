@@ -22,6 +22,7 @@ import { cn } from '../lib/utils'
 import { formatDate } from '../lib/presentation'
 import type {
   AnkiDeckManifest,
+  AnkiDeckTemplateVersion,
   AnkiDeckSync,
   DeckSubscriptionList,
   SubscribableDeck,
@@ -102,6 +103,27 @@ export function AddonPage() {
       queryClient.invalidateQueries({ queryKey: ['deck-subscriptions'] })
     },
   })
+  const updateProtectedFields = useMutation({
+    mutationFn: ({
+      templateId,
+      protectedFields,
+    }: {
+      templateId: string
+      protectedFields: string[]
+    }) =>
+      apiRequest<AnkiDeckTemplateVersion>(
+        `/addon/decks/${selectedDeckId}/templates/${templateId}/protected-fields`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ protected_fields: protectedFields }),
+        },
+        token,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['addon-manifest', selectedDeckId] })
+      queryClient.invalidateQueries({ queryKey: ['addon-sync', selectedDeckId] })
+    },
+  })
 
   const error =
     decks.error ||
@@ -109,7 +131,8 @@ export function AddonPage() {
     manifest.error ||
     sync.error ||
     subscribe.error ||
-    cancel.error
+    cancel.error ||
+    updateProtectedFields.error
 
   function refreshAll() {
     queryClient.invalidateQueries({ queryKey: ['subscribable-decks'] })
@@ -243,7 +266,14 @@ export function AddonPage() {
               {manifest.isLoading || sync.isLoading ? (
                 <LoadingState />
               ) : (
-                <AddonContractPreview manifest={manifest.data} sync={sync.data} />
+                <AddonContractPreview
+                  manifest={manifest.data}
+                  sync={sync.data}
+                  savingProtectedFields={updateProtectedFields.isPending}
+                  onSaveProtectedFields={(templateId, protectedFields) =>
+                    updateProtectedFields.mutate({ templateId, protectedFields })
+                  }
+                />
               )}
             </>
           ) : (
@@ -355,9 +385,13 @@ function EndpointList({ deckId }: { deckId: string }) {
 function AddonContractPreview({
   manifest,
   sync,
+  savingProtectedFields,
+  onSaveProtectedFields,
 }: {
   manifest?: AnkiDeckManifest
   sync?: AnkiDeckSync
+  savingProtectedFields: boolean
+  onSaveProtectedFields: (templateId: string, protectedFields: string[]) => void
 }) {
   if (!manifest || !sync) return null
   return (
@@ -410,6 +444,109 @@ function AddonContractPreview({
           )}
         </div>
       </article>
+      <article className={cn(muriaeSurface, 'flex flex-col gap-3 bg-mu-surface-2 p-4 xl:col-span-2')}>
+        <div className="flex flex-col gap-1">
+          <span className={muriaeEyebrow}>Campos protegidos</span>
+          <strong className="text-[14px] font-semibold text-mu-text">
+            Campos preservados no Anki local
+          </strong>
+          <p className="text-[12.5px] leading-relaxed text-mu-muted">
+            Campos marcados aqui são enviados como <code>protected_fields</code> e
+            não serão sobrescritos pelo add-on durante updates remotos.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {manifest.templates.map((template) => (
+            <ProtectedFieldsEditor
+              key={`${template.note_type}-${template.template_name}-${(template.protected_fields || []).join('\u0000')}`}
+              templateId={template.template_id || ''}
+              templateName={template.template_name}
+              noteType={template.note_type}
+              fields={template.fields}
+              initialProtectedFields={template.protected_fields || []}
+              saving={savingProtectedFields}
+              onSave={onSaveProtectedFields}
+            />
+          ))}
+        </div>
+      </article>
     </div>
+  )
+}
+
+function ProtectedFieldsEditor({
+  templateId,
+  templateName,
+  noteType,
+  fields,
+  initialProtectedFields,
+  saving,
+  onSave,
+}: {
+  templateId: string
+  templateName: string
+  noteType: string
+  fields: string[]
+  initialProtectedFields: string[]
+  saving: boolean
+  onSave: (templateId: string, protectedFields: string[]) => void
+}) {
+  const [selectedFields, setSelectedFields] = useState(initialProtectedFields)
+
+  const normalizedInitial = [...initialProtectedFields].sort().join('\u0000')
+  const normalizedSelected = [...selectedFields].sort().join('\u0000')
+  const changed = normalizedInitial !== normalizedSelected
+  const canSave = Boolean(templateId) && changed && !saving
+
+  function toggleField(field: string) {
+    setSelectedFields((current) =>
+      current.includes(field)
+        ? current.filter((item) => item !== field)
+        : [...current, field],
+    )
+  }
+
+  return (
+    <section className="rounded-[8px] border border-mu-border bg-mu-surface p-3">
+      <div className="flex flex-col gap-0.5">
+        <strong className="text-[13px] font-semibold text-mu-text">
+          {templateName}
+        </strong>
+        <span className="text-[11.5px] text-mu-muted-2">{noteType}</span>
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {fields.map((field) => {
+          const checked = selectedFields.includes(field)
+          return (
+            <label
+              key={field}
+              className={cn(
+                'flex min-h-10 items-center gap-2 rounded-[7px] border px-3 py-2 text-[12.5px] transition-colors',
+                checked
+                  ? 'border-mu-brand bg-mu-brand-bg text-mu-text'
+                  : 'border-mu-border bg-mu-surface-2 text-mu-muted hover:border-mu-border-hover',
+              )}
+            >
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[#231651]"
+                checked={checked}
+                onChange={() => toggleField(field)}
+              />
+              <span className="truncate">{field}</span>
+            </label>
+          )
+        })}
+      </div>
+      <button
+        type="button"
+        className={cn(muriaeSecondaryBtn, 'mt-3 h-[36px]')}
+        disabled={!canSave}
+        onClick={() => onSave(templateId, selectedFields)}
+      >
+        <CheckCircle2 size={15} />
+        Salvar proteção
+      </button>
+    </section>
   )
 }
