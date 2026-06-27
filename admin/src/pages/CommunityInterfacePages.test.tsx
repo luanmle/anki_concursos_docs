@@ -6,7 +6,6 @@ import { apiRequest } from '../api/client'
 import { AdminSuggestionsPage, DeckPage } from './CommunityInterfacePages'
 import { fallbackDecks, fallbackNotes } from '../data/communityData'
 
-const STORAGE_KEY = 'anki-concursos-suggestions'
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -15,8 +14,43 @@ const createTestQueryClient = () =>
     },
   })
 
+const pendingSuggestion = {
+  suggestion_id: 'sug-1',
+  deck_id: 'deck-1',
+  card_id: 'card-1',
+  public_id: 'AC-001',
+  card_version_id: 'ver-1',
+  version_number: 3,
+  submitted_by_user_id: 'user-1',
+  submitted_by_email: 'maria.silva@example.com',
+  suggestion_type: 'spelling/grammar',
+  status: 'pending',
+  fields: { Front: { old: 'glicose', new: '<b>glicose</b>' } },
+  added_tags: ['novo'],
+  removed_tags: [],
+  comment: 'Corrigir destaque',
+  source: 'addon',
+  reviewed_by: null,
+  review_comment: null,
+  reviewed_at: null,
+  resulting_card_version_id: null,
+  created_at: '2026-06-27T10:00:00Z',
+  updated_at: '2026-06-27T10:00:00Z',
+}
+
+const emptyList = { items: [], page: 1, page_size: 100, total: 0, pages: 0 }
+
 vi.mock('../api/client', () => ({
   apiRequest: vi.fn(async (path: string, options?: RequestInit) => {
+    if (path.includes('/admin/note-suggestions/') && options?.method === 'POST') {
+      return { ...pendingSuggestion, status: 'accepted' }
+    }
+    if (path.includes('/admin/note-suggestions?status=pending')) {
+      return { items: [pendingSuggestion], page: 1, page_size: 100, total: 1, pages: 1 }
+    }
+    if (path.includes('/admin/note-suggestions')) {
+      return emptyList
+    }
     if (path.includes('/subscriptions/decks')) {
       return { items: fallbackDecks }
     }
@@ -68,56 +102,53 @@ describe('AdminSuggestionsPage', () => {
     )
   }
 
-  it('marks a suggestion as converted to a new version', async () => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify([
-        {
-          id: 'suggestion-1',
-          deckId: 'deck-1',
-          publicId: 'AC-001',
-          changeType: 'Erro de conteudo',
-          message: 'Ajustar a explicacao',
-          proposedFields: {},
-          status: 'pending',
-          createdAt: '2026-06-17T10:00:00Z',
-        },
-      ]),
-    )
-
+  it('lists pending suggestions from the backend with a diff', async () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: /converter/i }))
-
-    await waitFor(() =>
-      expect(screen.getByTitle('converted_to_new_version')).toBeInTheDocument(),
-    )
-    expect(screen.getByRole('button', { name: /converter/i })).toBeDisabled()
+    expect(
+      await screen.findByText('maria.silva@example.com'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Ortografia/Gramática')).toBeInTheDocument()
+    expect(screen.getByText('Corrigir destaque')).toBeInTheDocument()
+    // diff renders both sides
+    expect(screen.getByText('Atual')).toBeInTheDocument()
+    expect(screen.getByText('Sugerido')).toBeInTheDocument()
   })
 
-  it('marks a suggestion as rejected', async () => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify([
-        {
-          id: 'suggestion-2',
-          deckId: 'deck-1',
-          publicId: 'AC-002',
-          changeType: 'Ortografia/Gramatica',
-          message: 'Corrigir acento',
-          proposedFields: {},
-          status: 'pending',
-          createdAt: '2026-06-17T10:00:00Z',
-        },
-      ]),
-    )
+  it('accepts a suggestion through the review endpoint', async () => {
+    const apiRequestMock = vi.mocked(apiRequest)
+    apiRequestMock.mockClear()
 
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: /rejeitar/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /aceitar/i }))
 
-    await waitFor(() => expect(screen.getByTitle('rejected')).toBeInTheDocument())
-    expect(screen.getByRole('button', { name: /rejeitar/i })).toBeDisabled()
+    await waitFor(() =>
+      expect(apiRequestMock).toHaveBeenCalledWith(
+        '/admin/note-suggestions/sug-1/review',
+        expect.objectContaining({ method: 'POST' }),
+        null,
+      ),
+    )
+  })
+
+  it('rejects a suggestion through the review endpoint', async () => {
+    const apiRequestMock = vi.mocked(apiRequest)
+    apiRequestMock.mockClear()
+
+    renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: /rejeitar/i }))
+
+    await waitFor(() => {
+      const call = apiRequestMock.mock.calls.find(
+        ([path]) => path === '/admin/note-suggestions/sug-1/review',
+      )
+      expect(call).toBeTruthy()
+      expect(JSON.parse((call![1] as RequestInit).body as string).status).toBe(
+        'rejected',
+      )
+    })
   })
 })
 

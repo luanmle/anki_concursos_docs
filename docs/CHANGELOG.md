@@ -6,6 +6,53 @@ ADRs (decisões de arquitetura): `docs/adr/`.
 
 ---
 
+## 2026-06-27 — Página de Sugestões de Mudanças (fila de moderação)
+
+**Branch:** `codex/publish-admin`
+**Tipo:** feature + design
+
+### O que mudou
+- `admin/src/components/suggestions/DiffViewer.tsx` (novo) — diff por campo no estilo AnkiHub: Atual (vermelho) vs Sugerido (verde), HTML sanitizado (texto, tags, imagens, cloze), toggle `<>` por painel para ver o HTML-fonte; também renderiza diff de tags (adicionadas verdes / removidas riscadas em vermelho).
+- `admin/src/components/suggestions/diff.ts` (novo) + `diff.test.ts` — `normalizeFieldDiff`: normaliza cada campo de `fields` para `{old,new}`, tolerante a `{old,new}` ou string crua (separado em módulo p/ não disparar `react-refresh/only-export-components`).
+- `admin/src/components/suggestions/SuggestionCard.tsx` (novo) — card de sugestão: avatar (iniciais do e-mail), autor, data, ID, badge de status, título (rótulo do tipo), votos display-only, bloco Justificativa, `DiffViewer`, e ações Aceitar/Rejeitar com comentário de revisão opcional (some quando não pendente, mostra "Revisada por…").
+- `admin/src/components/suggestions/SuggestionList.tsx` (novo) — filtros de status (Aguardando/Aceitas/Rejeitadas) com contagem por aba + estados loading/error/empty.
+- `admin/src/pages/CommunityInterfacePages.tsx` — `AdminSuggestionsPage` reescrita: consome `GET /admin/note-suggestions` (3 queries por status p/ contagens) e `POST /admin/note-suggestions/{id}/review`. Removido o fluxo localStorage antigo e os órfãos `resolveSuggestionCardId`/`buildVersionPayload`; imports `CardSummary`/`CardVersion` removidos.
+- `admin/src/pages/CommunityInterfacePages.test.tsx` — testes da página migrados de localStorage para o backend (lista do diff, aceitar/rejeitar via endpoint de review).
+
+### Decisões relevantes
+- **Contrato de diff `fields[campo] = {old,new}`** (HTML) — auto-contido, a UI compara sem buscar a versão atual; diff calculado no add-on (igual AnkiHub). `normalizeFieldDiff` aceita também string crua (só sugerido) p/ clientes antigos. Como o add-on ainda não envia, esta UI fixa o contrato.
+- **Substitui localStorage** — `/admin/suggestions` agora é a fila persistente; aceitar/rejeitar chama o endpoint de review (sem conversão automática em nova versão neste bloco).
+- **Votos display-only** — `NoteSuggestion` não tem campo de voto no backend; o controle aparece (fidelidade à referência) mas desabilitado, marcado com `ponytail:`.
+
+### Impacto
+- A equipe de curadoria tem fila de moderação real para sugestões vindas do add-on, com diff visual e revisão. Verificado no app real (login admin, dados semeados e removidos): lista, diff (cloze/imagem/tags), aceitar com comentário → migra de Aguardando p/ Aceitas e grava revisor/comentário. Lint limpo, 18 testes passam, build OK.
+
+---
+
+## 2026-06-27 — Sugestoes de notas pelo add-on
+
+**Branch:** `codex/publish-admin`
+**Tipo:** backend feature
+
+### O que mudou
+- `app/models/entities.py` + `migrations/versions/20260627_0017_note_suggestions.py` — nova tabela `note_suggestions` para persistir sugestoes vindas do add-on.
+- `app/schemas/suggestions.py`, `app/repositories/suggestions.py`, `app/services/suggestions.py`, `app/api/routes/suggestions.py` — contrato para criar sugestoes por card existente, sugestoes de nota nova por deck, listar e revisar sugestoes.
+- `app/main.py` — registra as rotas e inclui `PATCH` no CORS, necessario para frontend admin.
+- `admin/src/types.ts` — tipos TypeScript para a futura tela de sugestoes persistentes.
+- `tests/test_suggestions_api.py` — cobre criacao, listagem e revisao no nivel de service.
+- `docs/changes/2026-06-27-addon-note-suggestions.md` — documenta contrato, decisoes e gap anterior.
+
+### Decisoes relevantes
+- **Sem conversao automatica agora** — aceitar sugestao e criar card version pode reaproveitar o fluxo existente de cards/reports no frontend.
+- **Base versionada** — sugestao em card existente guarda o `card_version_id` publicado no momento do envio.
+- **Substitui localStorage** — backend agora tem destino persistente para o fluxo que antes existia apenas no frontend comunitario.
+
+### Impacto
+- Add-on pode enviar diff de campos/tags/comentario direto para a plataforma.
+- Frontend admin ja tem tipos e endpoints para construir fila de moderacao.
+
+---
+
 ## 2026-06-27 — Campos protegidos no contrato do add-on
 
 **Branch:** `codex/publish-admin`
