@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
-from app.models import Card, CardVersion, Deck, Discipline, Topic, User
+from app.models import Card, CardVersion, Deck, DeckCard, Discipline, Topic, User
 from app.models.enums import (
     CardStatus,
     CardVersionStatus,
@@ -17,7 +17,11 @@ from app.models.enums import (
     UserRole,
 )
 from app.repositories import NoteSuggestionRepository
-from app.schemas import NoteSuggestionCreateRequest, NoteSuggestionReviewRequest
+from app.schemas import (
+    NoteSuggestionCommentCreateRequest,
+    NoteSuggestionCreateRequest,
+    NoteSuggestionReviewRequest,
+)
 from app.services import NoteSuggestionService
 
 
@@ -168,6 +172,97 @@ def test_reviewer_can_review_note_suggestion(session: Session) -> None:
             reviewed_by="reviewer@example.com",
         )
     assert exc_info.value.status_code == 409
+
+
+def add_card_to_deck(session: Session, deck: Deck, card: Card, version: CardVersion) -> None:
+    session.add(
+        DeckCard(deck_id=deck.id, card_id=card.id, card_version_id=version.id)
+    )
+    session.commit()
+
+
+def test_list_for_deck_includes_deck_and_card_suggestions(session: Session) -> None:
+    user = create_user(session)
+    deck = create_published_deck(session)
+    card, version = create_published_card(session)
+    add_card_to_deck(session, deck, card, version)
+
+    # sugestao em card do deck
+    card_sug = service(session).create_for_card(
+        card.id,
+        NoteSuggestionCreateRequest(
+            suggestion_type=NoteSuggestionType.UPDATED_CONTENT,
+            fields={"Front": {"old": "a", "new": "b"}},
+            comment="edit card",
+        ),
+        user,
+    )
+    # sugestao de nota nova no deck
+    deck_sug = service(session).create_for_deck(
+        deck.id,
+        NoteSuggestionCreateRequest(
+            suggestion_type=NoteSuggestionType.NEW_CARD_TO_ADD,
+            fields={"Front": "nova"},
+            comment="new note",
+        ),
+        user,
+    )
+    # ruido: sugestao em outro deck, nao deve aparecer
+    other_deck = create_published_deck(session)
+    service(session).create_for_deck(
+        other_deck.id,
+        NoteSuggestionCreateRequest(
+            suggestion_type=NoteSuggestionType.NEW_CARD_TO_ADD,
+            fields={"Front": "outra"},
+            comment="other deck",
+        ),
+        user,
+    )
+
+    listed = service(session).list_for_deck(
+        deck.id, page=1, page_size=20, status_filter=None
+    )
+    ids = {item.suggestion_id for item in listed.items}
+    assert listed.total == 2
+    assert card_sug.suggestion_id in ids
+    assert deck_sug.suggestion_id in ids
+
+
+def test_add_and_list_comments(session: Session) -> None:
+    user = create_user(session)
+    card, _version = create_published_card(session)
+    sug = service(session).create_for_card(
+        card.id,
+        NoteSuggestionCreateRequest(
+            suggestion_type=NoteSuggestionType.CONTENT_ERROR,
+            fields={"Back": {"old": "x", "new": "y"}},
+            comment="fix",
+        ),
+        user,
+    )
+
+    created = service(session).add_comment(
+        sug.suggestion_id,
+        NoteSuggestionCommentCreateRequest(body="Concordo com a mudanca."),
+        user,
+    )
+    assert created.body == "Concordo com a mudanca."
+    assert created.author_email == user.email
+
+    listed = service(session).list_comments(sug.suggestion_id)
+    assert listed.total == 1
+    assert listed.items[0].comment_id == created.comment_id
+
+
+def test_comment_on_missing_suggestion_raises(session: Session) -> None:
+    user = create_user(session)
+    with pytest.raises(HTTPException) as exc:
+        service(session).add_comment(
+            uuid.uuid4(),
+            NoteSuggestionCommentCreateRequest(body="vazio"),
+            user,
+        )
+    assert exc.value.status_code == 404
 
 
 def test_suggestion_requires_diff_for_non_delete() -> None:

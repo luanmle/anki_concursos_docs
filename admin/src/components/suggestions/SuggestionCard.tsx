@@ -1,26 +1,15 @@
 import { Check, ThumbsDown, ThumbsUp, X } from '@phosphor-icons/react'
 import { useState } from 'react'
-import type { NoteSuggestion, NoteSuggestionType } from '../../types'
+import type { NoteSuggestion } from '../../types'
 import { formatDate } from '../../lib/presentation'
 import { cn } from '../../lib/utils'
 import { DiffViewer } from './DiffViewer'
+import { SUGGESTION_TYPE_LABEL } from './labels'
 
 const muriaePrimaryBtn =
   'inline-flex h-[38px] items-center gap-2 rounded-[6px] bg-[#231651] px-4 text-[13px] font-semibold !text-white transition-colors hover:bg-[#1a1040] disabled:opacity-50'
 const muriaeSecondaryBtn =
   'inline-flex h-[38px] items-center gap-2 rounded-[6px] border border-mu-border bg-mu-surface px-4 text-[13px] font-semibold text-mu-text transition-colors hover:border-mu-border-hover hover:bg-mu-surface-2 disabled:opacity-50'
-
-const TYPE_LABEL: Record<NoteSuggestionType, string> = {
-  updated_content: 'Conteúdo atualizado',
-  new_content: 'Novo conteúdo',
-  'spelling/grammar': 'Ortografia/Gramática',
-  content_error: 'Erro de conteúdo',
-  new_card_to_add: 'Novo cartão',
-  new_tags: 'Novas tags',
-  updated_tags: 'Tags atualizadas',
-  delete: 'Exclusão',
-  other: 'Outro',
-}
 
 function initials(email: string): string {
   const name = email.split('@')[0] ?? email
@@ -93,7 +82,8 @@ export function SuggestionCard({
       {/* Título: tipo de mudança + votos */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-[15px] font-semibold text-mu-text">
-          {TYPE_LABEL[suggestion.suggestion_type] ?? suggestion.suggestion_type}
+          {SUGGESTION_TYPE_LABEL[suggestion.suggestion_type] ??
+            suggestion.suggestion_type}
         </h3>
         {/* ponytail: votos são display-only — backend não tem campo de voto. */}
         <div className="flex items-center gap-1" title="Votação em breve">

@@ -342,6 +342,20 @@ export interface NoteSuggestion {
 
 export type NoteSuggestionList = Paginated<NoteSuggestion>
 
+export interface NoteSuggestionComment {
+  comment_id: string
+  suggestion_id: string
+  author_user_id: string
+  author_email: string
+  body: string
+  created_at: string
+}
+
+export interface NoteSuggestionCommentList {
+  items: NoteSuggestionComment[]
+  total: number
+}
+
 export interface OperationStatus {
   service: 'online' | 'offline'
   database: 'online' | 'offline' | 'checking'

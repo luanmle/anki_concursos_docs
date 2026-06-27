@@ -91,3 +91,26 @@ class NoteSuggestionListResponse(BaseModel):
     page_size: int
     total: int
     pages: int
+
+
+class NoteSuggestionCommentCreateRequest(BaseModel):
+    body: str = Field(min_length=1, max_length=5000)
+
+    @field_validator("body", mode="before")
+    @classmethod
+    def strip_body(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
+class NoteSuggestionCommentResponse(BaseModel):
+    comment_id: uuid.UUID
+    suggestion_id: uuid.UUID
+    author_user_id: uuid.UUID
+    author_email: str
+    body: str
+    created_at: datetime
+
+
+class NoteSuggestionCommentListResponse(BaseModel):
+    items: list[NoteSuggestionCommentResponse]
+    total: int

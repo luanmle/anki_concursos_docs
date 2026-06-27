@@ -83,7 +83,6 @@ import {
 import { cn } from '../lib/utils'
 import { useLocalStorageState } from '../hooks/useLocalStorageState'
 import { formatDate } from '../lib/presentation'
-import { StatusBadge } from '../components/ui-primitives'
 import type {
   AnkiDeckSync,
   AnkiSyncChange,
@@ -94,6 +93,12 @@ import type {
   SubscribableDeckList,
 } from '../types'
 import { SuggestionList } from '../components/suggestions/SuggestionList'
+import { DiffViewer } from '../components/suggestions/DiffViewer'
+import { SuggestionDiscussion } from '../components/suggestions/SuggestionDiscussion'
+import {
+  SUGGESTION_STATUS_LABEL,
+  SUGGESTION_TYPE_LABEL,
+} from '../components/suggestions/labels'
 
 type DeckFilter = 'all' | 'subscribed' | 'available'
 
@@ -1108,274 +1113,180 @@ export function CommunityFuturePage() {
   )
 }
 
-type DeckSuggestionHistory = {
-  id: string
-  noteId: string
-  publicId: string
-  userName: string
-  originalField: string
-  suggestedField: string
-  createdAt: string
-  discussion: Array<{
-    id: string
-    author: string
-    body: string
-    createdAt: string
-  }>
+const STATUS_CHIP: Record<string, string> = {
+  pending: 'border-mu-border bg-mu-surface-2 text-mu-muted',
+  accepted: 'border-mu-validated-border bg-mu-validated-bg text-mu-validated',
+  rejected: 'border-mu-danger-border bg-mu-danger-bg text-mu-danger',
 }
-
-const suggestionHistorySeed: DeckSuggestionHistory[] = [
-  {
-    id: 'suggestion-history-1',
-    noteId: 'note-1',
-    publicId: 'AC-CONST-0001',
-    userName: 'Camila Ribeiro',
-    originalField: 'Habeas corpus protege a liberdade de locomoção.',
-    suggestedField:
-      'Habeas corpus protege a liberdade de locomoção contra coação ilegal.',
-    createdAt: '2026-06-16T10:15:00Z',
-    discussion: [
-      {
-        id: 'comment-1',
-        author: 'Equipe editorial',
-        body: 'Boa precisão. Mantém o sentido sem confundir o enunciado original da nota.',
-        createdAt: '2026-06-16T11:02:00Z',
-      },
-      {
-        id: 'comment-2',
-        author: 'Mariana S.',
-        body: 'A formulação ficou mais fiel ao texto legal e continua legível no preview.',
-        createdAt: '2026-06-16T11:26:00Z',
-      },
-    ],
-  },
-  {
-    id: 'suggestion-history-2',
-    noteId: 'note-2',
-    publicId: 'AC-CONST-0002',
-    userName: 'Paulo Nogueira',
-    originalField: 'A Constituição admite habeas corpus.',
-    suggestedField: 'A Constituição admite habeas corpus para proteger a locomoção.',
-    createdAt: '2026-06-15T16:40:00Z',
-    discussion: [
-      {
-        id: 'comment-3',
-        author: 'Revisor',
-        body: 'A sugestão está correta, mas não deve substituir o campo original sem contexto adicional.',
-        createdAt: '2026-06-15T17:05:00Z',
-      },
-    ],
-  },
-]
 
 export function CommunitySuggestionHistoryPage() {
   const { deckId = '' } = useParams()
+  const { token } = useAuth()
   const decksQuery = useDeckCatalog()
   const decks = decksQuery.data?.length ? decksQuery.data : fallbackDecks
   const deck = decks.find((item) => item.deck_id === deckId)
-  const [selectedSuggestionId, setSelectedSuggestionId] = useState(
-    suggestionHistorySeed[0]?.id || '',
-  )
-  const [draftComment, setDraftComment] = useState('')
-  const [history, setHistory] = useLocalStorageState<DeckSuggestionHistory[]>(
-    `anki-concursos-suggestion-history-${deckId}`,
-    suggestionHistorySeed,
-  )
 
-  const visibleHistory = history.filter((item) => !deck || item.publicId.startsWith('AC'))
-  const selectedSuggestion =
-    visibleHistory.find((item) => item.id === selectedSuggestionId) || visibleHistory[0] || null
+  const suggestionsQuery = useQuery({
+    queryKey: ['deck-note-suggestions', deckId],
+    queryFn: () =>
+      apiRequest<NoteSuggestionList>(
+        `/decks/${deckId}/note-suggestions?page_size=100`,
+        {},
+        token,
+      ),
+    enabled: Boolean(deckId),
+  })
 
-  function addComment() {
-    if (!selectedSuggestion || !draftComment.trim()) return
-    const next = history.map((item) => {
-      if (item.id !== selectedSuggestion.id) return item
-      return {
-        ...item,
-        discussion: [
-          ...item.discussion,
-          {
-            id: crypto.randomUUID(),
-            author: 'Você',
-            body: draftComment.trim(),
-            createdAt: new Date().toISOString(),
-          },
-        ],
-      }
-    })
-    setHistory(next)
-    setDraftComment('')
-  }
+  const suggestions = suggestionsQuery.data?.items ?? []
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selected =
+    suggestions.find((item) => item.suggestion_id === selectedId) ||
+    suggestions[0] ||
+    null
 
-  if (decksQuery.isLoading) return <LoadingState />
-  if (decksQuery.error) {
-    return (
-      <ErrorState
-        message={decksQuery.error.message}
-        requestId={decksQuery.error instanceof ApiError ? decksQuery.error.requestId : null}
-      />
-    )
-  }
-
-  if (!deck) {
-    return (
-      <EmptyState
-        title="Deck não encontrado"
-        description="Volte para a lista de decks e abra novamente a área de sugestões."
-      />
-    )
-  }
+  const deckName = deck?.name ?? 'Baralho'
 
   return (
     <div className="ac-page ac-page-muriae">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <ExploreHero
-          eyebrow="Comunidade do deck"
-          title="Histórico de mudanças e discussão"
-          description={`${deck.name} · acompanhe a nota original, a proposta do usuário, o ID da nota e a conversa editorial sem perder o contexto da sugestão.`}
+          eyebrow="Comunidade do baralho"
+          title="Sugestões de mudanças"
+          description={`${deckName} · acompanhe as propostas da comunidade, compare o conteúdo atual com o sugerido e participe da discussão.`}
         />
-        <Link to={`/deck/${deck.deck_id}`} className={cn(muriaeSecondaryBtn, 'shrink-0')}>
+        <Link to={`/deck/${deckId}`} className={cn(muriaeSecondaryBtn, 'shrink-0')}>
           <ArrowLeft size={16} />
-          Voltar ao deck
+          Voltar ao baralho
         </Link>
       </div>
 
-      {!visibleHistory.length ? (
+      {suggestionsQuery.isLoading ? (
+        <div className="mt-8">
+          <LoadingState />
+        </div>
+      ) : suggestionsQuery.error ? (
+        <div className="mt-8">
+          <ErrorState
+            message={
+              suggestionsQuery.error instanceof Error
+                ? suggestionsQuery.error.message
+                : 'Não foi possível carregar as sugestões.'
+            }
+            requestId={
+              suggestionsQuery.error instanceof ApiError
+                ? suggestionsQuery.error.requestId
+                : null
+            }
+          />
+        </div>
+      ) : suggestions.length === 0 ? (
         <div className="mt-8">
           <EmptyState
             title="Nenhuma sugestão registrada"
-            description="As mudanças da comunidade aparecerão aqui assim que forem criadas."
+            description="As mudanças propostas pela comunidade aparecerão aqui assim que forem enviadas pelo add-on."
           />
         </div>
       ) : (
-        <section className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="flex flex-col gap-2" aria-label="Histórico de sugestões">
-            {visibleHistory.map((item) => {
-              const active = item.id === selectedSuggestion?.id
+        <section className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
+          <aside className="flex flex-col gap-2" aria-label="Lista de sugestões">
+            {suggestions.map((item) => {
+              const active = item.suggestion_id === selected?.suggestion_id
               return (
                 <button
-                  key={item.id}
+                  key={item.suggestion_id}
                   type="button"
-                  onClick={() => setSelectedSuggestionId(item.id)}
+                  onClick={() => setSelectedId(item.suggestion_id)}
                   className={cn(
-                    'flex flex-col gap-0.5 rounded-[8px] border px-4 py-3 text-left transition-colors',
+                    'flex flex-col gap-1 rounded-[8px] border px-4 py-3 text-left transition-colors',
                     active
                       ? 'border-mu-brand bg-mu-brand-bg'
                       : 'border-mu-border bg-mu-surface hover:border-mu-border-hover',
                   )}
                 >
-                  <span className="text-[11px] text-mu-muted-2">Nota {item.noteId}</span>
-                  <strong className="font-mono text-[13px] font-semibold text-mu-text">
-                    {item.publicId}
-                  </strong>
-                  <small className="text-[12px] text-mu-muted">Por {item.userName}</small>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-semibold text-mu-text">
+                      {SUGGESTION_TYPE_LABEL[item.suggestion_type] ??
+                        item.suggestion_type}
+                    </span>
+                    <span
+                      className={cn(
+                        'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold',
+                        STATUS_CHIP[item.status] ?? STATUS_CHIP.pending,
+                      )}
+                    >
+                      {SUGGESTION_STATUS_LABEL[item.status] ?? item.status}
+                    </span>
+                  </div>
+                  <small className="truncate text-[12px] text-mu-muted">
+                    {item.submitted_by_email}
+                  </small>
+                  <small className="text-[11px] text-mu-muted-2">
+                    {formatDate(item.created_at)}
+                  </small>
                 </button>
               )
             })}
           </aside>
 
-          {selectedSuggestion && (
+          {selected && (
             <main className="flex min-w-0 flex-col gap-5">
               <section className={cn(muriaeSurface, 'p-5')}>
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <span className={muriaeEyebrow}>Sugestão selecionada</span>
                     <h2 className="mt-1.5 font-dm-serif text-[20px] font-normal text-mu-text">
-                      {selectedSuggestion.publicId}
+                      {SUGGESTION_TYPE_LABEL[selected.suggestion_type] ??
+                        selected.suggestion_type}
                     </h2>
-                  </div>
-                  <StatusBadge value="published" />
-                </div>
-                <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <div>
-                    <dt className="text-[11px] uppercase tracking-[0.06em] text-mu-muted-2">
-                      ID da nota
-                    </dt>
-                    <dd className="mt-0.5 text-[13.5px] text-mu-text">
-                      {selectedSuggestion.noteId}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[11px] uppercase tracking-[0.06em] text-mu-muted-2">
-                      Usuário
-                    </dt>
-                    <dd className="mt-0.5 text-[13.5px] text-mu-text">
-                      {selectedSuggestion.userName}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[11px] uppercase tracking-[0.06em] text-mu-muted-2">
-                      Criada em
-                    </dt>
-                    <dd className="mt-0.5 text-[13.5px] text-mu-text">
-                      {formatDate(selectedSuggestion.createdAt)}
-                    </dd>
-                  </div>
-                </dl>
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <article className="rounded-[8px] border border-mu-border bg-mu-bg p-4">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-mu-muted-2">
-                      Campo original
-                    </span>
-                    <p className="mt-1.5 text-[14px] leading-[1.55] text-mu-text">
-                      {selectedSuggestion.originalField}
+                    <p className="mt-1 text-[12.5px] text-mu-muted">
+                      Por {selected.submitted_by_email} ·{' '}
+                      {formatDate(selected.created_at)}
+                      {selected.public_id ? ` · ${selected.public_id}` : ''}
                     </p>
-                  </article>
-                  <article className="rounded-[8px] border border-mu-validated-border bg-mu-validated-bg p-4">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-mu-validated">
-                      Novo campo sugerido
-                    </span>
-                    <p className="mt-1.5 text-[14px] leading-[1.55] text-mu-text">
-                      {selectedSuggestion.suggestedField}
-                    </p>
-                  </article>
+                  </div>
+                  <span
+                    className={cn(
+                      'rounded-full border px-2.5 py-1 text-[11px] font-semibold',
+                      STATUS_CHIP[selected.status] ?? STATUS_CHIP.pending,
+                    )}
+                  >
+                    {SUGGESTION_STATUS_LABEL[selected.status] ?? selected.status}
+                  </span>
                 </div>
+
+                {selected.comment && (
+                  <div className="mt-4 rounded-[8px] border border-mu-border bg-mu-bg p-3.5">
+                    <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.08em] text-mu-muted-2">
+                      Justificativa
+                    </span>
+                    <p className="whitespace-pre-wrap text-[13.5px] leading-[1.6] text-mu-text">
+                      {selected.comment}
+                    </p>
+                  </div>
+                )}
+
+                <div className="mt-4">
+                  <DiffViewer
+                    fields={selected.fields}
+                    addedTags={selected.added_tags}
+                    removedTags={selected.removed_tags}
+                  />
+                </div>
+
+                {selected.status !== 'pending' && (
+                  <div className="mt-4 border-t border-mu-border pt-3 text-[12.5px] text-mu-muted">
+                    Revisada por {selected.reviewed_by ?? '—'}
+                    {selected.reviewed_at
+                      ? ` em ${formatDate(selected.reviewed_at)}`
+                      : ''}
+                    {selected.review_comment
+                      ? ` · "${selected.review_comment}"`
+                      : ''}
+                  </div>
+                )}
               </section>
 
-              <section className={cn(muriaeSurface, 'p-5')}>
-                <div>
-                  <span className={muriaeEyebrow}>Discussão</span>
-                  <h2 className="mt-1.5 font-dm-serif text-[20px] font-normal text-mu-text">
-                    Conversa editorial
-                  </h2>
-                </div>
-                <div className="mt-4 flex flex-col gap-2.5">
-                  {selectedSuggestion.discussion.map((comment) => (
-                    <article
-                      key={comment.id}
-                      className="rounded-[8px] border border-mu-border bg-mu-bg p-3.5"
-                    >
-                      <header className="flex items-center justify-between gap-2">
-                        <strong className="text-[13px] font-semibold text-mu-text">
-                          {comment.author}
-                        </strong>
-                        <small className="text-[11px] text-mu-muted-2">
-                          {formatDate(comment.createdAt)}
-                        </small>
-                      </header>
-                      <p className="mt-1.5 text-[13px] leading-[1.55] text-mu-text-soft">
-                        {comment.body}
-                      </p>
-                    </article>
-                  ))}
-                </div>
-                <label className="mt-4 flex flex-col gap-1.5">
-                  <span className="text-[13px] font-semibold text-mu-text">
-                    Adicionar comentário
-                  </span>
-                  <textarea
-                    rows={4}
-                    value={draftComment}
-                    onChange={(event) => setDraftComment(event.target.value)}
-                    placeholder="Registre uma observação sobre esta sugestão."
-                    className="w-full rounded-[6px] border border-mu-border bg-mu-surface px-3 py-2 text-[14px] leading-[1.5] text-mu-text outline-none transition-colors placeholder:text-mu-muted-2 focus:border-mu-brand"
-                  />
-                </label>
-                <button type="button" onClick={addComment} className={cn(muriaePrimaryBtn, 'mt-3')}>
-                  <MessageSquare size={16} />
-                  Publicar comentário
-                </button>
-              </section>
+              <SuggestionDiscussion suggestionId={selected.suggestion_id} />
             </main>
           )}
         </section>
