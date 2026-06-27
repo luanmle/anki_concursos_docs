@@ -1,0 +1,24 @@
+- main [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e6]: AC
+    - text: Anki Concursos
+  - generic [ref=e8]:
+    - generic [ref=e9]:
+      - paragraph [ref=e10]: Acesso interno
+      - heading "Entrar no console" [level=2] [ref=e11]
+      - paragraph [ref=e12]: Use as credenciais administrativas do ambiente.
+    - generic [ref=e13]:
+      - text: E-mail
+      - textbox "E-mail" [ref=e14]:
+        - /placeholder: nome@exemplo.com
+        - text: admin@example.com
+    - generic [ref=e15]:
+      - text: Senha
+      - textbox "Senha A senha deve ter pelo menos 8 caracteres." [active] [ref=e21]:
+        - /placeholder: Sua senha
+        - text: senha
+      - generic [ref=e22]: A senha deve ter pelo menos 8 caracteres.
+    - button "Entrar" [ref=e17] [cursor=pointer]:
+      - text: Entrar
+      - img [ref=e23]
+    - paragraph [ref=e20]: Não há recuperação automática de senha. Contate um administrador.

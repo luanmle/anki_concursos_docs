@@ -1,0 +1,121 @@
+- generic [ref=e5]:
+  - generic [ref=e8]:
+    - generic [ref=e12]:
+      - strong [ref=e13]: Muriae
+      - generic [ref=e14]: concursos
+    - generic [ref=e15]:
+      - list [ref=e18]:
+        - listitem [ref=e19]:
+          - link "Explore" [ref=e20] [cursor=pointer]:
+            - /url: /
+            - img [ref=e21]
+            - generic [ref=e23]: Explore
+        - listitem [ref=e24]:
+          - link "Meus baralhos" [ref=e25] [cursor=pointer]:
+            - /url: /my-decks
+            - img [ref=e26]
+            - generic [ref=e28]: Meus baralhos
+        - listitem [ref=e29]:
+          - link "Comunidade" [ref=e30] [cursor=pointer]:
+            - /url: /community
+            - img [ref=e31]
+            - generic [ref=e33]: Comunidade
+      - generic [ref=e34]:
+        - generic [ref=e35]: Equipe
+        - list [ref=e37]:
+          - listitem [ref=e38]:
+            - link "Administração" [ref=e39] [cursor=pointer]:
+              - /url: /admin
+              - img [ref=e40]
+              - generic [ref=e42]: Administração
+          - listitem [ref=e43]:
+            - link "Add-on do Anki" [ref=e44] [cursor=pointer]:
+              - /url: /addon
+              - img [ref=e45]
+              - generic [ref=e47]: Add-on do Anki
+          - listitem [ref=e48]:
+            - link "Operação" [ref=e49] [cursor=pointer]:
+              - /url: /operation
+              - img [ref=e50]
+              - generic [ref=e52]: Operação
+    - generic [ref=e54]:
+      - button "Abrir configurações" [ref=e55]:
+        - generic [ref=e57]: SY
+        - generic [ref=e58]:
+          - strong [ref=e59]: System administrator
+          - generic [ref=e60]: Administrador
+      - button "Sair" [ref=e61]:
+        - img
+  - generic [ref=e62]:
+    - banner [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e65]: STAGING
+        - generic [ref=e66]: API conectada
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - strong [ref=e70]: System administrator
+          - generic [ref=e71]: Administrador
+        - generic [ref=e72]: SY
+        - img [ref=e73]
+    - main [ref=e75]:
+      - generic [ref=e76]:
+        - link "Voltar ao Explore" [ref=e77] [cursor=pointer]:
+          - /url: /
+          - img [ref=e78]
+          - text: Voltar ao Explore
+        - generic [ref=e80]:
+          - generic [ref=e81]:
+            - text: Baralho
+            - heading "Direito Constitucional" [level=1] [ref=e82]
+            - paragraph [ref=e83]: Artigo 5º, direitos e garantias fundamentais, organização do Estado e poderes da União.
+            - generic [ref=e84]:
+              - generic [ref=e85]: Oficial
+              - generic [ref=e86]:
+                - img [ref=e87]
+                - text: 1.200 notas
+              - generic [ref=e89]:
+                - img [ref=e90]
+                - text: Versão 18
+              - generic [ref=e92]: Atualizado 16 jun 2026
+          - generic [ref=e93]:
+            - button "Inscrito" [ref=e94]:
+              - img
+              - text: Inscrito
+            - button "Compartilhar" [ref=e95]:
+              - img
+              - text: Compartilhar
+            - link "Sugestões" [ref=e96] [cursor=pointer]:
+              - /url: /deck/demo-constitucional/suggestions
+              - img
+              - text: Sugestões
+            - link "Ver na Comunidade" [ref=e97] [cursor=pointer]:
+              - /url: /community
+        - generic [ref=e98]:
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - text: Notas
+              - heading "Preview do baralho" [level=2] [ref=e101]
+            - generic [ref=e102]:
+              - img
+              - textbox "Buscar notas..." [ref=e103]
+          - generic [ref=e104]:
+            - button "basic Qual remédio constitucional protege a liberdade de locomoção? O habeas corpus protege a liberdade de locomoção quando alguém sofre ou se acha ameaçado de sofrer violência ou coação ilegal. Validado AC-CONST-0001" [ref=e105]:
+              - generic [ref=e106]: basic
+              - generic [ref=e107]:
+                - strong [ref=e108]: Qual remédio constitucional protege a liberdade de locomoção?
+                - paragraph [ref=e109]: O habeas corpus protege a liberdade de locomoção quando alguém sofre ou se acha ameaçado de sofrer violência ou coação ilegal.
+              - generic [ref=e110]:
+                - img
+                - text: Validado
+              - code [ref=e111]: AC-CONST-0001
+              - img [ref=e112]
+            - 'button "cloze A Constituição admite {{c1::habeas corpus}} para proteger a liberdade de locomoção. O cloze preserva a memorização ativa do instituto jurídico. Validado AC-CONST-0002" [ref=e114]':
+              - generic [ref=e115]: cloze
+              - generic [ref=e116]:
+                - strong [ref=e117]: "A Constituição admite {{c1::habeas corpus}} para proteger a liberdade de locomoção."
+                - paragraph [ref=e118]: O cloze preserva a memorização ativa do instituto jurídico.
+              - generic [ref=e119]:
+                - img
+                - text: Validado
+              - code [ref=e120]: AC-CONST-0002
+              - img [ref=e121]

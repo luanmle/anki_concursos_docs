@@ -1,0 +1,138 @@
+- generic [ref=e21]:
+  - button "Abrir navegacao" [ref=e22] [cursor=pointer]:
+    - img [ref=e23]
+  - complementary [ref=e25]:
+    - generic [ref=e26]:
+      - img [ref=e28]
+      - generic [ref=e30]:
+        - strong [ref=e31]: Anki Concursos
+        - generic [ref=e32]: Web Interface
+      - button "Fechar navegacao" [ref=e33] [cursor=pointer]:
+        - img [ref=e34]
+    - navigation "Navegacao principal" [ref=e36]:
+      - link "Explore" [ref=e37] [cursor=pointer]:
+        - /url: /
+        - img [ref=e38]
+        - text: Explore
+      - link "Meus Baralhos" [ref=e40] [cursor=pointer]:
+        - /url: /my-decks
+        - img [ref=e41]
+        - text: Meus Baralhos
+      - link "Community" [ref=e43] [cursor=pointer]:
+        - /url: /community
+        - img [ref=e44]
+        - text: Community
+      - link "Administracao" [ref=e46] [cursor=pointer]:
+        - /url: /admin
+        - img [ref=e47]
+        - text: Administracao
+      - link "Gerenciar Baralhos" [ref=e49] [cursor=pointer]:
+        - /url: /admin/decks
+        - img [ref=e50]
+        - text: Gerenciar Baralhos
+      - link "Sugestoes" [ref=e52] [cursor=pointer]:
+        - /url: /admin/suggestions
+        - img [ref=e53]
+        - text: Sugestoes
+      - link "Cartoes internos" [ref=e55] [cursor=pointer]:
+        - /url: /cards
+        - img [ref=e56]
+        - text: Cartoes internos
+      - link "Decks internos" [ref=e58] [cursor=pointer]:
+        - /url: /decks
+        - img [ref=e59]
+        - text: Decks internos
+      - link "Reports" [ref=e61] [cursor=pointer]:
+        - /url: /reports
+        - img [ref=e62]
+        - text: Reports
+      - link "Usuarios" [ref=e64] [cursor=pointer]:
+        - /url: /users
+        - img [ref=e65]
+        - text: Usuarios
+      - link "Add-on" [ref=e67] [cursor=pointer]:
+        - /url: /addon
+        - img [ref=e68]
+        - text: Add-on
+      - link "Operacao" [ref=e70] [cursor=pointer]:
+        - /url: /operation
+        - img [ref=e71]
+        - text: Operacao
+    - generic [ref=e73]:
+      - generic [ref=e74]: SY
+      - generic [ref=e75]:
+        - strong [ref=e76]: System administrator
+        - generic [ref=e77]: Administrador
+      - button "Sair" [ref=e78] [cursor=pointer]:
+        - img [ref=e79]
+  - generic [ref=e81]:
+    - banner [ref=e82]:
+      - generic [ref=e83]:
+        - generic [ref=e84]: STAGING
+        - generic [ref=e85]: API conectada
+      - generic [ref=e87]:
+        - generic [ref=e88]:
+          - strong [ref=e89]: System administrator
+          - generic [ref=e90]: Administrador
+        - generic [ref=e91]: SY
+        - img [ref=e92]
+    - main [ref=e94]:
+      - generic [ref=e95]:
+        - generic [ref=e96]:
+          - generic [ref=e97]:
+            - text: Explore
+            - heading "Explore Baralhos" [level=1] [ref=e98]
+            - paragraph [ref=e99]: Encontre e inscreva-se nos melhores decks focados em concursos pÃºblicos.
+          - generic [ref=e100]:
+            - button "Todos" [ref=e101] [cursor=pointer]
+            - button "Inscritos" [ref=e102] [cursor=pointer]
+            - button "DisponÃveis" [ref=e103] [cursor=pointer]
+        - generic [ref=e104]:
+          - img [ref=e105]
+          - textbox [ref=e107]:
+            - /placeholder: Buscar baralhos...
+        - generic [ref=e108]:
+          - article [ref=e109]:
+            - generic [ref=e110]:
+              - img [ref=e111]
+              - heading "Direito Constitucional" [level=2] [ref=e113]
+              - generic [ref=e114]: Inscrito
+            - paragraph [ref=e115]: Artigo 5o, direitos e garantias fundamentais, organizacao do Estado e poderes da Uniao.
+            - generic [ref=e116]:
+              - generic [ref=e117]: 1200 notas
+              - generic [ref=e118]: "Ãšltima atualizaÃ§Ã£o: 16/06/2026, 09:00"
+            - link "Abrir baralho" [ref=e119] [cursor=pointer]:
+              - /url: /deck/demo-constitucional
+              - text: Abrir baralho
+              - img [ref=e120]
+          - article [ref=e122]:
+            - generic [ref=e123]:
+              - img [ref=e124]
+              - heading "Raciocinio Logico" [level=2] [ref=e126]
+            - paragraph [ref=e127]: Proposicoes logicas, tabelas-verdade, equivalencias e diagramas logicos complexos.
+            - generic [ref=e128]:
+              - generic [ref=e129]: 850 notas
+              - generic [ref=e130]: "Ãšltima atualizaÃ§Ã£o: 12/06/2026, 09:00"
+            - button "Inscrever-se" [ref=e131] [cursor=pointer]:
+              - img [ref=e132]
+              - text: Inscrever-se
+          - article [ref=e134]:
+            - generic [ref=e135]:
+              - img [ref=e136]
+              - heading "Lingua Portuguesa" [level=2] [ref=e138]
+            - paragraph [ref=e139]: Sintaxe, morfologia, crase, concordancia verbal e interpretacao de texto.
+            - generic [ref=e140]:
+              - generic [ref=e141]: 2100 notas
+              - generic [ref=e142]: "Ãšltima atualizaÃ§Ã£o: 15/06/2026, 09:00"
+            - button "Inscrever-se" [ref=e143] [cursor=pointer]:
+              - img [ref=e144]
+              - text: Inscrever-se
+          - article "Carregando baralho" [ref=e146]:
+            - strong [ref=e151]
+        - generic [ref=e152]:
+          - img [ref=e153]
+          - generic [ref=e155]:
+            - strong [ref=e156]: "Ã\x81rea administrativa disponÃvel"
+            - generic [ref=e157]: Gerencie baralhos, sugestÃµes e releases sem misturar o fluxo do estudante.
+          - link "Abrir administraÃ§Ã£o" [ref=e158] [cursor=pointer]:
+            - /url: /admin

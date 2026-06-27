@@ -1,0 +1,49 @@
+- generic [ref=e2]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]: Muriae
+    - generic [ref=e5]: concursos
+    - generic [ref=e6]: Explore
+    - generic [ref=e7]: Meus baralhos
+  - generic [ref=e8]:
+    - banner [ref=e9]:
+      - generic [ref=e10]: API conectada
+      - button "tema" [ref=e11] [cursor=pointer]
+    - main [ref=e12]:
+      - generic [ref=e13]:
+        - paragraph [ref=e14]: EXPLORE
+        - heading "Explore baralhos" [level=1] [ref=e15]
+        - paragraph [ref=e16]: Encontre e inscreva-se nos melhores baralhos focados em concursos públicos.
+        - generic [ref=e17]:
+          - article [ref=e18] [cursor=pointer]:
+            - generic [ref=e19]:
+              - generic [ref=e20]: Oficial
+              - generic [ref=e21]: Validado
+            - generic [ref=e22]:
+              - heading "Direito Constitucional" [level=3] [ref=e23]
+              - paragraph [ref=e24]: Artigo 5º, direitos e garantias fundamentais.
+            - separator [ref=e25]
+            - generic [ref=e26]:
+              - generic [ref=e27]: 1.200 notas
+              - generic [ref=e28]: 16 jun 2026
+          - article [ref=e29]:
+            - generic [ref=e30]:
+              - generic [ref=e31]: Comunidade
+              - generic [ref=e32]: Validado
+            - generic [ref=e33]:
+              - heading "Raciocínio Lógico" [level=3] [ref=e34]
+              - paragraph [ref=e35]: Proposições, tabelas-verdade, equivalências.
+            - separator [ref=e36]
+            - generic [ref=e37]: 850 notas
+          - article [ref=e38]:
+            - generic [ref=e39]:
+              - generic [ref=e40]: IA
+              - generic [ref=e41]: Em análise
+            - generic [ref=e42]:
+              - heading "Atualidades 2026" [level=3] [ref=e43]
+              - paragraph [ref=e44]: Panorama de economia, política e meio ambiente.
+            - separator [ref=e45]
+            - generic [ref=e46]: 210 notas
+        - generic [ref=e47]:
+          - button "Inscrever-se" [ref=e48]
+          - button "Secundário" [ref=e49]
+          - generic [ref=e50]: Validado

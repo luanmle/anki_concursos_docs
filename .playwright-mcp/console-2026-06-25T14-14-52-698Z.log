@@ -1,0 +1,9 @@
+[    1551ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=9d028343:14337
+[    6155ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[    7216ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  252310ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  253338ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  305763ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  306817ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  370262ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  371294ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0

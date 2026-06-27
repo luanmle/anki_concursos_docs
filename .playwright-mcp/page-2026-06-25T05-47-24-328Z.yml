@@ -1,0 +1,169 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - strong: Muriae
+                - generic: concursos
+            - generic:
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /
+                        - img
+                        - generic: Explore
+                    - listitem:
+                      - link:
+                        - /url: /my-decks
+                        - img
+                        - generic: Meus baralhos
+                    - listitem:
+                      - link:
+                        - /url: /community
+                        - img
+                        - generic: Comunidade
+              - generic:
+                - generic: Equipe
+                - generic:
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /admin
+                        - img
+                        - generic: Administração
+                    - listitem:
+                      - link:
+                        - /url: /addon
+                        - img
+                        - generic: Add-on do Anki
+                    - listitem:
+                      - link:
+                        - /url: /operation
+                        - img
+                        - generic: Operação
+            - generic:
+              - generic:
+                - button:
+                  - generic:
+                    - generic: SY
+                  - generic:
+                    - strong: System administrator
+                    - generic: Administrador
+                - button:
+                  - img
+      - generic:
+        - banner:
+          - generic:
+            - generic: STAGING
+            - generic: API conectada
+          - generic:
+            - generic:
+              - strong: System administrator
+              - generic: Administrador
+            - generic: SY
+            - img
+        - main:
+          - generic:
+            - generic:
+              - generic: Explore
+              - heading [level=1]: Explore baralhos
+              - paragraph: Encontre e inscreva-se nos melhores baralhos focados em concursos públicos, construídos e revisados em comunidade.
+            - generic:
+              - generic:
+                - img
+                - textbox:
+                  - /placeholder: Buscar baralhos...
+              - generic:
+                - button: Todos
+                - button: Inscritos
+                - button: Disponíveis
+              - button [expanded]:
+                - img
+                - text: Mais recentes
+            - paragraph: 3 baralhos
+            - generic:
+              - button:
+                - generic:
+                  - generic: Oficial
+                  - generic:
+                    - img
+                    - text: Validado
+                - generic:
+                  - heading [level=3]: Direito Constitucional
+                  - paragraph: Artigo 5º, direitos e garantias fundamentais, organização do Estado e poderes da União.
+                - separator
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                      - text: 1.200 notas
+                    - generic:
+                      - img
+                      - text: Inscrito
+                  - generic:
+                    - generic:
+                      - img
+                      - text: Versão 18
+                    - generic: 16 jun 2026
+              - button:
+                - generic:
+                  - generic: Oficial
+                  - generic:
+                    - img
+                    - text: Validado
+                - generic:
+                  - heading [level=3]: Língua Portuguesa
+                  - paragraph: Sintaxe, morfologia, crase, concordância verbal e interpretação de texto.
+                - separator
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                      - text: 2.100 notas
+                  - generic:
+                    - generic:
+                      - img
+                      - text: Versão 11
+                    - generic: 15 jun 2026
+              - button:
+                - generic:
+                  - generic: Comunidade
+                  - generic:
+                    - img
+                    - text: Validado
+                - generic:
+                  - heading [level=3]: Raciocínio Lógico
+                  - paragraph: Proposições, tabelas-verdade, equivalências e diagramas lógicos para bancas como Cebraspe e FGV.
+                - separator
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                      - text: 850 notas
+                  - generic:
+                    - generic:
+                      - img
+                      - text: Versão 7
+                    - generic: 12 jun 2026
+            - generic:
+              - img
+              - generic:
+                - strong: Área administrativa disponível
+                - generic: Gerencie baralhos, sugestões e releases sem misturar o fluxo do estudante.
+              - link:
+                - /url: /admin
+                - text: Abrir administração
+  - menu "Mais recentes" [active] [ref=e165]:
+    - group [ref=e166]:
+      - menuitemradio "Mais recentes" [checked] [ref=e167]:
+        - generic:
+          - generic:
+            - img
+        - text: Mais recentes
+      - menuitemradio "Mais notas" [ref=e168]: Mais notas
+      - menuitemradio "A–Z" [ref=e169]: A–Z

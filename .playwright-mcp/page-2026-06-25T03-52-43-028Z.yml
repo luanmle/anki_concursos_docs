@@ -1,0 +1,202 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e8]:
+      - strong [ref=e9]: Muriae
+      - generic [ref=e10]: concursos
+    - navigation "Navegação principal" [ref=e11]:
+      - link "Explore" [ref=e12] [cursor=pointer]:
+        - /url: "#"
+        - img [ref=e13]
+        - text: Explore
+      - link "Meus baralhos" [ref=e16] [cursor=pointer]:
+        - /url: "#"
+        - img [ref=e17]
+        - text: Meus baralhos
+      - link "Comunidade" [ref=e21] [cursor=pointer]:
+        - /url: "#"
+        - img [ref=e22]
+        - text: Comunidade
+      - generic [ref=e27]: Equipe
+      - link "Administração" [ref=e28] [cursor=pointer]:
+        - /url: "#"
+        - img [ref=e29]
+        - text: Administração
+      - link "Add-on do Anki" [ref=e32] [cursor=pointer]:
+        - /url: "#"
+        - img [ref=e33]
+        - text: Add-on do Anki
+      - link "Operação" [ref=e35] [cursor=pointer]:
+        - /url: "#"
+        - img [ref=e36]
+        - text: Operação
+    - generic [ref=e38]:
+      - button "Abrir configurações" [ref=e39] [cursor=pointer]:
+        - generic [ref=e40]: LU
+        - generic [ref=e41]:
+          - strong [ref=e42]: Luan
+          - generic [ref=e43]: Estudante
+        - img [ref=e44]
+      - button "Sair" [ref=e47] [cursor=pointer]:
+        - img [ref=e48]
+  - generic [ref=e51]:
+    - banner [ref=e52]:
+      - generic [ref=e53]:
+        - generic [ref=e54]: Beta gratuito
+        - generic [ref=e55]: Sincronizado com o Anki
+      - generic [ref=e57]:
+        - button "Alternar tema" [ref=e58] [cursor=pointer]:
+          - img [ref=e59]
+        - button "Abrir configurações" [ref=e61] [cursor=pointer]:
+          - generic [ref=e62]:
+            - strong [ref=e63]: Luan
+            - generic [ref=e64]: Estudante
+          - generic [ref=e65]: LU
+          - img [ref=e66]
+    - generic [ref=e69]:
+      - banner [ref=e70]:
+        - generic [ref=e71]: Explore
+        - heading "Explore baralhos" [level=1] [ref=e72]
+        - paragraph [ref=e73]: Encontre e inscreva-se nos melhores baralhos focados em concursos públicos, construídos e revisados em comunidade.
+      - generic [ref=e74]:
+        - generic [ref=e75]:
+          - img [ref=e76]
+          - textbox [ref=e79]:
+            - /placeholder: Buscar baralhos...
+        - generic [ref=e80]:
+          - generic [ref=e81]:
+            - button "Todos" [ref=e82] [cursor=pointer]
+            - button "Inscritos" [ref=e83] [cursor=pointer]
+            - button "Disponíveis" [ref=e84] [cursor=pointer]
+          - generic [ref=e85]:
+            - img
+            - combobox "Ordenar" [ref=e86] [cursor=pointer]:
+              - option "Mais recentes" [selected]
+              - option "Mais notas"
+              - option "Nome (A–Z)"
+            - img
+      - generic [ref=e88]:
+        - strong [ref=e89]: "6"
+        - text: baralhos
+      - generic [ref=e90]:
+        - button "Oficial Validado Direito Constitucional Artigo 5º, direitos e garantias fundamentais, organização do Estado e poderes da União. 1.200 notas Inscrito Versão 18 16 jun 2026" [ref=e91] [cursor=pointer]:
+          - generic [ref=e92]:
+            - generic [ref=e93]: Oficial
+            - generic [ref=e94]:
+              - img [ref=e95]
+              - text: Validado
+          - generic [ref=e97]:
+            - heading "Direito Constitucional" [level=3] [ref=e98]
+            - paragraph [ref=e99]: Artigo 5º, direitos e garantias fundamentais, organização do Estado e poderes da União.
+          - separator [ref=e100]
+          - generic [ref=e101]:
+            - generic [ref=e102]:
+              - generic [ref=e103]:
+                - img [ref=e104]
+                - text: 1.200 notas
+              - generic [ref=e108]:
+                - img [ref=e109]
+                - text: Inscrito
+            - generic [ref=e111]:
+              - generic [ref=e112]:
+                - img [ref=e113]
+                - text: Versão 18
+              - generic [ref=e118]: 16 jun 2026
+        - button "Comunidade Validado Raciocínio Lógico Proposições, tabelas-verdade, equivalências e diagramas lógicos para bancas como Cebraspe e FGV. 850 notas Versão 7 12 jun 2026" [ref=e119] [cursor=pointer]:
+          - generic [ref=e120]:
+            - generic [ref=e121]: Comunidade
+            - generic [ref=e122]:
+              - img [ref=e123]
+              - text: Validado
+          - generic [ref=e125]:
+            - heading "Raciocínio Lógico" [level=3] [ref=e126]
+            - paragraph [ref=e127]: Proposições, tabelas-verdade, equivalências e diagramas lógicos para bancas como Cebraspe e FGV.
+          - separator [ref=e128]
+          - generic [ref=e129]:
+            - generic [ref=e131]:
+              - img [ref=e132]
+              - text: 850 notas
+            - generic [ref=e136]:
+              - generic [ref=e137]:
+                - img [ref=e138]
+                - text: Versão 7
+              - generic [ref=e143]: 12 jun 2026
+        - button "Oficial Validado Língua Portuguesa Sintaxe, morfologia, crase, concordância verbal e interpretação de texto. 2.100 notas Inscrito Versão 11 15 jun 2026" [ref=e144] [cursor=pointer]:
+          - generic [ref=e145]:
+            - generic [ref=e146]: Oficial
+            - generic [ref=e147]:
+              - img [ref=e148]
+              - text: Validado
+          - generic [ref=e150]:
+            - heading "Língua Portuguesa" [level=3] [ref=e151]
+            - paragraph [ref=e152]: Sintaxe, morfologia, crase, concordância verbal e interpretação de texto.
+          - separator [ref=e153]
+          - generic [ref=e154]:
+            - generic [ref=e155]:
+              - generic [ref=e156]:
+                - img [ref=e157]
+                - text: 2.100 notas
+              - generic [ref=e161]:
+                - img [ref=e162]
+                - text: Inscrito
+            - generic [ref=e164]:
+              - generic [ref=e165]:
+                - img [ref=e166]
+                - text: Versão 11
+              - generic [ref=e171]: 15 jun 2026
+        - button "Comunidade Validado Direito Administrativo Atos administrativos, licitações, contratos e princípios da administração pública. 980 notas Versão 5 14 jun 2026" [ref=e172] [cursor=pointer]:
+          - generic [ref=e173]:
+            - generic [ref=e174]: Comunidade
+            - generic [ref=e175]:
+              - img [ref=e176]
+              - text: Validado
+          - generic [ref=e178]:
+            - heading "Direito Administrativo" [level=3] [ref=e179]
+            - paragraph [ref=e180]: Atos administrativos, licitações, contratos e princípios da administração pública.
+          - separator [ref=e181]
+          - generic [ref=e182]:
+            - generic [ref=e184]:
+              - img [ref=e185]
+              - text: 980 notas
+            - generic [ref=e189]:
+              - generic [ref=e190]:
+                - img [ref=e191]
+                - text: Versão 5
+              - generic [ref=e196]: 14 jun 2026
+        - button "Comunidade Em análise Informática Segurança da informação, redes, pacote Office e conceitos de hardware e software. 640 notas Versão 3 18 jun 2026" [ref=e197] [cursor=pointer]:
+          - generic [ref=e198]:
+            - generic [ref=e199]: Comunidade
+            - generic [ref=e200]:
+              - img [ref=e201]
+              - text: Em análise
+          - generic [ref=e204]:
+            - heading "Informática" [level=3] [ref=e205]
+            - paragraph [ref=e206]: Segurança da informação, redes, pacote Office e conceitos de hardware e software.
+          - separator [ref=e207]
+          - generic [ref=e208]:
+            - generic [ref=e210]:
+              - img [ref=e211]
+              - text: 640 notas
+            - generic [ref=e215]:
+              - generic [ref=e216]:
+                - img [ref=e217]
+                - text: Versão 3
+              - generic [ref=e222]: 18 jun 2026
+        - button "IA Em análise Atualidades 2026 Panorama de economia, política e meio ambiente com curadoria mensal da comunidade. 210 notas Versão 1 20 jun 2026" [ref=e223] [cursor=pointer]:
+          - generic [ref=e224]:
+            - generic [ref=e225]: IA
+            - generic [ref=e226]:
+              - img [ref=e227]
+              - text: Em análise
+          - generic [ref=e230]:
+            - heading "Atualidades 2026" [level=3] [ref=e231]
+            - paragraph [ref=e232]: Panorama de economia, política e meio ambiente com curadoria mensal da comunidade.
+          - separator [ref=e233]
+          - generic [ref=e234]:
+            - generic [ref=e236]:
+              - img [ref=e237]
+              - text: 210 notas
+            - generic [ref=e241]:
+              - generic [ref=e242]:
+                - img [ref=e243]
+                - text: Versão 1
+              - generic [ref=e248]: 20 jun 2026

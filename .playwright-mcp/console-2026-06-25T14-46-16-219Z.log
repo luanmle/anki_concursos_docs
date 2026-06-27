@@ -1,0 +1,15 @@
+[    2577ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=9d028343:14337
+[    8028ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[    9092ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Entity) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  557570ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/subscriptions/decks?page=1&page_size=100:0
+[  557576ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  558802ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/subscriptions/decks?page=1&page_size=100:0
+[  558812ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  624253ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  624255ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/subscriptions/decks?page=1&page_size=100:0
+[  625277ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  625284ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/subscriptions/decks?page=1&page_size=100:0
+[  635466ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/subscriptions/decks?page=1&page_size=100:0
+[  635466ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0
+[  636494ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/subscriptions/decks?page=1&page_size=100:0
+[  636506ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/addon/decks/demo-constitucional/sync?since_release=0&page=1&page_size=1000:0

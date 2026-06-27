@@ -1,0 +1,208 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - strong: Muriae
+                - generic: concursos
+            - generic:
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /
+                        - img
+                        - generic: Explore
+                    - listitem:
+                      - link:
+                        - /url: /my-decks
+                        - img
+                        - generic: Meus baralhos
+                    - listitem:
+                      - link:
+                        - /url: /community
+                        - img
+                        - generic: Comunidade
+              - generic:
+                - generic: Equipe
+                - generic:
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /admin
+                        - img
+                        - generic: Administração
+                    - listitem:
+                      - link:
+                        - /url: /addon
+                        - img
+                        - generic: Add-on do Anki
+                    - listitem:
+                      - link:
+                        - /url: /operation
+                        - img
+                        - generic: Operação
+            - generic:
+              - generic:
+                - button:
+                  - generic:
+                    - generic: SY
+                  - generic:
+                    - strong: System administrator
+                    - generic: Administrador
+                - button:
+                  - img
+      - generic:
+        - banner:
+          - generic:
+            - generic: STAGING
+            - generic: API conectada
+          - generic:
+            - generic:
+              - strong: System administrator
+              - generic: Administrador
+            - generic: SY
+            - img
+        - main:
+          - generic:
+            - link:
+              - /url: /
+              - img
+              - text: Voltar ao Explore
+            - generic:
+              - generic:
+                - text: Baralho
+                - heading [level=1]: Direito Constitucional
+                - paragraph: Artigo 5º, direitos e garantias fundamentais, organização do Estado e poderes da União.
+                - generic:
+                  - generic: Oficial
+                  - generic:
+                    - img
+                    - text: 1.200 notas
+                  - generic:
+                    - img
+                    - text: Versão 18
+                  - generic: Atualizado 16 jun 2026
+              - generic:
+                - button:
+                  - img
+                  - text: Inscrito
+                - button:
+                  - img
+                  - text: Compartilhar
+                - link:
+                  - /url: /deck/demo-constitucional/suggestions
+                  - img
+                  - text: Sugestões
+                - link:
+                  - /url: /community
+                  - text: Ver na Comunidade
+            - generic:
+              - generic:
+                - generic:
+                  - text: Notas
+                  - heading [level=2]: Preview do baralho
+                - generic:
+                  - img
+                  - textbox:
+                    - /placeholder: Buscar notas...
+              - generic:
+                - button:
+                  - generic: basic
+                  - generic:
+                    - strong: Qual remédio constitucional protege a liberdade de locomoção?
+                    - paragraph: O habeas corpus protege a liberdade de locomoção quando alguém sofre ou se acha ameaçado de sofrer violência ou coação ilegal.
+                  - generic:
+                    - img
+                    - text: Validado
+                  - code: AC-CONST-0001
+                  - img
+                - button:
+                  - generic: cloze
+                  - generic:
+                    - strong: "A Constituição admite {{c1::habeas corpus}} para proteger a liberdade de locomoção."
+                    - paragraph: O cloze preserva a memorização ativa do instituto jurídico.
+                  - generic:
+                    - img
+                    - text: Validado
+                  - code: AC-CONST-0002
+                  - img
+  - dialog "AC-CONST-0001" [ref=e6]:
+    - heading "AC-CONST-0001" [level=2] [ref=e7]
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - text: basic
+        - heading "AC-CONST-0001" [level=2] [ref=e10]
+      - generic [ref=e11]:
+        - generic [ref=e12]: Oficial
+        - generic [ref=e13]:
+          - img
+          - text: Validado
+        - button "Copiar identificador" [ref=e14]:
+          - img [ref=e15]
+        - button "Fechar" [ref=e17]:
+          - img [ref=e18]
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - tablist [ref=e22]:
+          - tab "Conteúdo" [selected] [ref=e23]
+          - tab "Sugerir mudanças" [ref=e24]
+        - button "Comentários" [active] [pressed] [ref=e25]:
+          - img [ref=e26]
+          - text: Comentários
+      - generic [ref=e28]:
+        - tabpanel "Conteúdo" [ref=e30]:
+          - generic [ref=e31]:
+            - article [ref=e32]:
+              - text: Front
+              - paragraph [ref=e33]: Qual remédio constitucional protege a liberdade de locomoção?
+            - article [ref=e34]:
+              - text: Back
+              - paragraph [ref=e35]: Habeas corpus.
+            - article [ref=e36]:
+              - text: Answer
+              - paragraph [ref=e37]: Habeas corpus.
+            - article [ref=e38]:
+              - text: Explanation
+              - paragraph [ref=e39]: O habeas corpus protege a liberdade de locomoção quando alguém sofre ou se acha ameaçado de sofrer violência ou coação ilegal.
+          - generic [ref=e40]:
+            - generic [ref=e41]: deck::demo-constitucional
+            - generic [ref=e42]: card::AC-CONST-0001
+        - complementary [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]:
+              - img [ref=e46]
+              - text: Comentários
+              - generic [ref=e48]: "2"
+            - generic [ref=e49]:
+              - textbox "Escreva um comentário sobre esta nota..." [ref=e50]
+              - button "Publicar" [ref=e51]
+            - generic [ref=e52]:
+              - article [ref=e53]:
+                - generic [ref=e54]:
+                  - generic [ref=e55]: Jo
+                  - strong [ref=e56]: Joao P.
+                  - generic [ref=e57]: Dica
+                  - generic [ref=e58]: 15/06/2026, 11:10
+                - paragraph [ref=e59]: A banca costuma cobrar a diferença entre habeas corpus preventivo e repressivo.
+                - generic [ref=e60]:
+                  - button "Útil (17)" [ref=e61]:
+                    - img [ref=e62]
+                    - text: Útil (17)
+                  - button "Denunciar" [ref=e64]
+              - article [ref=e65]:
+                - generic [ref=e66]:
+                  - generic [ref=e67]: Ma
+                  - strong [ref=e68]: Mariana S.
+                  - generic [ref=e69]: Mnemônico
+                  - generic [ref=e70]: 15/06/2026, 10:30
+                - paragraph [ref=e71]: "Macete: HC = Habeas Corpus = Caminhar. Sempre associe com liberdade de ir e vir."
+                - generic [ref=e72]:
+                  - button "Útil (24)" [ref=e73]:
+                    - img [ref=e74]
+                    - text: Útil (24)
+                  - button "Denunciar" [ref=e76]
