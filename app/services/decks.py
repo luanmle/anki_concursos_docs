@@ -44,6 +44,8 @@ from app.schemas import (
 )
 from app.schemas.decks import (
     AnkiDeckManifestResponse,
+    AnkiDeckReleaseListResponse,
+    AnkiDeckReleaseSummaryResponse,
     AnkiDeckStateCardResponse,
     AnkiDeckStateResponse,
     AnkiDeckSyncResponse,
@@ -1427,6 +1429,47 @@ class DeckService:
             )
             raise
 
+    def anki_releases(
+        self,
+        deck_id: uuid.UUID,
+        *,
+        user_id: uuid.UUID,
+        page: int,
+        page_size: int,
+    ) -> AnkiDeckReleaseListResponse:
+        try:
+            self._require_active_subscription(user_id, deck_id)
+            releases, total = self.repository.list_releases(
+                deck_id,
+                page=page,
+                page_size=page_size,
+            )
+            return AnkiDeckReleaseListResponse(
+                deck_id=deck_id,
+                latest_release=self.repository.latest_release_number(deck_id),
+                items=[
+                    self._anki_release_summary(release)
+                    for release in releases
+                ],
+                page=page,
+                page_size=page_size,
+                total=total,
+                pages=math.ceil(total / page_size) if total else 0,
+            )
+        except Exception as exc:
+            notify_exception(
+                exc,
+                context={
+                    "operation": "anki_releases",
+                    "deck_id": str(deck_id),
+                    "user_id": str(user_id),
+                    "page": page,
+                    "page_size": page_size,
+                },
+                tags=["addon", "releases"],
+            )
+            raise
+
     def _anki_snapshot_changes(
         self, deck_id: uuid.UUID, latest_release: int
     ) -> list[AnkiSyncChangeResponse]:
@@ -1701,6 +1744,23 @@ class DeckService:
                 removed=counts[ReleaseAction.REMOVED],
                 deprecated=counts[ReleaseAction.DEPRECATED],
             ),
+        )
+
+    @staticmethod
+    def _anki_release_summary(release: Release) -> AnkiDeckReleaseSummaryResponse:
+        counts = {
+            action: sum(1 for item in release.items if item.action == action)
+            for action in ReleaseAction
+        }
+        return AnkiDeckReleaseSummaryResponse(
+            release_id=release.id,
+            release_number=release.release_number,
+            published_at=DeckService._as_utc(release.published_at),
+            summary=release.description,
+            cards_added=counts[ReleaseAction.ADDED],
+            cards_updated=counts[ReleaseAction.UPDATED],
+            cards_removed=counts[ReleaseAction.REMOVED],
+            cards_deprecated=counts[ReleaseAction.DEPRECATED],
         )
 
     @staticmethod

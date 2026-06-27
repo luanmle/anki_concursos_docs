@@ -6,6 +6,79 @@ ADRs (decisões de arquitetura): `docs/adr/`.
 
 ---
 
+## 2026-06-26 — Campos HTML do Anki: render formatado + toggle de fonte + editor WYSIWYG
+
+**Branch:** `frontend-redesign`
+**Tipo:** feature + design
+
+Campos do Anki são HTML; antes o modal de nota renderizava `<p>{value}</p>` (React
+escapava → notas reais mostravam as tags como texto literal). Adicionado o padrão do
+editor do Anki: visão formatada + botão `<>` que alterna para o código-fonte HTML.
+
+### O que mudou
+- `admin/src/lib/html.ts` (novo) — `sanitizeHtml` (DOMPurify, allowlist de tags/attrs),
+  `htmlToText` (HTML → texto puro p/ previews), `renderCloze` (`{{c1::...}}` → destaque).
+- `admin/src/components/HtmlField.tsx` (novo) — `HtmlFieldView` (somente-leitura: HTML
+  sanitizado + toggle `<>` p/ fonte mono) e `HtmlFieldEditor` (contenteditable WYSIWYG +
+  toolbar via `document.execCommand` + toggle `<>` p/ editar HTML cru; os dois modos
+  compartilham a mesma string).
+- `admin/src/pages/CommunityInterfacePages.tsx` — aba **Conteúdo** usa `HtmlFieldView`;
+  `SuggestChangePanel` troca os textareas markdown por `HtmlFieldEditor` (toolbar virou
+  comandos HTML: bold/italic/underline/strike/h3/link/listas/citação/hr/alinhamento);
+  `noteTitle`/`noteSummary` passam por `htmlToText` (previews da lista não mostram tags).
+- `admin/src/data/communityData.ts` — campos demo enriquecidos com HTML (`<b>`, `<i>`,
+  `<span style>`) p/ exercitar render/fonte.
+- `admin/package.json` — dep `dompurify`.
+
+### Decisões relevantes
+- **Sanitização obrigatória** — campos vêm de sync Anki + sugestões da comunidade
+  (não confiável); render de HTML cru = XSS armazenado. Todo HTML passa por DOMPurify.
+- **`execCommand` para WYSIWYG** — depreciado mas universal e simples p/ contenteditable
+  (o próprio Anki usa contenteditable). DOM do editor só sincroniza do valor ao (re)entrar
+  no modo rich, p/ não resetar o cursor a cada tecla.
+- **Helpers em `lib/html.ts` separado** — evita o lint `react-refresh/only-export-components`
+  (componente + função no mesmo arquivo).
+
+### Impacto
+- Modal de nota mostra campos formatados e permite ver/editar o HTML-fonte por campo.
+  Validado no app real (login admin): Conteúdo (render + `<>`), Sugerir (WYSIWYG + fonte).
+  Lint limpo, build OK, 14 testes passam.
+
+### Iteração — botões cloze (só cartões cloze)
+- `admin/src/components/HtmlField.tsx` — `HtmlFieldEditor` ganhou prop `cloze`; quando
+  ligada, a toolbar mostra `[...]` (**sempre c1**) e `[...]+` (**continuação: maior `cN`+1**),
+  envolvendo a seleção em `{{cN::...}}`. Número calculado do maior `cN` já no campo.
+- `admin/src/pages/CommunityInterfacePages.tsx` — passa `cloze={note.card_kind === 'cloze'}`.
+- Validado no app: cartão cloze mostra os botões; sequência `[...]+`/`[...]+`/`[...]` →
+  `{{c1::Art}}. 5o, {{c2::LXVIII}}, {{c1::CF}}.`; cartão basic não mostra.
+
+## 2026-06-26 — Endpoint de releases para add-on
+
+**Tipo:** backend feature
+
+### O que mudou
+- `app/api/routes/addon.py` — novo endpoint autenticado `GET /addon/decks/{deck_id}/releases`.
+- `app/services/decks.py` — novo `anki_releases`, exigindo assinatura ativa e retornando releases paginadas.
+- `app/schemas/decks.py` + `app/schemas/__init__.py` — novos responses `AnkiDeckReleaseListResponse` e `AnkiDeckReleaseSummaryResponse`.
+- `tests/test_decks_api.py` — teste cobre 403 sem assinatura ativa, paginação e contadores por ação.
+
+### Contrato
+Resposta por release:
+- `release_id`
+- `release_number`
+- `published_at`
+- `summary` (mapeado de `Release.description`)
+- `cards_added`
+- `cards_updated`
+- `cards_removed`
+- `cards_deprecated`
+
+### Impacto
+- O add-on passa a ter contrato remoto para histórico/changelog de baralho.
+- Sem migração de banco: usa `releases` e `release_items` existentes.
+- Correção de teste: `test_addon_can_upload_full_deck_package_and_publish_release`
+  agora limpa `app.dependency_overrides` só após concluir também `/templates/sync`.
+
 ## 2026-06-26 — Modo noturno (dark mode) na superfície Muriae
 
 **Branch:** `frontend-redesign`

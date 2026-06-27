@@ -219,6 +219,27 @@ class AnkiDeckStateResponse(BaseModel):
     cards: list[AnkiDeckStateCardResponse]
 
 
+class AnkiDeckReleaseSummaryResponse(BaseModel):
+    release_id: uuid.UUID
+    release_number: int
+    published_at: datetime
+    summary: str | None
+    cards_added: int
+    cards_updated: int
+    cards_removed: int
+    cards_deprecated: int
+
+
+class AnkiDeckReleaseListResponse(BaseModel):
+    deck_id: uuid.UUID
+    latest_release: int
+    items: list[AnkiDeckReleaseSummaryResponse]
+    page: int
+    page_size: int
+    total: int
+    pages: int
+
+
 class AnkiDeckTemplateVersionResponse(BaseModel):
     template_id: uuid.UUID
     template_key: str

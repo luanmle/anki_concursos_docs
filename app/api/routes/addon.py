@@ -10,6 +10,7 @@ from app.models import User
 from app.repositories import DeckRepository
 from app.schemas import (
     AnkiDeckManifestResponse,
+    AnkiDeckReleaseListResponse,
     AnkiDeckStateResponse,
     AnkiDeckSyncResponse,
     AnkiDeckTemplateSyncResponse,
@@ -78,6 +79,22 @@ def get_anki_deck_state(
     service: DeckService = Depends(get_deck_service),
 ) -> AnkiDeckStateResponse:
     return service.anki_deck_state(deck_id, user_id=user.id)
+
+
+@router.get("/decks/{deck_id}/releases", response_model=AnkiDeckReleaseListResponse)
+def list_anki_deck_releases(
+    deck_id: uuid.UUID,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    user: User = Depends(require_authenticated_user),
+    service: DeckService = Depends(get_deck_service),
+) -> AnkiDeckReleaseListResponse:
+    return service.anki_releases(
+        deck_id,
+        user_id=user.id,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.get(

@@ -22,7 +22,6 @@ import {
   Stack,
   Sparkle as Sparkles,
   ThumbsUp,
-  Code,
   LinkSimple,
   ListBullets,
   ListNumbers,
@@ -30,10 +29,11 @@ import {
   TextH,
   TextT,
   TextItalic,
+  TextUnderline,
   DotsThreeVertical,
   X,
 } from '@phosphor-icons/react'
-import { useCallback, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError, apiRequest } from '../api/client'
 import { useAuth } from '../auth/auth-context'
@@ -52,6 +52,8 @@ import {
   LoadingState,
 } from '../components/ui-primitives'
 import { ExploreHero } from '../components/ExploreHero'
+import { HtmlFieldEditor, HtmlFieldView } from '../components/HtmlField'
+import { htmlToText } from '../lib/html'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -91,25 +93,23 @@ import type {
   SubscribableDeckList,
 } from '../types'
 
-/* eslint-disable react-hooks/refs */
-
 type DeckFilter = 'all' | 'subscribed' | 'available'
 
 function noteTitle(note: AnkiSyncChange) {
-  return (
+  return htmlToText(
     note.fields?.Front ||
-    note.fields?.Text ||
-    note.fields?.front_text ||
-    note.public_id
+      note.fields?.Text ||
+      note.fields?.front_text ||
+      note.public_id,
   )
 }
 
 function noteSummary(note: AnkiSyncChange) {
-  return (
+  return htmlToText(
     note.fields?.Explanation ||
-    note.fields?.Back ||
-    note.fields?.Extra ||
-    'Nota sincronizada pela plataforma.'
+      note.fields?.Back ||
+      note.fields?.Extra ||
+      'Nota sincronizada pela plataforma.',
   )
 }
 
@@ -590,17 +590,9 @@ function NoteModal({
           <div className="flex max-h-[70vh] min-h-0 flex-col md:flex-row">
             <div className="min-w-0 flex-1 overflow-y-auto px-6 py-5">
               <TabsContent value="content" className="mt-0">
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-4">
                   {Object.entries(fields).map(([label, value]) => (
-                    <article
-                      key={label}
-                      className="rounded-[8px] border border-mu-border bg-mu-bg p-4"
-                    >
-                      <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-mu-muted-2">
-                        {label}
-                      </span>
-                      <p className="mt-1.5 text-[14px] leading-[1.55] text-mu-text">{value}</p>
-                    </article>
+                    <HtmlFieldView key={label} label={label} value={value} />
                   ))}
                 </div>
                 {note.tags.length > 0 && (
@@ -648,14 +640,6 @@ function SuggestChangePanel({
   const [message, setMessage] = useState('')
   const [fields, setFields] = useState<Record<string, string>>(note.fields || {})
   const [sent, setSent] = useState(false)
-  const fieldRefs = useRef<Record<string, HTMLTextAreaElement | null>>({})
-  const [activeField, setActiveField] = useState<string | null>(null)
-  const registerFieldRef = useCallback(
-    (fieldName: string) => (node: HTMLTextAreaElement | null) => {
-      fieldRefs.current[fieldName] = node
-    },
-    [],
-  )
 
   function submitSuggestion() {
     const suggestion: StudentSuggestion = {
@@ -673,58 +657,26 @@ function SuggestChangePanel({
     setSent(true)
   }
 
-  function insertMarkdown(fieldName: string, before: string, after = before, placeholder = '') {
-    const textarea = fieldRefs.current[fieldName]
-    if (!textarea) return
-
-    const currentValue = fields[fieldName] ?? ''
-    const start = textarea.selectionStart ?? currentValue.length
-    const end = textarea.selectionEnd ?? currentValue.length
-    const selectedText = currentValue.slice(start, end) || placeholder
-    const nextValue =
-      currentValue.slice(0, start) +
-      before +
-      selectedText +
-      after +
-      currentValue.slice(end)
-
-    setFields((current) => ({ ...current, [fieldName]: nextValue }))
-    setActiveField(fieldName)
-
-    window.requestAnimationFrame(() => {
-      const selectionStart = start + before.length
-      const selectionEnd = selectionStart + selectedText.length
-      textarea.focus()
-      textarea.setSelectionRange(selectionStart, selectionEnd)
-    })
-  }
-
-  const toolbarItems = (label: string): Array<{
-    icon: React.ReactNode
-    label: string
-    onClick?: () => void
-  }> => [
-    { icon: <ArrowCounterClockwise size={15} />, label: 'Desfazer' },
-    { icon: <ArrowClockwise size={15} />, label: 'Refazer' },
-    { icon: <TextB size={15} />, label: 'Negrito', onClick: () => insertMarkdown(label, '**', '**', 'texto em negrito') },
-    { icon: <TextItalic size={15} />, label: 'Itálico', onClick: () => insertMarkdown(label, '*', '*', 'texto em itálico') },
-    { icon: <TextH size={15} />, label: 'Título', onClick: () => insertMarkdown(label, '### ', '', 'título') },
-    { icon: <TextT size={15} />, label: 'Tachado', onClick: () => insertMarkdown(label, '~~', '~~', 'texto tachado') },
-    { icon: <LinkSimple size={15} />, label: 'Link', onClick: () => insertMarkdown(label, '[', '](https://)', 'link') },
-    { icon: <ListBullets size={15} />, label: 'Lista com marcadores', onClick: () => insertMarkdown(label, '- ', '', 'item de lista') },
-    { icon: <ListNumbers size={15} />, label: 'Lista numerada', onClick: () => insertMarkdown(label, '1. ', '', 'item numerado') },
-    { icon: <Code size={15} />, label: 'Bloco de código', onClick: () => insertMarkdown(label, '```\n', '\n```', 'codigo') },
-    { icon: <DotsThreeVertical size={15} />, label: 'Citação', onClick: () => insertMarkdown(label, '> ', '', 'citação') },
-    { icon: <span className="text-[14px] leading-none">—</span>, label: 'Linha horizontal', onClick: () => insertMarkdown(label, '\n---\n', '', '') },
-    { icon: <TextAlignLeft size={15} />, label: 'Alinhar à esquerda' },
-    { icon: <TextAlignCenter size={15} />, label: 'Centralizar' },
-    { icon: <TextAlignRight size={15} />, label: 'Alinhar à direita' },
-    { icon: <TextAlignJustify size={15} />, label: 'Justificar' },
+  const htmlToolbar = [
+    { icon: <ArrowCounterClockwise size={15} />, label: 'Desfazer', cmd: 'undo' },
+    { icon: <ArrowClockwise size={15} />, label: 'Refazer', cmd: 'redo' },
+    { icon: <TextB size={15} />, label: 'Negrito', cmd: 'bold' },
+    { icon: <TextItalic size={15} />, label: 'Itálico', cmd: 'italic' },
+    { icon: <TextUnderline size={15} />, label: 'Sublinhado', cmd: 'underline' },
+    { icon: <TextT size={15} />, label: 'Tachado', cmd: 'strikeThrough' },
+    { icon: <TextH size={15} />, label: 'Título', cmd: 'formatBlock', arg: 'h3' },
+    { icon: <LinkSimple size={15} />, label: 'Link', cmd: 'createLink' },
+    { icon: <ListBullets size={15} />, label: 'Lista com marcadores', cmd: 'insertUnorderedList' },
+    { icon: <ListNumbers size={15} />, label: 'Lista numerada', cmd: 'insertOrderedList' },
+    { icon: <DotsThreeVertical size={15} />, label: 'Citação', cmd: 'formatBlock', arg: 'blockquote' },
+    { icon: <span className="text-[14px] leading-none">—</span>, label: 'Linha horizontal', cmd: 'insertHorizontalRule' },
+    { icon: <TextAlignLeft size={15} />, label: 'Alinhar à esquerda', cmd: 'justifyLeft' },
+    { icon: <TextAlignCenter size={15} />, label: 'Centralizar', cmd: 'justifyCenter' },
+    { icon: <TextAlignRight size={15} />, label: 'Alinhar à direita', cmd: 'justifyRight' },
+    { icon: <TextAlignJustify size={15} />, label: 'Justificar', cmd: 'justifyFull' },
   ]
-  const toolbarButton =
-    'inline-flex h-7 min-w-7 items-center justify-center rounded-[4px] px-1 text-mu-muted transition-colors hover:bg-mu-border-hover hover:text-mu-text'
-  const fieldTextarea =
-    'min-h-[88px] w-full rounded-[6px] border border-mu-border bg-mu-surface px-3 py-2 text-[14px] leading-[1.5] text-mu-text outline-none transition-colors placeholder:text-mu-muted-2 focus:border-mu-brand'
+  const messageTextarea =
+    'min-h-[112px] w-full rounded-[6px] border border-mu-border bg-mu-surface px-3.5 py-2.5 text-[15px] leading-[1.6] text-mu-text outline-none transition-colors placeholder:text-mu-muted-2 focus:border-mu-brand'
 
   return (
     <div className="flex flex-col gap-4">
@@ -750,41 +702,16 @@ function SuggestChangePanel({
         </Select>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="flex flex-col gap-5">
         {Object.entries(fields).map(([label, value]) => (
-          <div className="flex flex-col gap-1.5" key={label}>
-            <span className="text-[13px] font-semibold text-mu-text">{label}</span>
-            {activeField === label && (
-              <div
-                className="flex flex-wrap items-center gap-0.5 rounded-[6px] border border-mu-border bg-mu-bg p-1"
-                aria-label={`Barra de formatação de ${label}`}
-              >
-                {toolbarItems(label).map((item, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={item.onClick}
-                    aria-label={item.label}
-                    className={toolbarButton}
-                  >
-                    {item.icon}
-                  </button>
-                ))}
-              </div>
-            )}
-            <textarea
-              ref={registerFieldRef(label)}
-              value={value}
-              onFocus={() => setActiveField(label)}
-              onChange={(event) =>
-                setFields((current) => ({ ...current, [label]: event.target.value }))
-              }
-              className={fieldTextarea}
-            />
-            {activeField === label && (
-              <p className="text-[12px] text-mu-muted-2">A barra acima edita este campo da nota.</p>
-            )}
-          </div>
+          <HtmlFieldEditor
+            key={label}
+            label={label}
+            value={value}
+            toolbar={htmlToolbar}
+            cloze={note.card_kind === 'cloze'}
+            onChange={(next) => setFields((current) => ({ ...current, [label]: next }))}
+          />
         ))}
       </div>
 
@@ -794,7 +721,7 @@ function SuggestChangePanel({
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           placeholder="Explique o motivo da sugestão."
-          className={fieldTextarea}
+          className={messageTextarea}
         />
       </label>
 
@@ -875,7 +802,7 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
           value={body}
           onChange={(event) => setBody(event.target.value)}
           placeholder="Escreva um comentário sobre esta nota..."
-          className="min-h-[84px] w-full resize-none rounded-[8px] border border-mu-border bg-mu-bg px-3.5 py-2.5 text-[14px] leading-[1.55] text-mu-text outline-none transition-colors placeholder:text-mu-muted-2 focus:border-mu-brand focus:bg-mu-surface"
+          className="min-h-[96px] w-full resize-none rounded-[8px] border border-mu-border bg-mu-bg px-3.5 py-2.5 text-[14.5px] leading-[1.6] text-mu-text outline-none transition-colors placeholder:text-mu-muted-2 focus:border-mu-brand focus:bg-mu-surface"
         />
         <Button
           type="button"
@@ -887,7 +814,7 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-4 border-t border-mu-border pt-6">
+      <div className="flex flex-col gap-5 border-t border-mu-border pt-7">
         {noteComments
           .slice()
           .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
@@ -897,9 +824,9 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
                 <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-mu-brand-bg text-[12px] font-bold uppercase text-mu-brand">
                   {comment.author.slice(0, 2)}
                 </span>
-                <article className="min-w-0 flex-1 rounded-[12px] border border-mu-border bg-mu-surface p-4 shadow-[0_1px_2px_-1px_rgba(31,36,48,0.06),0_4px_10px_-4px_rgba(31,36,48,0.08)]">
+                <article className="min-w-0 flex-1 rounded-[12px] border border-mu-border bg-mu-surface p-5 shadow-[0_1px_2px_-1px_rgba(31,36,48,0.06),0_4px_10px_-4px_rgba(31,36,48,0.08)]">
                   <header className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <strong className="text-[13.5px] font-semibold text-mu-text">
+                    <strong className="text-[14.5px] font-semibold text-mu-text">
                       {comment.author}
                     </strong>
                     <Badge className="rounded-full border-mu-border bg-mu-surface-2 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.06em] text-mu-muted">
@@ -909,10 +836,10 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
                       {formatDate(comment.createdAt)}
                     </small>
                   </header>
-                  <p className="mt-2.5 text-[13.5px] leading-[1.65] text-mu-text-soft">
+                  <p className="mt-3 text-[14.5px] leading-[1.7] text-mu-text-soft">
                     {comment.body}
                   </p>
-                  <footer className="mt-3.5 flex items-center gap-2 border-t border-mu-surface-2 pt-3">
+                  <footer className="mt-4 flex items-center gap-2 border-t border-mu-surface-2 pt-3.5">
                     <button
                       type="button"
                       onClick={() => handleUpvote(comment.id)}

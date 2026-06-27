@@ -889,6 +889,93 @@ def test_addon_deck_state_requires_active_subscription(
         app.dependency_overrides.clear()
 
 
+def test_addon_releases_requires_subscription_and_returns_changelog_summary(
+    session: Session, client: TestClient
+) -> None:
+    discipline, topic = create_taxonomy(session, "Addon Releases")
+    updated_card = approve_and_publish(
+        client,
+        create_card(client, discipline, topic, "addon-releases-updated-card"),
+    )
+    removed_card = approve_and_publish(
+        client,
+        create_card(client, discipline, topic, "addon-releases-removed-card"),
+    )
+    deck = create_deck(client, discipline, "Deck Addon Releases")
+    for card in (updated_card, removed_card):
+        assert client.post(
+            f"/decks/{deck['deck_id']}/cards",
+            json={"card_id": card["card_id"]},
+        ).status_code == 200
+    first_release = client.post(
+        f"/decks/{deck['deck_id']}/publish-release",
+        json={"description": "Release inicial do add-on"},
+    ).json()
+
+    create_and_publish_new_version(client, updated_card, "addon-releases")
+    assert client.post(
+        f"/decks/{deck['deck_id']}/cards",
+        json={"card_id": updated_card["card_id"]},
+    ).status_code == 200
+    assert client.post(
+        f"/decks/{deck['deck_id']}/cards/{removed_card['card_id']}/remove",
+        json={"action": "removed"},
+    ).status_code == 200
+    second_release = client.post(
+        f"/decks/{deck['deck_id']}/publish-release",
+        json={"description": "Correções para o add-on"},
+    ).json()
+
+    bearer_client = create_bearer_client(session)
+    try:
+        unsubscribed_response = bearer_client.get(
+            f"/addon/decks/{deck['deck_id']}/releases"
+        )
+        assert unsubscribed_response.status_code == 403, unsubscribed_response.text
+        assert bearer_client.post(
+            f"/subscriptions/{deck['deck_id']}"
+        ).status_code == 200
+
+        response = bearer_client.get(
+            f"/addon/decks/{deck['deck_id']}/releases",
+            params={"page": 1, "page_size": 1},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "deck_id": deck["deck_id"],
+            "latest_release": 2,
+            "items": [
+                {
+                    "release_id": second_release["release_id"],
+                    "release_number": 2,
+                    "published_at": second_release["published_at"],
+                    "summary": "Correções para o add-on",
+                    "cards_added": 0,
+                    "cards_updated": 1,
+                    "cards_removed": 1,
+                    "cards_deprecated": 0,
+                }
+            ],
+            "page": 1,
+            "page_size": 1,
+            "total": 2,
+            "pages": 2,
+        }
+
+        second_page = bearer_client.get(
+            f"/addon/decks/{deck['deck_id']}/releases",
+            params={"page": 2, "page_size": 1},
+        )
+        assert second_page.status_code == 200
+        assert second_page.json()["items"][0]["release_id"] == first_release[
+            "release_id"
+        ]
+        assert second_page.json()["items"][0]["cards_added"] == 2
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_anki_delta_sync_returns_updated_and_removed_cards(
     session: Session, client: TestClient
 ) -> None:
@@ -1321,42 +1408,42 @@ def test_addon_can_upload_full_deck_package_and_publish_release(
         manifest = subscriber_client.get(
             f"/addon/decks/{body['deck_id']}/manifest"
         )
+
+        assert manifest.status_code == 200
+        manifest_body = manifest.json()
+        assert manifest_body["note_type"] == "Anki Concursos Basic"
+        assert manifest_body["fields"] == [
+            "Front",
+            "Back",
+            "Answer",
+            "Explanation",
+        ]
+        assert manifest_body["templates"][0]["template_name"] == "Basic"
+        assert manifest_body["templates"][0]["styling_css"] == ".card { font-family: Inter; }"
+
+        deck_template = session.query(DeckTemplate).one()
+        assert deck_template.template_name == "Basic"
+        assert deck_template.note_type == "Anki Concursos Basic"
+        assert deck_template.current_version is not None
+
+        version = session.query(DeckTemplateVersion).one()
+        assert version.deck_template_id == deck_template.id
+        assert version.version_number == 1
+        assert len(version.content_hash) == 64
+
+        template_sync = subscriber_client.get(
+            f"/addon/decks/{body['deck_id']}/templates/sync?since_version=0"
+        )
+        assert template_sync.status_code == 200
+        template_sync_body = template_sync.json()
+        assert template_sync_body["deck_id"] == body["deck_id"]
+        assert template_sync_body["from_version"] == 0
+        assert template_sync_body["to_version"] == 1
+        assert template_sync_body["has_changes"] is True
+        assert template_sync_body["changes"][0]["template_name"] == "Basic"
+        assert template_sync_body["changes"][0]["version_number"] == 1
     finally:
         app.dependency_overrides.clear()
-
-    assert manifest.status_code == 200
-    manifest_body = manifest.json()
-    assert manifest_body["note_type"] == "Anki Concursos Basic"
-    assert manifest_body["fields"] == [
-        "Front",
-        "Back",
-        "Answer",
-        "Explanation",
-    ]
-    assert manifest_body["templates"][0]["template_name"] == "Basic"
-    assert manifest_body["templates"][0]["styling_css"] == ".card { font-family: Inter; }"
-
-    deck_template = session.query(DeckTemplate).one()
-    assert deck_template.template_name == "Basic"
-    assert deck_template.note_type == "Anki Concursos Basic"
-    assert deck_template.current_version is not None
-
-    version = session.query(DeckTemplateVersion).one()
-    assert version.deck_template_id == deck_template.id
-    assert version.version_number == 1
-    assert len(version.content_hash) == 64
-
-    template_sync = subscriber_client.get(
-        f"/addon/decks/{body['deck_id']}/templates/sync?since_version=0"
-    )
-    assert template_sync.status_code == 200
-    template_sync_body = template_sync.json()
-    assert template_sync_body["deck_id"] == body["deck_id"]
-    assert template_sync_body["from_version"] == 0
-    assert template_sync_body["to_version"] == 1
-    assert template_sync_body["has_changes"] is True
-    assert template_sync_body["changes"][0]["template_name"] == "Basic"
-    assert template_sync_body["changes"][0]["version_number"] == 1
 
 
 def test_addon_upload_reuses_cards_for_identical_content(
