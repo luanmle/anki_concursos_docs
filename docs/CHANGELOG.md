@@ -6,6 +6,33 @@ ADRs (decisões de arquitetura): `docs/adr/`.
 
 ---
 
+## 2026-06-27 — Sugestões visíveis à comunidade no baralho + discussão
+
+**Branch:** `codex/publish-admin` (trabalho local; ver git)
+**Tipo:** feature (backend + frontend)
+
+### O que mudou
+- `migrations/versions/20260627_0018_suggestion_comments.py` + `app/models/entities.py` — nova tabela `suggestion_comments` (discussão por sugestão): `suggestion_id` (FK CASCADE), `author_user_id`/`author_email`, `body`, timestamps.
+- `app/repositories/suggestions.py` — `list_for_deck` (sugestões com `deck_id==X` OU `card_id ∈ deck_cards(X)`), `list_comments`, `create_comment`, `get_deck`. (`from __future__ import annotations` p/ evitar shadow do builtin `list` pelo método `list`.)
+- `app/services/suggestions.py` — `list_for_deck` (404 se deck inexistente), `list_comments`, `add_comment` (404 se sugestão inexistente) + `_comment_response`.
+- `app/api/routes/suggestions.py` + `app/main.py` — novo `community_router` (`require_authenticated_user`): `GET /decks/{deck_id}/note-suggestions`, `GET /note-suggestions/{id}/comments`, `POST /note-suggestions/{id}/comments`.
+- `app/schemas/suggestions.py` — `NoteSuggestionCommentCreateRequest/Response/ListResponse`.
+- `admin/src/pages/CommunityInterfacePages.tsx` — `CommunitySuggestionHistoryPage` reescrita: consome `GET /decks/{deckId}/note-suggestions` (real), lista + detalhe com `DiffViewer` e discussão real. Removido o mock `DeckSuggestionHistory`/seed/localStorage.
+- `admin/src/components/suggestions/SuggestionDiscussion.tsx` (novo) — comentários (query + post). `labels.ts` (novo) — `SUGGESTION_TYPE_LABEL`/`SUGGESTION_STATUS_LABEL` compartilhados (extraídos do `SuggestionCard`). `admin/src/types.ts` — tipos de comentário.
+- `tests/test_suggestions_api.py` — cobre `list_for_deck` (deck + card no deck, exclui outro deck), criar/listar comentário, 404 em sugestão inexistente. `tests/test_models.py` + `tests/test_postgres_integration.py` — incluem `suggestion_comments` e head `20260627_0018`.
+
+### Decisões relevantes
+- **Visível a qualquer usuário logado** (`require_authenticated_user`) — comunidade aberta, igual AnkiHub. Status abertos (pendentes) + fechados (aceitas/rejeitadas).
+- **Escopo do deck = `deck_id` OU card em `deck_cards`** — sugestões de card têm `deck_id` nulo; mapeadas via `deck_cards` (inclui cards removidos, sugestão histórica permanece). `ponytail:` marcado.
+- **Discussão como tabela nova** (decisão do usuário) — `note_suggestions` só tinha `comment`/`review_comment`; discussão real exigia modelo próprio.
+- **Sem migration destrutiva / sem impacto no add-on / sem tocar imutabilidade** — só leitura + nova tabela aditiva com `downgrade`.
+
+### Impacto
+- Usuários veem as sugestões reais por baralho em `/deck/:deckId/suggestions`, com diff Atual/Sugerido e discussão. Backend: 117 passed; rotas registradas e lógica validada em DB real. Frontend: lint limpo, 18 testes, build OK.
+- **Deploy:** exige `alembic upgrade head` (release phase já roda) e restart do backend p/ servir as rotas novas.
+
+---
+
 ## 2026-06-27 — Página de Sugestões de Mudanças (fila de moderação)
 
 **Branch:** `codex/publish-admin`
