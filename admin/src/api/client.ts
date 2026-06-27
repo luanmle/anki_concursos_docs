@@ -1,5 +1,4 @@
-const DEFAULT_API_URL =
-  'http://localhost:8000'
+const DEFAULT_API_URL = 'http://localhost:8000'
 
 declare global {
   interface Window {
@@ -10,11 +9,30 @@ declare global {
   }
 }
 
-export const API_URL = (
+// ponytail: if the app runs in non-localhost but API_URL is still localhost,
+// guess a plausible backend host by replacing `admin.` with `api.` on the current host.
+// This heuristic avoids a full ops change while teams fix Heroku env vars.
+let _apiUrl = (
   window.__APP_CONFIG__?.API_URL ||
   import.meta.env.VITE_API_URL ||
   DEFAULT_API_URL
 ).replace(/\/$/, '')
+
+if (
+  _apiUrl === DEFAULT_API_URL &&
+  typeof window !== 'undefined' &&
+  window.location &&
+  !/localhost|127\.0\.0\.1/.test(window.location.hostname)
+) {
+  const guessedHost = `${window.location.protocol}//${window.location.hostname.replace(/^admin\./, 'api.')}`
+  // only use guess if it looks different
+  if (!guessedHost.includes('localhost')) {
+    console.warn('ponytail: guessing API_URL from host', guessedHost)
+    _apiUrl = guessedHost
+  }
+}
+
+export const API_URL = _apiUrl
 
 export class ApiError extends Error {
   status: number
