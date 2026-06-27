@@ -45,7 +45,7 @@ def test_migrations_apply_to_postgresql(monkeypatch: pytest.MonkeyPatch) -> None
                     )
                 ).scalars()
             )
-        assert revision == "20260618_0014"
+        assert revision == "20260627_0016"
         assert {
             "trg_card_versions_immutable",
             "trg_cards_current_version_ownership",
@@ -59,9 +59,14 @@ def test_migrations_apply_to_postgresql(monkeypatch: pytest.MonkeyPatch) -> None
             column["name"]
             for column in inspect(engine).get_columns("card_reports")
         }
+        template_version_columns = {
+            column["name"]
+            for column in inspect(engine).get_columns("deck_template_versions")
+        }
         assert "credential_version" in user_columns
         assert "reporter_reference" in report_columns
         assert "user_id" not in report_columns
+        assert "protected_fields" in template_version_columns
     finally:
         engine.dispose()
         get_settings.cache_clear()
