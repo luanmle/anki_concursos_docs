@@ -41,6 +41,16 @@ do ADR-0004 (sem publicar direto).
 - Aprovar uma sugestão de card agora gera a versão corrigida em revisão, pronta
   para o curador publicar. Backend: 120 passed, ruff limpo. Sem mudança no add-on.
 
+### Frontend — ações por versão no histórico do card
+- `admin/src/pages/CardDetailPage.tsx` — a lista de histórico de versões ganhou
+  botões **Aprovar** (versão `needs_review`) e **Publicar** (versão `approved`)
+  por linha, reaproveitando a mutation/endpoints existentes
+  (`/cards/{id}/versions/{vid}/approve|publish`). Antes só a `current_version`
+  tinha ação, então a versão `needs_review` criada pela aprovação de sugestão
+  (ou qualquer nova versão sobre card já publicado) ficava sem botão. Fecha o
+  fluxo: sugestão → aprovar → versão em revisão → curador aprova+publica no card
+  → publica release no deck → nota atualiza. Lint limpo, build OK.
+
 ---
 
 ## 2026-06-27 — Fix: sugestões do web app gravavam em localStorage (não no backend)

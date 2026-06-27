@@ -222,6 +222,36 @@ export function CardDetailPage() {
                 </small>
               </div>
               <StatusBadge value={version.status} />
+              {canReview && version.status === 'needs_review' && (
+                <button
+                  className="button button-primary"
+                  disabled={action.isPending}
+                  onClick={() =>
+                    action.mutate({
+                      versionId: version.card_version_id,
+                      operation: 'approve',
+                    })
+                  }
+                >
+                  <CheckCircle2 size={15} />
+                  Aprovar
+                </button>
+              )}
+              {canReview && version.status === 'approved' && (
+                <button
+                  className="button button-success"
+                  disabled={action.isPending}
+                  onClick={() =>
+                    action.mutate({
+                      versionId: version.card_version_id,
+                      operation: 'publish',
+                    })
+                  }
+                >
+                  <Send size={15} />
+                  Publicar
+                </button>
+              )}
             </article>
           ))}
         </div>
