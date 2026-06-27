@@ -191,7 +191,14 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route path="operation" element={<OperationPage />} />
+        <Route
+          path="operation"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <OperationPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="forbidden" element={<PlaceholderPage title="Acesso não autorizado" />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
