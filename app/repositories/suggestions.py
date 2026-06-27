@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.models import (
     Card,
+    CardVersion,
     Deck,
     DeckCard,
     NoteSuggestion,
@@ -134,3 +135,25 @@ class NoteSuggestionRepository:
         self.session.add(comment)
         self.session.flush()
         return comment
+
+    def next_card_version_number(self, card_id: uuid.UUID) -> int:
+        current = self.session.scalar(
+            select(func.max(CardVersion.version_number)).where(
+                CardVersion.card_id == card_id
+            )
+        )
+        return (current or 0) + 1
+
+    def card_version_hashes(self, card_id: uuid.UUID) -> set[str]:
+        return set(
+            self.session.scalars(
+                select(CardVersion.content_hash).where(
+                    CardVersion.card_id == card_id
+                )
+            )
+        )
+
+    def add_card_version(self, version: CardVersion) -> CardVersion:
+        self.session.add(version)
+        self.session.flush()
+        return version

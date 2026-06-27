@@ -265,6 +265,74 @@ def test_comment_on_missing_suggestion_raises(session: Session) -> None:
     assert exc.value.status_code == 404
 
 
+def test_accept_card_suggestion_creates_needs_review_version(session: Session) -> None:
+    user = create_user(session)
+    card, _version = create_published_card(session)
+    created = service(session).create_for_card(
+        card.id,
+        NoteSuggestionCreateRequest(
+            suggestion_type=NoteSuggestionType.UPDATED_CONTENT,
+            fields={"Front": {"old": "Frente original", "new": "Frente corrigida"}},
+            comment="Corrige a frente.",
+        ),
+        user,
+    )
+
+    reviewed = service(session).review(
+        created.suggestion_id,
+        NoteSuggestionReviewRequest(status=NoteSuggestionStatus.ACCEPTED),
+        reviewed_by="rev@example.com",
+    )
+
+    assert reviewed.status == NoteSuggestionStatus.ACCEPTED
+    assert reviewed.resulting_card_version_id is not None
+    version = session.get(CardVersion, reviewed.resulting_card_version_id)
+    assert version.status == CardVersionStatus.NEEDS_REVIEW
+    assert version.version_number == 2
+    assert version.front_text == "Frente corrigida"
+    assert version.back_text == "Verso original"  # campo não tocado preserva base
+
+
+def test_reject_card_suggestion_creates_no_version(session: Session) -> None:
+    user = create_user(session)
+    card, _version = create_published_card(session)
+    created = service(session).create_for_card(
+        card.id,
+        NoteSuggestionCreateRequest(
+            suggestion_type=NoteSuggestionType.UPDATED_CONTENT,
+            fields={"Front": {"old": "Frente original", "new": "x"}},
+            comment="nao",
+        ),
+        user,
+    )
+    reviewed = service(session).review(
+        created.suggestion_id,
+        NoteSuggestionReviewRequest(status=NoteSuggestionStatus.REJECTED),
+        reviewed_by="rev@example.com",
+    )
+    assert reviewed.resulting_card_version_id is None
+
+
+def test_accept_tag_only_suggestion_creates_no_version(session: Session) -> None:
+    user = create_user(session)
+    card, _version = create_published_card(session)
+    created = service(session).create_for_card(
+        card.id,
+        NoteSuggestionCreateRequest(
+            suggestion_type=NoteSuggestionType.NEW_TAGS,
+            added_tags=["nova"],
+            comment="so tag",
+        ),
+        user,
+    )
+    reviewed = service(session).review(
+        created.suggestion_id,
+        NoteSuggestionReviewRequest(status=NoteSuggestionStatus.ACCEPTED),
+        reviewed_by="rev@example.com",
+    )
+    assert reviewed.resulting_card_version_id is None
+
+
 def test_suggestion_requires_diff_for_non_delete() -> None:
     with pytest.raises(ValidationError):
         NoteSuggestionCreateRequest(
