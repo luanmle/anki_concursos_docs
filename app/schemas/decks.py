@@ -167,6 +167,7 @@ class AnkiDeckManifestResponse(BaseModel):
     field_mapping: dict[str, str]
     supported_note_types: dict[str, dict[str, Any]]
     templates: list["AnkiDeckTemplatePayload"] = Field(default_factory=list)
+    protected_fields: list[str] = Field(default_factory=list)
     tags: list[str]
 
 
@@ -188,6 +189,7 @@ class AnkiSyncChangeResponse(BaseModel):
     content_hash: str | None = None
     fields: dict[str, str] | None = None
     template: dict[str, Any] | None = None
+    protected_fields: list[str] = Field(default_factory=list)
     source_note_id: str | None = None
     source_note_guid: str | None = None
     source_deck_path: str | None = None
@@ -251,6 +253,7 @@ class AnkiDeckTemplateVersionResponse(BaseModel):
     status: str
     fields: list[str]
     field_mapping: dict[str, str]
+    protected_fields: list[str] = Field(default_factory=list)
     front_html: str
     back_html: str
     styling_css: str
@@ -267,11 +270,13 @@ class AnkiDeckTemplateSyncResponse(BaseModel):
 
 
 class AnkiDeckTemplatePayload(BaseModel):
+    template_id: uuid.UUID | None = None
     template_name: str = Field(min_length=1, max_length=255)
     note_type: str = Field(min_length=1, max_length=255)
     card_kind: CardKind
     fields: list[str] = Field(min_length=1)
     field_mapping: dict[str, str] = Field(default_factory=dict)
+    protected_fields: list[str] = Field(default_factory=list)
     front_html: str = Field(min_length=1)
     back_html: str = Field(min_length=1)
     styling_css: str = Field(default="")
@@ -286,6 +291,28 @@ class AnkiDeckTemplatePayload(BaseModel):
     @classmethod
     def strip_template_strings(cls, value: object) -> object:
         return value.strip() if isinstance(value, str) else value
+
+    @field_validator("protected_fields", mode="after")
+    @classmethod
+    def normalize_protected_fields(cls, value: list[str]) -> list[str]:
+        seen: set[str] = set()
+        normalized: list[str] = []
+        for item in value:
+            field = item.strip()
+            if not field or field in seen:
+                continue
+            seen.add(field)
+            normalized.append(field)
+        return normalized
+
+
+class AnkiDeckTemplateProtectedFieldsUpdate(BaseModel):
+    protected_fields: list[str] = Field(default_factory=list)
+
+    @field_validator("protected_fields", mode="after")
+    @classmethod
+    def normalize_protected_fields(cls, value: list[str]) -> list[str]:
+        return AnkiDeckTemplatePayload.normalize_protected_fields(value)
 
 
 class AnkiDeckUploadNotePayload(BaseModel):

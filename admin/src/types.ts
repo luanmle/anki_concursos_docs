@@ -202,15 +202,50 @@ export interface AnkiDeckManifest {
   note_type: string
   fields: string[]
   field_mapping: Record<string, string>
+  protected_fields: string[]
   supported_note_types: Record<
     string,
     {
       note_type: string
       fields: string[]
       field_mapping: Record<string, string>
+      protected_fields?: string[]
     }
   >
+  templates: AnkiDeckTemplate[]
   tags: string[]
+}
+
+export interface AnkiDeckTemplate {
+  template_id?: string
+  template_name: string
+  note_type: string
+  card_kind: 'basic' | 'cloze'
+  fields: string[]
+  field_mapping: Record<string, string>
+  protected_fields: string[]
+  front_html: string
+  back_html: string
+  styling_css: string
+}
+
+export interface AnkiDeckTemplateVersion {
+  template_id: string
+  template_key: string
+  template_name: string
+  note_type: string
+  card_kind: 'basic' | 'cloze'
+  version_number: number
+  content_hash: string
+  status: string
+  fields: string[]
+  field_mapping: Record<string, string>
+  protected_fields: string[]
+  front_html: string
+  back_html: string
+  styling_css: string
+  created_by: string
+  created_at: string
 }
 
 export interface AnkiSyncChange {
@@ -224,7 +259,11 @@ export interface AnkiSyncChange {
   new_card_version_id: string | null
   card_kind: 'basic' | 'cloze' | null
   note_type: string | null
+  template_name?: string | null
+  native?: boolean
+  content_hash?: string | null
   fields: Record<string, string> | null
+  protected_fields?: string[]
   tags: string[]
 }
 

@@ -16,9 +16,9 @@ from app.models import (
     Deck,
     DeckCard,
     DeckSnapshot,
+    DeckSubscription,
     DeckTemplate,
     DeckTemplateVersion,
-    DeckSubscription,
     Release,
     ReleaseItem,
 )
@@ -49,9 +49,10 @@ from app.schemas.decks import (
     AnkiDeckStateCardResponse,
     AnkiDeckStateResponse,
     AnkiDeckSyncResponse,
+    AnkiDeckTemplatePayload,
+    AnkiDeckTemplateProtectedFieldsUpdate,
     AnkiDeckTemplateSyncResponse,
     AnkiDeckTemplateVersionResponse,
-    AnkiDeckTemplatePayload,
     AnkiDeckUploadItemResponse,
     AnkiDeckUploadRequest,
     AnkiDeckUploadResponse,
@@ -380,10 +381,16 @@ class DeckService:
                     "note_type": config["note_type"],
                     "fields": config["fields"],
                     "field_mapping": config["field_mapping"],
+                    "protected_fields": [],
                 }
                 for kind, config in self.ANKI_NOTE_TYPES.items()
             },
             templates=templates,
+            protected_fields=(
+                list(primary_template.protected_fields)
+                if primary_template is not None
+                else []
+            ),
             tags=[f"deck::{deck.id}"],
         )
 
@@ -480,7 +487,10 @@ class DeckService:
                     for version in versions
                     if version.version_number > since_version
                 ]
-            to_version = max((version.version_number for version in versions), default=0)
+            to_version = max(
+                (version.version_number for version in versions),
+                default=0,
+            )
             return AnkiDeckTemplateSyncResponse(
                 deck_id=deck_id,
                 from_version=since_version,
@@ -498,6 +508,7 @@ class DeckService:
                         status=version.status,
                         fields=list(version.fields),
                         field_mapping=dict(version.field_mapping),
+                        protected_fields=list(version.protected_fields),
                         front_html=version.front_html,
                         back_html=version.back_html,
                         styling_css=version.styling_css,
@@ -519,6 +530,78 @@ class DeckService:
                 tags=["addon", "template_sync"],
             )
             raise
+
+    def update_anki_template_protected_fields(
+        self,
+        deck_id: uuid.UUID,
+        template_id: uuid.UUID,
+        payload: AnkiDeckTemplateProtectedFieldsUpdate,
+        *,
+        updated_by: str,
+    ) -> AnkiDeckTemplateVersionResponse:
+        with self.session.begin():
+            deck_template = self.repository.get_template_by_id(deck_id, template_id)
+            if deck_template is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Template not found",
+                )
+            current_version = deck_template.current_version
+            if current_version is None:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Template has no current version",
+                )
+
+            available_fields = set(current_version.fields)
+            unknown_fields = [
+                field
+                for field in payload.protected_fields
+                if field not in available_fields
+            ]
+            if unknown_fields:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    detail=(
+                        "protected_fields contains unknown fields: "
+                        + ", ".join(unknown_fields)
+                    ),
+                )
+
+            if list(current_version.protected_fields) == payload.protected_fields:
+                return self._template_version_response(current_version)
+
+            template_payload = AnkiDeckTemplatePayload(
+                template_name=deck_template.template_name,
+                note_type=deck_template.note_type,
+                card_kind=deck_template.card_kind,
+                fields=list(current_version.fields),
+                field_mapping=dict(current_version.field_mapping),
+                protected_fields=list(payload.protected_fields),
+                front_html=current_version.front_html,
+                back_html=current_version.back_html,
+                styling_css=current_version.styling_css,
+            )
+            version = self.repository.create_template_version(
+                DeckTemplateVersion(
+                    deck_template_id=deck_template.id,
+                    version_number=self.repository.next_template_version_number(
+                        deck_template.id
+                    ),
+                    fields=list(template_payload.fields),
+                    field_mapping=dict(template_payload.field_mapping),
+                    protected_fields=list(template_payload.protected_fields),
+                    front_html=template_payload.front_html,
+                    back_html=template_payload.back_html,
+                    styling_css=template_payload.styling_css,
+                    content_hash=self._template_content_hash(template_payload),
+                    status="published",
+                    created_by=updated_by,
+                )
+            )
+            deck_template.current_version_id = version.id
+            self.session.flush()
+            return self._template_version_response(version)
 
     def upload_anki_deck(  # noqa: C901 - orchestration across upload, versioning and release
         self,
@@ -587,14 +670,18 @@ class DeckService:
                                 card_kind=template.card_kind,
                             )
                         )
-                    template_version_number = self.repository.next_template_version_number(
-                        deck_template.id
+                    template_version_number = (
+                        self.repository.next_template_version_number(
+                            deck_template.id
+                        )
                     )
                     if (
                         deck_template.current_version is not None
                         and deck_template.current_version.content_hash == template_hash
                     ):
-                        template_version_number = deck_template.current_version.version_number
+                        template_version_number = (
+                            deck_template.current_version.version_number
+                        )
 
                     if (
                         deck_template.current_version is None
@@ -606,6 +693,7 @@ class DeckService:
                                 version_number=template_version_number,
                                 fields=list(template.fields),
                                 field_mapping=dict(template.field_mapping),
+                                protected_fields=list(template.protected_fields),
                                 front_html=template.front_html,
                                 back_html=template.back_html,
                                 styling_css=template.styling_css,
@@ -1136,17 +1224,42 @@ class DeckService:
                 continue
             templates.append(
                 AnkiDeckTemplatePayload(
+                    template_id=deck_template.id,
                     template_name=deck_template.template_name,
                     note_type=deck_template.note_type,
                     card_kind=deck_template.card_kind,
                     fields=list(current_version.fields),
                     field_mapping=dict(current_version.field_mapping),
+                    protected_fields=list(current_version.protected_fields),
                     front_html=current_version.front_html,
                     back_html=current_version.back_html,
                     styling_css=current_version.styling_css,
                 )
             )
         return templates
+
+    @staticmethod
+    def _template_version_response(
+        version: DeckTemplateVersion,
+    ) -> AnkiDeckTemplateVersionResponse:
+        return AnkiDeckTemplateVersionResponse(
+            template_id=version.template.id,
+            template_key=version.template.template_key,
+            template_name=version.template.template_name,
+            note_type=version.template.note_type,
+            card_kind=version.template.card_kind,
+            version_number=version.version_number,
+            content_hash=version.content_hash,
+            status=version.status,
+            fields=list(version.fields),
+            field_mapping=dict(version.field_mapping),
+            protected_fields=list(version.protected_fields),
+            front_html=version.front_html,
+            back_html=version.back_html,
+            styling_css=version.styling_css,
+            created_by=version.created_by,
+            created_at=version.created_at,
+        )
 
     @staticmethod
     def _template_key_for_upload(
@@ -1169,6 +1282,7 @@ class DeckService:
             else str(template.card_kind),
             "fields": list(template.fields),
             "field_mapping": dict(sorted(template.field_mapping.items())),
+            "protected_fields": sorted(template.protected_fields),
             "front_html": template.front_html,
             "back_html": template.back_html,
             "styling_css": template.styling_css,

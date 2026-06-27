@@ -6,6 +6,27 @@ ADRs (decisões de arquitetura): `docs/adr/`.
 
 ---
 
+## 2026-06-27 — Campos protegidos no contrato do add-on
+
+**Branch:** `codex/publish-admin`
+**Tipo:** feature
+
+### O que mudou
+- `app/models/entities.py` + `migrations/versions/20260627_0016_template_protected_fields.py` — `deck_template_versions` ganhou `protected_fields` JSON com default `[]`, preservando templates existentes.
+- `app/schemas/decks.py`, `app/services/decks.py`, `app/api/routes/addon.py` — upload, manifesto e template sync passam a aceitar/expor `protected_fields`; novo endpoint `PATCH /addon/decks/{deck_id}/templates/{template_id}/protected-fields`.
+- `admin/src/pages/AddonPage.tsx` + `admin/src/types.ts` — página do add-on ganhou editor de campos protegidos por template, com checkboxes e salvamento via API.
+- `tests/test_decks_api.py` — cobre upload com `protected_fields`, atualização por curator/admin, validação de campo desconhecido e propagação no manifesto/template sync.
+- `docs/changes/2026-06-27-protected-fields-contract.md` — documentação operacional da mudança.
+
+### Decisões relevantes
+- **Contrato `protected_fields`** — mantido o nome usado pelo add-on para retrocompatibilidade direta entre backend e cliente.
+- **Proteção por versão de template** — mudar campos protegidos cria nova `DeckTemplateVersion`, preservando histórico e `content_hash`.
+- **Permissão de escrita curator/admin** — assinantes podem consumir o contrato, mas não alterar regra de preservação do baralho.
+
+### Impacto
+- Add-on pode preservar campos locais definidos pela plataforma sem bloquear o sync inteiro.
+- Frontend admin permite configurar quais campos do template não devem ser sobrescritos no Anki local.
+
 ## 2026-06-26 — Campos HTML do Anki: render formatado + toggle de fonte + editor WYSIWYG
 
 **Branch:** `frontend-redesign`

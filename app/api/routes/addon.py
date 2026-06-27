@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.database import get_db
-from app.core.security import require_authenticated_user
+from app.core.security import AuthPrincipal, require_authenticated_user, require_curator
 from app.models import User
 from app.repositories import DeckRepository
 from app.schemas import (
@@ -14,9 +14,11 @@ from app.schemas import (
     AnkiDeckStateResponse,
     AnkiDeckSyncResponse,
     AnkiDeckTemplateSyncResponse,
+    AnkiDeckTemplateVersionResponse,
 )
 from app.schemas.decks import (
     AddonStatusResponse,
+    AnkiDeckTemplateProtectedFieldsUpdate,
     AnkiDeckUploadRequest,
     AnkiDeckUploadResponse,
 )
@@ -111,6 +113,25 @@ def sync_anki_deck_templates(
         deck_id,
         user_id=user.id,
         since_version=since_version,
+    )
+
+
+@router.patch(
+    "/decks/{deck_id}/templates/{template_id}/protected-fields",
+    response_model=AnkiDeckTemplateVersionResponse,
+)
+def update_anki_deck_template_protected_fields(
+    deck_id: uuid.UUID,
+    template_id: uuid.UUID,
+    payload: AnkiDeckTemplateProtectedFieldsUpdate,
+    principal: AuthPrincipal = Depends(require_curator),
+    service: DeckService = Depends(get_deck_service),
+) -> AnkiDeckTemplateVersionResponse:
+    return service.update_anki_template_protected_fields(
+        deck_id,
+        template_id,
+        payload,
+        updated_by=principal.email,
     )
 
 

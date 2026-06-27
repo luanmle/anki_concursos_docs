@@ -558,6 +558,9 @@ class DeckTemplateVersion(TimestampMixin, Base):
     field_mapping: Mapped[dict[str, str]] = mapped_column(
         JSON, default=dict, nullable=False
     )
+    protected_fields: Mapped[list[str]] = mapped_column(
+        JSON, default=list, nullable=False
+    )
     front_html: Mapped[str] = mapped_column(Text, nullable=False)
     back_html: Mapped[str] = mapped_column(Text, nullable=False)
     styling_css: Mapped[str] = mapped_column(Text, default="", nullable=False)

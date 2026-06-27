@@ -1,64 +1,53 @@
 # Contexto Ativo
 
-**Atualizado:** 2026-06-26
-**Branch:** `frontend-redesign` (dark mode) · sync já mergeado em `main` (Heroku v97)
-**Status:** modo noturno Muriae — concluído, não commitado; sync — mergeado e no ar
+**Atualizado:** 2026-06-27
+**Branch:** `codex/publish-admin`
+**Status:** concluído, pronto para commit e deploy
 
 ## O que está sendo trabalhado
 
-**Modo noturno (dark mode)** da superfície Muriae — tema escuro do
-`design-reference/redesign.html`, com toggle no topbar e persistência. Concluído e
-verificado visualmente (claro + escuro); ainda **não commitado** (branch `frontend-redesign`).
+Campos protegidos no contrato do add-on Anki, com persistência no backend e UI
+administrativa para configurar `protected_fields` por template.
 
-Em paralelo, o **contrato de sync backend ↔ add-on** já foi mergeado em `main` e
-publicado (Heroku v97) — ver "Sync (estado herdado)" abaixo; ainda há ações pendentes lá,
-incluindo uma **urgente de segurança**.
+## Últimas mudanças
 
-## Últimas mudanças (desta sessão — dark mode)
+- `deck_template_versions` ganhou coluna JSON `protected_fields` via migration
+  `20260627_0016_template_protected_fields.py`.
+- Upload de baralho aceita `templates[].protected_fields`.
+- Manifesto do add-on retorna `protected_fields`, `templates[].protected_fields`
+  e `templates[].template_id`.
+- Template sync retorna `protected_fields` por versão de template.
+- Novo endpoint curator/admin:
+  `PATCH /addon/decks/{deck_id}/templates/{template_id}/protected-fields`.
+- Página admin do add-on ganhou editor de campos protegidos com checkboxes por
+  template e botão `Salvar proteção`.
+- Documentação adicionada em
+  `docs/changes/2026-06-27-protected-fields-contract.md`.
 
-- `admin/src/index.css` — tokens semânticos `--mu-*` escopados em `.app-shell`,
-  swap via `html[data-theme="dark"]`; utilitários no `@theme`; chrome do shell
-  (topbar/sidebar/hero/page) reescrito de hex para `var(--mu-*)`.
-- `admin/src/pages/CommunityInterfacePages.tsx` — ~242 cores hard-coded → tokens
-  (prefix-aware: fill sólido da marca mantido, marca-como-texto invertida).
-- `admin/src/components/MuriaeDeckCard.tsx` — `CATEGORY` migrado para tokens.
-- `admin/src/lib/theme.ts` + `theme.test.ts` (novos), `ThemeToggle.tsx` (novo),
-  `AppShell.tsx` (toggle no topbar), `main.tsx` (`initTheme()`).
-- Detalhe completo: `docs/CHANGELOG.md` (entrada 2026-06-26 — Modo noturno).
+## Verificação
+
+- `.venv/bin/python -m compileall app` — passou.
+- `.venv/bin/python -m pytest` — `110 passed, 2 skipped`.
+- `cd admin && npm run build` — passou.
+- `git diff --check` — passou.
 
 ## Próximos passos
 
-- [ ] **Segurança (urgente, herdado do sync):** rotacionar segredos expostos no terminal
-      via `heroku releases:info` — `AUTH_SECRET_KEY`, senha do admin,
-      `heroku pg:credentials:rotate -a flashcards-stagging`.
-- [ ] Validar o dark mode **no app real** com backend de pé + login
-      (`admin@example.com` / `development-password`) — nesta sessão a API local estava
-      fora; validação feita sobre o CSS do build.
-- [ ] `review-change` e commit do dark mode em `frontend-redesign`.
-- [ ] Aplicar tokens `--mu-*` às demais páginas Muriae ao migrá-las.
-- [ ] Revisar e mergear add-on PR **#2** (`luanmle/addon-anki#2`); avaliar
-      `/addon/decks/{id}/templates/sync` (sem consumidor) ou removê-lo.
+- [ ] Commitar somente os arquivos desta implementação.
+- [ ] Levar o commit para `main` e fazer push.
+- [ ] Confirmar workflow que gera `admin-deploy`.
+- [ ] Confirmar releases Heroku do backend e frontend após deploy.
 
-## Decisões recentes (dark mode)
+## Decisões recentes
 
-- **Tokens semânticos `--mu-*` num único `[data-theme]`**, não variantes `dark:` por
-  elemento — espelha a arquitetura do protótipo e isola o tema.
-- **Escopo só Muriae** (decisão do usuário); legado fica fora do toggle.
-- **Fill sólido da marca não inverte** no escuro; só marca como texto/borda clareia.
-- **Padrão claro + lembrar** (decisão do usuário); ignora `prefers-color-scheme`.
-
-## Sync (estado herdado, já no ar)
-
-- Backend PR **#6** (squash) → `main` (`7cbb9666`); add-on PR **#2** aberto, **não mergeado**.
-- Heroku `flashcards-stagging` release **v97** — alembic limpo; `/state` responde 401 (vivo).
-- ⚠️ **Vazamento de segredos** (ver "Próximos passos"): `heroku releases:info` despejou
-  `AUTH_SECRET_KEY`, `BOOTSTRAP_ADMIN_PASSWORD` e `DATABASE_URL` de produção no terminal.
+- **Contrato `protected_fields`** — nome mantido para compatibilidade direta com
+  o add-on já preparado.
+- **Proteção versionada no template** — alteração cria nova versão de template,
+  mantendo histórico e novo `content_hash`.
+- **Escrita restrita a curator/admin** — assinantes consomem o contrato, mas não
+  alteram regra de preservação local.
 
 ## O que NÃO tocar agora
 
-- `admin-deploy` — branch gerada automaticamente.
-- Tema escuro **legado** (`:root` global, `.sidebar`/`.brand*`/`.topbar` base) — de páginas
-  ainda não migradas; não confundir com os tokens `--mu-*` da superfície Muriae.
-- `note_type_manager.py` / `installer.py` no add-on — alterações soltas de sessão anterior.
-- Páginas Muriae ainda não migradas (DashboardPage, CardsPage, CardDetailPage, CardFormPage,
-  CardImportPage, DecksPage/DeckDetailPage, AddonPage, ReportDetailPage, UserPages, OperationPage).
+- `admin-deploy` manualmente; essa branch deve ser gerada pelo workflow.
+- Arquivos/untracked antigos fora desta implementação.

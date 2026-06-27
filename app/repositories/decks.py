@@ -8,9 +8,9 @@ from app.models import (
     Deck,
     DeckCard,
     DeckSnapshot,
+    DeckSubscription,
     DeckTemplate,
     DeckTemplateVersion,
-    DeckSubscription,
     Discipline,
     Release,
     ReleaseItem,
@@ -71,7 +71,11 @@ class DeckRepository:
         )
         return list(self.session.scalars(statement).all())
 
-    def get_template_by_key(self, deck_id: uuid.UUID, template_key: str) -> DeckTemplate | None:
+    def get_template_by_key(
+        self,
+        deck_id: uuid.UUID,
+        template_key: str,
+    ) -> DeckTemplate | None:
         return self.session.scalar(
             select(DeckTemplate).where(
                 DeckTemplate.deck_id == deck_id,
@@ -79,11 +83,25 @@ class DeckRepository:
             )
         )
 
+    def get_template_by_id(
+        self,
+        deck_id: uuid.UUID,
+        template_id: uuid.UUID,
+    ) -> DeckTemplate | None:
+        return self.session.scalar(
+            select(DeckTemplate)
+            .options(selectinload(DeckTemplate.current_version))
+            .where(
+                DeckTemplate.deck_id == deck_id,
+                DeckTemplate.id == template_id,
+            )
+        )
+
     def next_template_version_number(self, deck_template_id: uuid.UUID) -> int:
         next_version = self.session.scalar(
-            select(func.coalesce(func.max(DeckTemplateVersion.version_number), 0) + 1).where(
-                DeckTemplateVersion.deck_template_id == deck_template_id
-            )
+            select(
+                func.coalesce(func.max(DeckTemplateVersion.version_number), 0) + 1
+            ).where(DeckTemplateVersion.deck_template_id == deck_template_id)
         )
         return int(next_version or 1)
 
@@ -92,7 +110,10 @@ class DeckRepository:
         self.session.flush()
         return template
 
-    def create_template_version(self, version: DeckTemplateVersion) -> DeckTemplateVersion:
+    def create_template_version(
+        self,
+        version: DeckTemplateVersion,
+    ) -> DeckTemplateVersion:
         self.session.add(version)
         self.session.flush()
         return version

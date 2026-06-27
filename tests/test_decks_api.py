@@ -662,6 +662,7 @@ def test_subscriber_can_fetch_manifest_and_initial_anki_snapshot(
                     "Explanation": card["current_version"]["explanation_text"],
                 },
                 "template": None,
+                "protected_fields": [],
                 "source_note_id": None,
                 "source_note_guid": None,
                 "source_deck_path": None,
@@ -1370,6 +1371,7 @@ def test_addon_can_upload_full_deck_package_and_publish_release(
                 "front_html": "<div class=\"front\">{{Front}}</div>",
                 "back_html": "<div class=\"back\">{{Back}}</div>",
                 "styling_css": ".card { font-family: Inter; }",
+                "protected_fields": ["Explanation"],
             }
         ],
         "notes": [
@@ -1420,6 +1422,8 @@ def test_addon_can_upload_full_deck_package_and_publish_release(
         ]
         assert manifest_body["templates"][0]["template_name"] == "Basic"
         assert manifest_body["templates"][0]["styling_css"] == ".card { font-family: Inter; }"
+        assert manifest_body["templates"][0]["protected_fields"] == ["Explanation"]
+        assert manifest_body["protected_fields"] == ["Explanation"]
 
         deck_template = session.query(DeckTemplate).one()
         assert deck_template.template_name == "Basic"
@@ -1429,6 +1433,7 @@ def test_addon_can_upload_full_deck_package_and_publish_release(
         version = session.query(DeckTemplateVersion).one()
         assert version.deck_template_id == deck_template.id
         assert version.version_number == 1
+        assert version.protected_fields == ["Explanation"]
         assert len(version.content_hash) == 64
 
         template_sync = subscriber_client.get(
@@ -1442,6 +1447,91 @@ def test_addon_can_upload_full_deck_package_and_publish_release(
         assert template_sync_body["has_changes"] is True
         assert template_sync_body["changes"][0]["template_name"] == "Basic"
         assert template_sync_body["changes"][0]["version_number"] == 1
+        assert template_sync_body["changes"][0]["protected_fields"] == ["Explanation"]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_curator_can_update_anki_template_protected_fields(
+    session: Session,
+) -> None:
+    student_client = create_bearer_client(session)
+    upload_payload = {
+        "deck_name": "Deck Protected Fields",
+        "source_name": "addon",
+        "publish_release": True,
+        "templates": [
+            {
+                "template_name": "Basic",
+                "note_type": "Anki Concursos Basic",
+                "card_kind": "basic",
+                "fields": ["Front", "Back", "Explanation"],
+                "field_mapping": {},
+                "protected_fields": ["Explanation"],
+                "front_html": "{{Front}}",
+                "back_html": "{{Back}}",
+                "styling_css": "",
+            }
+        ],
+        "notes": [
+            {
+                "note_type": "Anki Concursos Basic",
+                "template_name": "Basic",
+                "card_kind": "basic",
+                "fields": {
+                    "Front": "Pergunta",
+                    "Back": "Resposta",
+                    "Explanation": "Local",
+                },
+                "tags": [],
+            }
+        ],
+    }
+
+    uploaded = student_client.post("/addon/decks/upload", json=upload_payload)
+    assert uploaded.status_code == 201
+    deck_id = uploaded.json()["deck_id"]
+    deck_template = session.query(DeckTemplate).one()
+    old_hash = deck_template.current_version.content_hash
+
+    curator_client = create_curator_client(session)
+    response = curator_client.patch(
+        f"/addon/decks/{deck_id}/templates/{deck_template.id}/protected-fields",
+        json={"protected_fields": ["Back", "Back", "  Explanation  "]},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["version_number"] == 2
+    assert body["protected_fields"] == ["Back", "Explanation"]
+    assert body["content_hash"] != old_hash
+
+    subscriber_client = create_bearer_client(session)
+    try:
+        assert subscriber_client.post(f"/subscriptions/{deck_id}").status_code == 200
+        manifest = subscriber_client.get(f"/addon/decks/{deck_id}/manifest")
+        assert manifest.status_code == 200
+        assert manifest.json()["templates"][0]["protected_fields"] == [
+            "Back",
+            "Explanation",
+        ]
+
+        template_sync = subscriber_client.get(
+            f"/addon/decks/{deck_id}/templates/sync?since_version=1"
+        )
+        assert template_sync.status_code == 200
+        sync_body = template_sync.json()
+        assert sync_body["to_version"] == 2
+        assert sync_body["changes"][0]["protected_fields"] == [
+            "Back",
+            "Explanation",
+        ]
+
+        invalid = curator_client.patch(
+            f"/addon/decks/{deck_id}/templates/{deck_template.id}/protected-fields",
+            json={"protected_fields": ["Campo Inexistente"]},
+        )
+        assert invalid.status_code == 422
     finally:
         app.dependency_overrides.clear()
 
