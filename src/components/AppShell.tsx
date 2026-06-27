@@ -83,7 +83,9 @@ function AppShellLayout() {
       ? [{ to: '/admin', label: 'Administração', icon: Layout }]
       : []),
     { to: '/addon', label: 'Add-on do Anki', icon: PlugZap },
-    { to: '/operation', label: 'Operação', icon: Activity },
+    ...(hasRole('admin')
+      ? [{ to: '/operation', label: 'Operação', icon: Activity }]
+      : []),
   ]
 
   return (
