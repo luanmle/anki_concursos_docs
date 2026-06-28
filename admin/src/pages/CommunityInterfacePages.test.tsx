@@ -97,7 +97,9 @@ describe('AdminSuggestionsPage', () => {
   function renderPage() {
     return render(
       <QueryClientProvider client={createTestQueryClient()}>
-        <AdminSuggestionsPage />
+        <MemoryRouter>
+          <AdminSuggestionsPage />
+        </MemoryRouter>
       </QueryClientProvider>,
     )
   }
