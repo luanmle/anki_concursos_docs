@@ -1,0 +1,3 @@
+# Design mockups / reference, not project source — keep out of GitHub language stats.
+design-reference/** linguist-documentation
+docs/design/mockups/** linguist-documentation
