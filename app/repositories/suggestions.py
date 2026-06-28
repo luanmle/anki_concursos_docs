@@ -153,6 +153,14 @@ class NoteSuggestionRepository:
             )
         )
 
+    def decks_with_active_card(self, card_id: uuid.UUID) -> list[uuid.UUID]:
+        rows = self.session.scalars(
+            select(DeckCard.deck_id)
+            .where(DeckCard.card_id == card_id, DeckCard.removed_at.is_(None))
+            .distinct()
+        )
+        return list(rows)
+
     def add_card_version(self, version: CardVersion) -> CardVersion:
         self.session.add(version)
         self.session.flush()

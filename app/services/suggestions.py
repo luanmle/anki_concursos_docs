@@ -5,9 +5,11 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
-from app.models import CardVersion, NoteSuggestion, NoteSuggestionComment, User
-from app.models.enums import CardVersionStatus, NoteSuggestionStatus
+from app.models import NoteSuggestion, NoteSuggestionComment, User
+from app.models.enums import NoteSuggestionStatus, NoteSuggestionType
 from app.repositories import NoteSuggestionRepository
+from app.repositories.cards import CardRepository
+from app.repositories.decks import DeckRepository
 from app.schemas import (
     NoteSuggestionCommentCreateRequest,
     NoteSuggestionCommentListResponse,
@@ -17,7 +19,10 @@ from app.schemas import (
     NoteSuggestionResponse,
     NoteSuggestionReviewRequest,
 )
-from app.services.cards import calculate_content_hash
+from app.schemas.cards import CardVersionCreateRequest
+from app.schemas.decks import ReleasePublishRequest
+from app.services.cards import CardService, calculate_content_hash
+from app.services.decks import DeckService
 
 
 class NoteSuggestionService:
@@ -194,18 +199,19 @@ class NoteSuggestionService:
                     status_code=status.HTTP_409_CONFLICT,
                     detail="Suggestion has already been reviewed",
                 )
-            suggestion.status = payload.status
-            suggestion.reviewed_by = reviewed_by
-            suggestion.review_comment = payload.review_comment
+            # FIX 1: publish BEFORE committing status so that if publish raises,
+            # the suggestion stays PENDING and is retryable.
             resulting_id = payload.resulting_card_version_id
             if (
                 resulting_id is None
                 and payload.status == NoteSuggestionStatus.ACCEPTED
             ):
-                # ADR-0004: aprovar cria nova versão em needs_review (não publica).
-                resulting_id = self._create_review_version(suggestion, reviewed_by)
-            suggestion.resulting_card_version_id = resulting_id
+                resulting_id = self._publish_from_suggestion(suggestion, reviewed_by)
+            suggestion.status = payload.status
+            suggestion.reviewed_by = reviewed_by
+            suggestion.review_comment = payload.review_comment
             suggestion.reviewed_at = datetime.now(UTC)
+            suggestion.resulting_card_version_id = resulting_id
             self.session.commit()
         except IntegrityError as exc:
             self.session.rollback()
@@ -215,15 +221,18 @@ class NoteSuggestionService:
             ) from exc
         return self.get(suggestion_id)
 
-    def _create_review_version(
+    def _publish_from_suggestion(
         self, suggestion: NoteSuggestion, reviewed_by: str
     ) -> uuid.UUID | None:
-        """Cria CardVersion(needs_review) a partir do diff da sugestão.
+        """Aceite de sugestão de card: cria versão publicada + release nos decks.
 
-        ponytail: campos do Anki são mapeados por heurística de nome para os 4
-        campos da CardVersion; campos não tocados herdam a versão publicada.
-        Só vale para sugestão de card existente (deck/tag-only → None).
+        ADR-0007: sugestão aceita publica direto (sem segunda revisão).
+        ponytail: campos do Anki mapeados por heurística; sequencia serviços
+        existentes (Card/Deck) em vez de reimplementar versão/release.
         """
+        # FIX 2: DELETE suggestions have no content to publish.
+        if suggestion.suggestion_type == NoteSuggestionType.DELETE:
+            return None
         if suggestion.card_id is None:
             return None
         card = self.repository.get_published_card(suggestion.card_id)
@@ -246,27 +255,56 @@ class NoteSuggestionService:
             "explanation_text": suggested("Explanation", "explanation_text")
             or base.explanation_text,
         }
-        if all(
-            new_fields[key] == getattr(base, key) for key in new_fields
-        ):
+        if all(new_fields[key] == getattr(base, key) for key in new_fields):
             return None  # nada mapeável mudou (ex.: só tags)
-
         content_hash = calculate_content_hash(card_kind=card.card_kind, **new_fields)
         if content_hash in self.repository.card_version_hashes(card.id):
             return None  # versão idêntica já existe — no-op
 
-        version = self.repository.add_card_version(
-            CardVersion(
-                card_id=card.id,
-                version_number=self.repository.next_card_version_number(card.id),
+        card_id = card.id
+        deck_ids = self.repository.decks_with_active_card(card_id)
+        # Save suggestion_type before expire_all() clears the identity map;
+        # accessing expired attributes starts autobegin.
+        suggestion_type_label = suggestion.suggestion_type.value
+        # ponytail: commit read-only transaction so that CardService/DeckService
+        # can call session.begin() (SQLAlchemy raises if already begun).
+        self.session.commit()
+
+        card_service = CardService(CardRepository(self.session))
+        deck_service = DeckService(DeckRepository(self.session))
+
+        version_response = card_service.create_version(
+            card_id,
+            CardVersionCreateRequest(
                 change_reason=suggestion.comment or "Sugestão aceita",
                 created_by=reviewed_by,
-                status=CardVersionStatus.NEEDS_REVIEW,
-                content_hash=content_hash,
                 **new_fields,
-            )
+            ),
         )
-        return version.id
+        new_version_id = version_response.card_version_id
+        card_service.approve_version(card_id, new_version_id)
+        # ponytail: approve/publish_version return get_card() which starts an
+        # autobegin read transaction; commit + expire_all so the next
+        # session.begin() works and relationships load fresh from DB.
+        self.session.commit()
+        self.session.expire_all()
+        card_service.publish_version(card_id, new_version_id)
+        self.session.commit()
+        self.session.expire_all()
+
+        for deck_id in deck_ids:
+            deck_service.add_card(deck_id, card_id)
+            self.session.commit()
+            self.session.expire_all()
+            deck_service.publish_release(
+                deck_id,
+                ReleasePublishRequest(
+                    description=f"Sugestão aceita: {suggestion_type_label}"
+                ),
+            )
+            self.session.commit()
+            self.session.expire_all()
+        return new_version_id
 
     @staticmethod
     def _response(suggestion: NoteSuggestion) -> NoteSuggestionResponse:
