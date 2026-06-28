@@ -4,10 +4,11 @@ import uuid
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
-from app.models import Card, CardVersion, Deck, DeckCard, Discipline, Topic, User
+from app.models import Card, CardVersion, Deck, DeckCard, Discipline, Release, Topic, User
 from app.models.enums import (
     CardStatus,
     CardVersionStatus,
@@ -265,13 +266,15 @@ def test_comment_on_missing_suggestion_raises(session: Session) -> None:
     assert exc.value.status_code == 404
 
 
-def test_accept_card_suggestion_creates_needs_review_version(session: Session) -> None:
+def test_accept_card_suggestion_publishes_version_and_release(session: Session) -> None:
     user = create_user(session)
-    card, _version = create_published_card(session)
+    deck = create_published_deck(session)
+    card, version = create_published_card(session)
+    add_card_to_deck(session, deck, card, version)
     created = service(session).create_for_card(
         card.id,
         NoteSuggestionCreateRequest(
-            suggestion_type=NoteSuggestionType.UPDATED_CONTENT,
+            suggestion_type=NoteSuggestionType.CONTENT_ERROR,
             fields={"Front": {"old": "Frente original", "new": "Frente corrigida"}},
             comment="Corrige a frente.",
         ),
@@ -285,12 +288,14 @@ def test_accept_card_suggestion_creates_needs_review_version(session: Session) -
     )
 
     assert reviewed.status == NoteSuggestionStatus.ACCEPTED
-    assert reviewed.resulting_card_version_id is not None
-    version = session.get(CardVersion, reviewed.resulting_card_version_id)
-    assert version.status == CardVersionStatus.NEEDS_REVIEW
-    assert version.version_number == 2
-    assert version.front_text == "Frente corrigida"
-    assert version.back_text == "Verso original"  # campo não tocado preserva base
+    new_version = session.get(CardVersion, reviewed.resulting_card_version_id)
+    assert new_version.status == CardVersionStatus.PUBLISHED       # publicada, não needs_review
+    assert new_version.front_text == "Frente corrigida"
+    refreshed_card = session.get(Card, card.id)
+    assert refreshed_card.current_version_id == new_version.id     # virou a atual
+    # deck ganhou release contendo a nova versão
+    releases = session.scalars(select(Release).where(Release.deck_id == deck.id)).all()
+    assert len(releases) == 1
 
 
 def test_reject_card_suggestion_creates_no_version(session: Session) -> None:
