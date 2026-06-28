@@ -225,6 +225,20 @@ export function DeckDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['decks'] })
     },
   })
+  // re-adiciona o card → bumpa DeckCard p/ a versão publicada atual.
+  // Depois é só "Publicar release" para a nota atualizar no sync/baralho.
+  const updateCard = useMutation({
+    mutationFn: (cardId: string) =>
+      apiRequest<DeckDetail>(
+        `/decks/${deckId}/cards`,
+        { method: 'POST', body: JSON.stringify({ card_id: cardId }) },
+        token,
+      ),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['deck', deckId], data)
+      queryClient.invalidateQueries({ queryKey: ['decks'] })
+    },
+  })
   const publishRelease = useMutation({
     mutationFn: () =>
       apiRequest(
@@ -260,7 +274,11 @@ export function DeckDetailPage() {
   const canPublish = hasRole('admin', 'reviewer')
   const releaseData = releases.data
   const operationError =
-    addCard.error || removeCard.error || publishRelease.error || downloadError
+    addCard.error ||
+    updateCard.error ||
+    removeCard.error ||
+    publishRelease.error ||
+    downloadError
 
   async function exportRelease(releaseId: string) {
     setDownloadError(null)
@@ -383,18 +401,28 @@ export function DeckDetailPage() {
                     <td>{formatDate(card.added_at)}</td>
                     {canCurate && (
                       <td>
-                        <button
-                          className="danger-action"
-                          disabled={removeCard.isPending}
-                          onClick={() => {
-                            if (window.confirm(`Remover ${card.public_id} do deck?`)) {
-                              removeCard.mutate(card.card_id)
-                            }
-                          }}
-                        >
-                          <Trash2 size={15} />
-                          Remover
-                        </button>
+                        <div className="form-actions">
+                          <button
+                            className="button button-secondary"
+                            disabled={updateCard.isPending}
+                            title="Re-adiciona o card na versão publicada atual (depois publique uma release)"
+                            onClick={() => updateCard.mutate(card.card_id)}
+                          >
+                            Atualizar versão
+                          </button>
+                          <button
+                            className="danger-action"
+                            disabled={removeCard.isPending}
+                            onClick={() => {
+                              if (window.confirm(`Remover ${card.public_id} do deck?`)) {
+                                removeCard.mutate(card.card_id)
+                              }
+                            }}
+                          >
+                            <Trash2 size={15} />
+                            Remover
+                          </button>
+                        </div>
                       </td>
                     )}
                   </tr>
