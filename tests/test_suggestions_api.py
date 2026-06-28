@@ -333,6 +333,17 @@ def test_accept_tag_only_suggestion_creates_no_version(session: Session) -> None
     assert reviewed.resulting_card_version_id is None
 
 
+def test_decks_with_active_card_lists_only_active(session: Session) -> None:
+    deck = create_published_deck(session)
+    card, version = create_published_card(session)
+    add_card_to_deck(session, deck, card, version)
+    repo = NoteSuggestionRepository(session)
+    assert repo.decks_with_active_card(card.id) == [deck.id]
+    # card sem deck → vazio
+    other_card, _ = create_published_card(session)
+    assert repo.decks_with_active_card(other_card.id) == []
+
+
 def test_suggestion_requires_diff_for_non_delete() -> None:
     with pytest.raises(ValidationError):
         NoteSuggestionCreateRequest(
