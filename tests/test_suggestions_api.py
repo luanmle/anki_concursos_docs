@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
-from app.models import Card, CardVersion, Deck, DeckCard, Discipline, Release, Topic, User
+from app.models import Card, CardVersion, Deck, DeckCard, Discipline, NoteSuggestion, Release, Topic, User
 from app.models.enums import (
     CardStatus,
     CardVersionStatus,
@@ -291,6 +291,7 @@ def test_accept_card_suggestion_publishes_version_and_release(session: Session) 
     new_version = session.get(CardVersion, reviewed.resulting_card_version_id)
     assert new_version.status == CardVersionStatus.PUBLISHED       # publicada, não needs_review
     assert new_version.front_text == "Frente corrigida"
+    assert new_version.back_text == "Verso original"               # untouched field inherits base
     refreshed_card = session.get(Card, card.id)
     assert refreshed_card.current_version_id == new_version.id     # virou a atual
     # deck ganhou release contendo a nova versão
@@ -355,3 +356,38 @@ def test_suggestion_requires_diff_for_non_delete() -> None:
             suggestion_type=NoteSuggestionType.UPDATED_CONTENT,
             comment="Sem alteracao.",
         )
+
+
+def test_accept_keeps_suggestion_pending_if_publish_fails(
+    session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FIX 1: if _publish_from_suggestion raises, suggestion stays PENDING (retryable)."""
+    user = create_user(session)
+    card, _version = create_published_card(session)
+    created = service(session).create_for_card(
+        card.id,
+        NoteSuggestionCreateRequest(
+            suggestion_type=NoteSuggestionType.CONTENT_ERROR,
+            fields={"Front": {"old": "Frente original", "new": "Nova frente"}},
+            comment="test retryable",
+        ),
+        user,
+    )
+
+    def failing_publish(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("publish exploded")
+
+    monkeypatch.setattr(NoteSuggestionService, "_publish_from_suggestion", failing_publish)
+
+    with pytest.raises(RuntimeError, match="publish exploded"):
+        service(session).review(
+            created.suggestion_id,
+            NoteSuggestionReviewRequest(status=NoteSuggestionStatus.ACCEPTED),
+            reviewed_by="rev@example.com",
+        )
+
+    # Status commit never happened → suggestion still PENDING, no version linked
+    sug = session.get(NoteSuggestion, created.suggestion_id)
+    assert sug is not None
+    assert sug.status == NoteSuggestionStatus.PENDING
+    assert sug.resulting_card_version_id is None

@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
 from app.models import NoteSuggestion, NoteSuggestionComment, User
-from app.models.enums import NoteSuggestionStatus
+from app.models.enums import NoteSuggestionStatus, NoteSuggestionType
 from app.repositories import NoteSuggestionRepository
 from app.repositories.cards import CardRepository
 from app.repositories.decks import DeckRepository
@@ -199,20 +199,18 @@ class NoteSuggestionService:
                     status_code=status.HTTP_409_CONFLICT,
                     detail="Suggestion has already been reviewed",
                 )
-            suggestion.status = payload.status
-            suggestion.reviewed_by = reviewed_by
-            suggestion.review_comment = payload.review_comment
-            suggestion.reviewed_at = datetime.now(UTC)
-            # ADR-0007: commit status before calling reused Card/Deck services
-            # (they open their own transactions via session.begin()).
-            self.session.commit()
-
+            # FIX 1: publish BEFORE committing status so that if publish raises,
+            # the suggestion stays PENDING and is retryable.
             resulting_id = payload.resulting_card_version_id
             if (
                 resulting_id is None
                 and payload.status == NoteSuggestionStatus.ACCEPTED
             ):
                 resulting_id = self._publish_from_suggestion(suggestion, reviewed_by)
+            suggestion.status = payload.status
+            suggestion.reviewed_by = reviewed_by
+            suggestion.review_comment = payload.review_comment
+            suggestion.reviewed_at = datetime.now(UTC)
             suggestion.resulting_card_version_id = resulting_id
             self.session.commit()
         except IntegrityError as exc:
@@ -232,6 +230,9 @@ class NoteSuggestionService:
         ponytail: campos do Anki mapeados por heurística; sequencia serviços
         existentes (Card/Deck) em vez de reimplementar versão/release.
         """
+        # FIX 2: DELETE suggestions have no content to publish.
+        if suggestion.suggestion_type == NoteSuggestionType.DELETE:
+            return None
         if suggestion.card_id is None:
             return None
         card = self.repository.get_published_card(suggestion.card_id)
