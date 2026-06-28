@@ -1011,7 +1011,13 @@ export function AdminDecksPage() {
               to={`/deck/${deck.deck_id}`}
               className={cn(muriaeSecondaryBtn, 'h-[36px] shrink-0 px-3.5')}
             >
-              Abrir
+              Ver
+            </Link>
+            <Link
+              to={`/decks/${deck.deck_id}`}
+              className={cn(muriaePrimaryBtn, 'h-[36px] shrink-0 px-3.5')}
+            >
+              Gerenciar
             </Link>
           </article>
         ))}
