@@ -1,5 +1,6 @@
-import { Check, ThumbsDown, ThumbsUp, X } from '@phosphor-icons/react'
+import { ArrowRight, Check, ThumbsDown, ThumbsUp, X } from '@phosphor-icons/react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { NoteSuggestion } from '../../types'
 import { formatDate } from '../../lib/presentation'
 import { cn } from '../../lib/utils'
@@ -68,6 +69,14 @@ export function SuggestionCard({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {suggestion.card_id && (
+            <Link
+              to={`/cards/${suggestion.card_id}`}
+              className="inline-flex items-center gap-1 text-[12px] font-semibold text-mu-brand hover:underline"
+            >
+              Ver cartão <ArrowRight size={13} weight="bold" />
+            </Link>
+          )}
           <span
             className={cn(
               'rounded-full border px-2.5 py-1 text-[11px] font-semibold',
@@ -145,10 +154,18 @@ export function SuggestionCard({
           </div>
         </div>
       ) : (
-        <div className="border-t border-mu-border pt-3 text-[12.5px] text-mu-muted">
-          Revisada por {suggestion.reviewed_by ?? '—'}
-          {suggestion.reviewed_at ? ` em ${formatDate(suggestion.reviewed_at)}` : ''}
-          {suggestion.review_comment ? ` · "${suggestion.review_comment}"` : ''}
+        <div className="flex flex-col gap-2.5 border-t border-mu-border pt-3">
+          <p className="text-[12.5px] text-mu-muted">
+            Revisada por {suggestion.reviewed_by ?? '—'}
+            {suggestion.reviewed_at ? ` em ${formatDate(suggestion.reviewed_at)}` : ''}
+            {suggestion.review_comment ? ` · "${suggestion.review_comment}"` : ''}
+          </p>
+          {suggestion.status === 'accepted' && suggestion.resulting_card_version_id && (
+            <Link to={`/cards/${suggestion.card_id}`} className={muriaePrimaryBtn}>
+              Abrir cartão para aprovar e publicar
+              <ArrowRight size={16} weight="bold" />
+            </Link>
+          )}
         </div>
       )}
     </article>

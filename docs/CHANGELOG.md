@@ -6,6 +6,29 @@ ADRs (decisões de arquitetura): `docs/adr/`.
 
 ---
 
+## 2026-06-27 — Link da sugestão para o cartão (achar aprovar/publicar)
+
+**Branch:** `fix/suggestion-link-to-card`
+**Tipo:** fix (UX)
+
+### Contexto
+As ações de aprovar/publicar versão ficam na página do cartão (`CardDetailPage`),
+mas não havia link da fila de sugestões para o cartão — o curador aprovava a
+sugestão e não achava onde publicar a versão `needs_review` resultante.
+
+### O que mudou
+- `admin/src/components/suggestions/SuggestionCard.tsx` — link **"Ver cartão"** no
+  cabeçalho (quando há `card_id`) e CTA **"Abrir cartão para aprovar e publicar"**
+  no rodapé quando a sugestão foi aceita e gerou versão
+  (`resulting_card_version_id`). Ambos navegam para `/cards/{card_id}`, onde o
+  histórico de versões tem os botões Aprovar/Publicar (admin/reviewer).
+
+### Impacto
+- Fecha a navegação do fluxo de curadoria: aprovar sugestão → "Abrir cartão" →
+  aprovar+publicar a versão → publicar release no deck. Lint limpo, build OK.
+
+---
+
 ## 2026-06-27 — Aprovar sugestão cria nova versão do card em revisão (ADR-0004)
 
 **Branch:** `feat/suggestion-approval-creates-version`
