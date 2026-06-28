@@ -141,7 +141,7 @@ export function SuggestionCard({
               onClick={() => onReview('accepted', comment)}
               className={muriaePrimaryBtn}
             >
-              <Check size={16} weight="bold" /> Aceitar
+              <Check size={16} weight="bold" /> Aceitar e publicar
             </button>
             <button
               type="button"
@@ -154,18 +154,10 @@ export function SuggestionCard({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-2.5 border-t border-mu-border pt-3">
-          <p className="text-[12.5px] text-mu-muted">
-            Revisada por {suggestion.reviewed_by ?? '—'}
-            {suggestion.reviewed_at ? ` em ${formatDate(suggestion.reviewed_at)}` : ''}
-            {suggestion.review_comment ? ` · "${suggestion.review_comment}"` : ''}
-          </p>
-          {suggestion.status === 'accepted' && suggestion.resulting_card_version_id && (
-            <Link to={`/cards/${suggestion.card_id}`} className={muriaePrimaryBtn}>
-              Abrir cartão para aprovar e publicar
-              <ArrowRight size={16} weight="bold" />
-            </Link>
-          )}
+        <div className="border-t border-mu-border pt-3 text-[12.5px] text-mu-muted">
+          Revisada por {suggestion.reviewed_by ?? '—'}
+          {suggestion.reviewed_at ? ` em ${formatDate(suggestion.reviewed_at)}` : ''}
+          {suggestion.review_comment ? ` · "${suggestion.review_comment}"` : ''}
         </div>
       )}
     </article>
