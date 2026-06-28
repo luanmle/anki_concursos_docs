@@ -236,7 +236,8 @@ export function DeckDetailPage() {
       ),
     onSuccess: (data) => {
       queryClient.setQueryData(['deck', deckId], data)
-      queryClient.invalidateQueries({ queryKey: ['decks'] })
+      // refetch garante que a linha reflita a versão bumpada na hora
+      refreshDeck()
     },
   })
   const publishRelease = useMutation({
