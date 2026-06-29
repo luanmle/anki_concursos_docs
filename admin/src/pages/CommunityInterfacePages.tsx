@@ -38,8 +38,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError, apiRequest } from '../api/client'
 import { useAuth } from '../auth/auth-context'
 import {
-  fallbackDecks,
-  fallbackNotes,
   changeTypes,
   initialComments,
   type CommentKind,
@@ -169,7 +167,7 @@ export function ExplorePage() {
   const [filter, setFilter] = useState<DeckFilter>('all')
   const [sort, setSort] = useState<DeckSort>('recent')
   const decksQuery = useDeckCatalog()
-  const decks = decksQuery.data?.length ? decksQuery.data : fallbackDecks
+  const decks = decksQuery.data ?? []
   const visibleDecks = decks
     .filter((deck) => {
       const matchesQuery = `${deck.name} ${deck.description || ''}`
@@ -255,7 +253,7 @@ export function ExplorePage() {
 
 export function MyDecksPage() {
   const decksQuery = useDeckCatalog()
-  const decks = (decksQuery.data?.length ? decksQuery.data : fallbackDecks).filter(
+  const decks = (decksQuery.data ?? []).filter(
     (deck) => deck.subscribed,
   )
 
@@ -310,10 +308,10 @@ export function MyDecksPage() {
 export function DeckPage() {
   const { deckId = '' } = useParams()
   const decksQuery = useDeckCatalog()
-  const decks = decksQuery.data?.length ? decksQuery.data : fallbackDecks
-  const deck = decks.find((item) => item.deck_id === deckId) || decks[0]
+  const decks = decksQuery.data ?? []
+  const deck = decks.find((item) => item.deck_id === deckId)
   const notesQuery = useDeckNotes(deck?.deck_id || deckId, Boolean(deck?.subscribed))
-  const notes = notesQuery.data?.length ? notesQuery.data : fallbackNotes
+  const notes = notesQuery.data ?? []
   const [selectedNote, setSelectedNote] = useState<AnkiSyncChange | null>(null)
   const [query, setQuery] = useState('')
   const filteredNotes = notes.filter((note) =>
@@ -969,7 +967,7 @@ export function AdminDashboardPage() {
 
 export function AdminDecksPage() {
   const decksQuery = useDeckCatalog()
-  const decks = decksQuery.data?.length ? decksQuery.data : fallbackDecks
+  const decks = decksQuery.data ?? []
   return (
     <div className="ac-page ac-page-muriae">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -1164,7 +1162,7 @@ export function CommunitySuggestionHistoryPage() {
   const { deckId = '' } = useParams()
   const { token } = useAuth()
   const decksQuery = useDeckCatalog()
-  const decks = decksQuery.data?.length ? decksQuery.data : fallbackDecks
+  const decks = decksQuery.data ?? []
   const deck = decks.find((item) => item.deck_id === deckId)
 
   const suggestionsQuery = useQuery({
