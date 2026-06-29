@@ -266,6 +266,84 @@ def test_comment_on_missing_suggestion_raises(session: Session) -> None:
     assert exc.value.status_code == 404
 
 
+def create_native_published_card(session: Session) -> tuple[Card, CardVersion]:
+    discipline = Discipline(name=f"Disc Nativa {uuid.uuid4().hex}")
+    session.add(discipline)
+    session.flush()
+    topic = Topic(discipline_id=discipline.id, name="Assunto")
+    session.add(topic)
+    session.flush()
+    card = Card(
+        canonical_key=f"native-card-{uuid.uuid4()}",
+        discipline_id=discipline.id,
+        topic_id=topic.id,
+        status=CardStatus.PUBLISHED,
+    )
+    session.add(card)
+    session.flush()
+    version = CardVersion(
+        card_id=card.id,
+        version_number=1,
+        front_text="Pergunta orig",
+        back_text="Resposta orig",
+        answer_text="Resposta orig",
+        explanation_text="",
+        note_type="Anki Concursos Basic",
+        template_name="Cartão 1",
+        anki_fields={"Pergunta": "orig", "Resposta": "r", "Extra livre": "x"},
+        anki_template={"templates": []},
+        anki_tags=["geo"],
+        change_reason="upload",
+        created_by="test",
+        status=CardVersionStatus.PUBLISHED,
+        content_hash=sha256(f"native-{card.id}".encode()).hexdigest(),
+    )
+    session.add(version)
+    session.flush()
+    card.current_version_id = version.id
+    session.commit()
+    return card, version
+
+
+def test_accept_native_suggestion_preserves_and_updates_anki_fields(
+    session: Session,
+) -> None:
+    user = create_user(session)
+    deck = create_published_deck(session)
+    card, base = create_native_published_card(session)
+    add_card_to_deck(session, deck, card, base)
+
+    created = service(session).create_for_card(
+        card.id,
+        NoteSuggestionCreateRequest(
+            suggestion_type=NoteSuggestionType.CONTENT_ERROR,
+            # native field name not covered by the legacy 4-field heuristic
+            fields={"Pergunta": {"old": "orig", "new": "novo"}},
+            comment="Corrige a pergunta.",
+        ),
+        user,
+    )
+
+    reviewed = service(session).review(
+        created.suggestion_id,
+        NoteSuggestionReviewRequest(status=NoteSuggestionStatus.ACCEPTED),
+        reviewed_by="rev@example.com",
+    )
+
+    assert reviewed.resulting_card_version_id is not None
+    new_version = session.get(CardVersion, reviewed.resulting_card_version_id)
+    assert new_version.status == CardVersionStatus.PUBLISHED
+    assert new_version.anki_fields == {
+        "Pergunta": "novo",
+        "Resposta": "r",
+        "Extra livre": "x",
+    }
+    assert new_version.note_type == base.note_type
+    assert new_version.content_hash != base.content_hash
+    refreshed = session.get(Card, card.id)
+    assert refreshed.current_version_id == new_version.id
+
+
 def test_accept_card_suggestion_publishes_version_and_release(session: Session) -> None:
     user = create_user(session)
     deck = create_published_deck(session)
