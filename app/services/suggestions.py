@@ -1,3 +1,5 @@
+import hashlib
+import json
 import math
 import uuid
 from datetime import UTC, datetime
@@ -5,8 +7,13 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
-from app.models import NoteSuggestion, NoteSuggestionComment, User
-from app.models.enums import NoteSuggestionStatus, NoteSuggestionType
+from app.models import CardVersion, NoteSuggestion, NoteSuggestionComment, User
+from app.models.enums import (
+    CardStatus,
+    CardVersionStatus,
+    NoteSuggestionStatus,
+    NoteSuggestionType,
+)
 from app.repositories import NoteSuggestionRepository
 from app.repositories.cards import CardRepository
 from app.repositories.decks import DeckRepository
@@ -240,6 +247,110 @@ class NoteSuggestionService:
             return None
         base = card.current_version
         fields = suggestion.fields or {}
+        card_id = card.id
+        suggestion_type_label = suggestion.suggestion_type.value
+        change_reason = suggestion.comment or "Sugestão aceita"
+
+        # Native cards (uploaded from Anki) carry anki_fields keyed by the real
+        # Anki field names — the deck sync serves those. Preserve them and apply
+        # the edit by field name. Legacy cards use the 4-field model.
+        if base.anki_fields:
+            new_version_id = self._create_native_version(
+                card, base, fields, change_reason, reviewed_by
+            )
+        else:
+            new_version_id = self._create_legacy_version(
+                card, base, fields, change_reason, reviewed_by
+            )
+        if new_version_id is None:
+            return None
+
+        deck_ids = self.repository.decks_with_active_card(card_id)
+        # close the autobegun read so the sub-services can session.begin();
+        # expire_all so add_card reloads the card's (now newer) current_version
+        # instead of a cached relationship from before the version was published.
+        self.session.commit()
+        self.session.expire_all()
+
+        deck_service = DeckService(DeckRepository(self.session))
+        for deck_id in deck_ids:
+            deck_service.add_card(deck_id, card_id)
+            self.session.commit()
+            self.session.expire_all()
+            deck_service.publish_release(
+                deck_id,
+                ReleasePublishRequest(
+                    description=f"Sugestão aceita: {suggestion_type_label}"
+                ),
+            )
+            self.session.commit()
+            self.session.expire_all()
+        return new_version_id
+
+    def _create_native_version(
+        self,
+        card: object,
+        base: CardVersion,
+        fields: dict,
+        change_reason: str,
+        reviewed_by: str,
+    ) -> uuid.UUID | None:
+        """New published version preserving anki_fields, applying the edit."""
+        new_anki = dict(base.anki_fields)
+        changed = False
+        for name, value in fields.items():
+            new_value = value.get("new", "") if isinstance(value, dict) else value
+            if name in new_anki and new_anki[name] != new_value:
+                new_anki[name] = new_value
+                changed = True
+        if not changed:
+            return None  # edited field absent on the note, or no real change
+        content_hash = self._native_content_hash(
+            card.card_kind,
+            base.note_type,
+            base.template_name,
+            new_anki,
+            base.anki_template,
+            base.anki_tags or [],
+        )
+        if content_hash in self.repository.card_version_hashes(card.id):
+            return None
+        version = self.repository.add_card_version(
+            CardVersion(
+                card_id=card.id,
+                version_number=self.repository.next_card_version_number(card.id),
+                front_text=base.front_text,
+                back_text=base.back_text,
+                answer_text=base.answer_text,
+                explanation_text=base.explanation_text,
+                note_type=base.note_type,
+                template_name=base.template_name,
+                anki_fields=new_anki,
+                anki_template=base.anki_template,
+                anki_tags=base.anki_tags,
+                source_note_id=base.source_note_id,
+                source_note_guid=base.source_note_guid,
+                source_deck_path=base.source_deck_path,
+                change_reason=change_reason,
+                created_by=reviewed_by,
+                status=CardVersionStatus.PUBLISHED,
+                content_hash=content_hash,
+            )
+        )
+        card.current_version_id = version.id
+        card.status = CardStatus.PUBLISHED
+        self.session.commit()
+        return version.id
+
+    def _create_legacy_version(
+        self,
+        card: object,
+        base: CardVersion,
+        fields: dict,
+        change_reason: str,
+        reviewed_by: str,
+    ) -> uuid.UUID | None:
+        """New published version for legacy 4-field cards via CardService."""
 
         def suggested(*names: str) -> str | None:
             for name in names:
@@ -256,55 +367,56 @@ class NoteSuggestionService:
             or base.explanation_text,
         }
         if all(new_fields[key] == getattr(base, key) for key in new_fields):
-            return None  # nada mapeável mudou (ex.: só tags)
+            return None
         content_hash = calculate_content_hash(card_kind=card.card_kind, **new_fields)
         if content_hash in self.repository.card_version_hashes(card.id):
-            return None  # versão idêntica já existe — no-op
-
+            return None
         card_id = card.id
-        deck_ids = self.repository.decks_with_active_card(card_id)
-        # Save suggestion_type before expire_all() clears the identity map;
-        # accessing expired attributes starts autobegin.
-        suggestion_type_label = suggestion.suggestion_type.value
-        # ponytail: commit read-only transaction so that CardService/DeckService
-        # can call session.begin() (SQLAlchemy raises if already begun).
         self.session.commit()
-
         card_service = CardService(CardRepository(self.session))
-        deck_service = DeckService(DeckRepository(self.session))
-
         version_response = card_service.create_version(
             card_id,
             CardVersionCreateRequest(
-                change_reason=suggestion.comment or "Sugestão aceita",
+                change_reason=change_reason,
                 created_by=reviewed_by,
                 **new_fields,
             ),
         )
         new_version_id = version_response.card_version_id
         card_service.approve_version(card_id, new_version_id)
-        # ponytail: approve/publish_version return get_card() which starts an
-        # autobegin read transaction; commit + expire_all so the next
-        # session.begin() works and relationships load fresh from DB.
         self.session.commit()
         self.session.expire_all()
         card_service.publish_version(card_id, new_version_id)
         self.session.commit()
         self.session.expire_all()
-
-        for deck_id in deck_ids:
-            deck_service.add_card(deck_id, card_id)
-            self.session.commit()
-            self.session.expire_all()
-            deck_service.publish_release(
-                deck_id,
-                ReleasePublishRequest(
-                    description=f"Sugestão aceita: {suggestion_type_label}"
-                ),
-            )
-            self.session.commit()
-            self.session.expire_all()
         return new_version_id
+
+    @staticmethod
+    def _native_content_hash(
+        card_kind,
+        note_type,
+        template_name,
+        anki_fields: dict,
+        anki_template,
+        anki_tags: list,
+    ) -> str:
+        # ponytail: mirror DeckService._upload_content_hash so a suggestion-built
+        # native version dedups against upload-built ones. base.anki_template is
+        # already the stored model_dump(mode="json") dict.
+        raw = json.dumps(
+            {
+                "card_kind": card_kind.value,
+                "fields": anki_fields,
+                "note_type": note_type,
+                "tags": anki_tags,
+                "template": anki_template,
+                "template_name": template_name,
+            },
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     @staticmethod
     def _response(suggestion: NoteSuggestion) -> NoteSuggestionResponse:
