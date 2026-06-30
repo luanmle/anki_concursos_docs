@@ -34,7 +34,7 @@ import {
   X,
 } from '@phosphor-icons/react'
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ApiError, apiRequest } from '../api/client'
 import { useAuth } from '../auth/auth-context'
 import {
@@ -312,8 +312,26 @@ export function DeckPage() {
   const deck = decks.find((item) => item.deck_id === deckId)
   const notesQuery = useDeckNotes(deck?.deck_id || deckId, Boolean(deck?.subscribed))
   const notes = notesQuery.data ?? []
-  const [selectedNote, setSelectedNote] = useState<AnkiSyncChange | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
+
+  // URL is the source of truth for the open note (deep-linkable / shareable).
+  const noteParam = searchParams.get('note')
+  const selectedNote = noteParam
+    ? (notes.find((note) => note.public_id === noteParam) ?? null)
+    : null
+
+  const setNoteParam = (publicId: string | null) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (publicId) next.set('note', publicId)
+        else next.delete('note')
+        return next
+      },
+      { replace: true },
+    )
+
   const filteredNotes = notes.filter((note) =>
     `${note.public_id} ${noteTitle(note)} ${noteSummary(note)}`
       .toLowerCase()
@@ -423,7 +441,7 @@ export function DeckPage() {
 
         <div className="mt-5 flex flex-col gap-2.5">
           {filteredNotes.map((note) => (
-            <NoteRow key={note.card_id} note={note} onOpen={() => setSelectedNote(note)} />
+            <NoteRow key={note.card_id} note={note} onOpen={() => setNoteParam(note.public_id)} />
           ))}
           {!filteredNotes.length && (
             <EmptyPanel
@@ -438,7 +456,7 @@ export function DeckPage() {
         <NoteModal
           deck={deck}
           note={selectedNote}
-          onClose={() => setSelectedNote(null)}
+          onClose={() => setNoteParam(null)}
         />
       )}
     </div>
@@ -540,6 +558,15 @@ function NoteModal({
               <Check size={10} weight="bold" />
               Validado
             </Badge>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard?.writeText(window.location.href)}
+              aria-label="Copiar link da nota"
+              title="Copiar link da nota"
+              className="flex h-8 w-8 items-center justify-center rounded-[6px] text-mu-muted transition-colors hover:bg-mu-surface-2 hover:text-mu-text"
+            >
+              <LinkSimple size={16} />
+            </button>
             <button
               type="button"
               onClick={() => navigator.clipboard?.writeText(note.public_id)}
