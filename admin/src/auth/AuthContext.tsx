@@ -14,17 +14,17 @@ const REFRESH_TOKEN_KEY = 'anki-concursos-admin-refresh-token'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() =>
-    sessionStorage.getItem(TOKEN_KEY),
+    localStorage.getItem(TOKEN_KEY),
   )
   const [refreshToken, setRefreshToken] = useState<string | null>(() =>
-    sessionStorage.getItem(REFRESH_TOKEN_KEY),
+    localStorage.getItem(REFRESH_TOKEN_KEY),
   )
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(Boolean(token || refreshToken))
 
   const logout = useCallback(() => {
-    sessionStorage.removeItem(TOKEN_KEY)
-    sessionStorage.removeItem(REFRESH_TOKEN_KEY)
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(REFRESH_TOKEN_KEY)
     setToken(null)
     setRefreshToken(null)
     setUser(null)
@@ -32,9 +32,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const persistSession = useCallback((response: TokenResponse) => {
-    sessionStorage.setItem(TOKEN_KEY, response.access_token)
+    localStorage.setItem(TOKEN_KEY, response.access_token)
     if (response.refresh_token) {
-      sessionStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token)
+      localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token)
       setRefreshToken(response.refresh_token)
     }
     setToken(response.access_token)
