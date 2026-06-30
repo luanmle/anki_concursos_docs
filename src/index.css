@@ -1846,6 +1846,16 @@ tbody tr:hover { background: rgba(255, 255, 255, .018); }
   background: var(--surface-container);
 }
 .deck-section > .section-heading { margin-bottom: 16px; }
+.deck-advanced { margin-bottom: 14px; }
+.deck-advanced > summary {
+  cursor: pointer;
+  color: var(--on-surface-variant);
+  font-size: 13px;
+  padding: 6px 0;
+}
+.deck-advanced > summary:hover { color: var(--on-surface); }
+.deck-advanced .deck-add-card { margin-top: 8px; margin-bottom: 0; }
+
 .deck-add-card {
   display: flex;
   gap: 9px;
