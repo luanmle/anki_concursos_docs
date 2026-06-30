@@ -358,26 +358,32 @@ export function DeckDetailPage() {
           </div>
         </div>
         {canCurate && (
-          <form
-            className="deck-add-card"
-            onSubmit={(event) => {
-              event.preventDefault()
-              addCard.mutate()
-            }}
-          >
-            <input
-              value={cardReference}
-              onChange={(event) => setCardReference(event.target.value)}
-              placeholder="Adicionar por Public ID ou Card ID"
-            />
-            <button
-              className="button button-primary"
-              disabled={addCard.isPending || !cardReference.trim()}
+          <details className="deck-advanced">
+            <summary>
+              Composição manual (avançado) — normalmente o conteúdo entra pelo
+              add-on ou ao aceitar sugestões
+            </summary>
+            <form
+              className="deck-add-card"
+              onSubmit={(event) => {
+                event.preventDefault()
+                addCard.mutate()
+              }}
             >
-              <PackagePlus size={17} />
-              Adicionar
-            </button>
-          </form>
+              <input
+                value={cardReference}
+                onChange={(event) => setCardReference(event.target.value)}
+                placeholder="Adicionar por Public ID ou Card ID"
+              />
+              <button
+                className="button button-primary"
+                disabled={addCard.isPending || !cardReference.trim()}
+              >
+                <PackagePlus size={17} />
+                Adicionar
+              </button>
+            </form>
+          </details>
         )}
         {deck.data.cards.length ? (
           <div className="table-card">
