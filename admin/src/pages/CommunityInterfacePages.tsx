@@ -558,6 +558,16 @@ function NoteModal({
               <Check size={10} weight="bold" />
               Validado
             </Badge>
+            {note.card_id && (
+              <Link
+                to={`/cards/${note.card_id}`}
+                aria-label="Ver histórico de versões"
+                title="Ver histórico de versões"
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] text-mu-muted transition-colors hover:bg-mu-surface-2 hover:text-mu-text"
+              >
+                <Clock3 size={16} />
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => navigator.clipboard?.writeText(window.location.href)}
