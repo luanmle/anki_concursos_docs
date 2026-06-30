@@ -25,15 +25,19 @@ export function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({ resolver: zodResolver(schema) })
 
-  if (user) return <Navigate to="/" replace />
+  // Preserve the originally-requested URL (path + query, e.g. ?note=...) so
+  // deep links survive the login redirect.
+  const from =
+    (location.state as { from?: { pathname?: string; search?: string } } | null)
+      ?.from
+  const target = from ? `${from.pathname ?? '/'}${from.search ?? ''}` : '/'
+
+  if (user) return <Navigate to={target} replace />
 
   async function onSubmit(values: LoginValues) {
     setError('')
     try {
       await login(values.email, values.password)
-      const target =
-        (location.state as { from?: { pathname?: string } } | null)?.from
-          ?.pathname || '/'
       navigate(target, { replace: true })
     } catch (caught) {
       setError(
