@@ -15,25 +15,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  redis:
-    image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-
   api:
     build: .
     environment:
       APP_ENV: development
       DATABASE_URL: postgresql+psycopg://anki:anki@db:5432/anki_concursos
-      REDIS_URL: redis://redis:6379/0
       ADMIN_API_KEY: development-admin-key
       ALLOW_LEGACY_ADMIN_API_KEY: "true"
       AUTH_SECRET_KEY: development-auth-secret-change-me
@@ -46,8 +32,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_healthy
     ports:
       - "8000:8000"
     healthcheck:
@@ -58,4 +42,3 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
