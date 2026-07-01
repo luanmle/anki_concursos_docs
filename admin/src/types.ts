@@ -356,6 +356,20 @@ export interface NoteSuggestionCommentList {
   total: number
 }
 
+export interface NoteComment {
+  comment_id: string
+  card_id: string
+  author_user_id: string
+  author_email: string
+  body: string
+  created_at: string
+}
+
+export interface NoteCommentList {
+  items: NoteComment[]
+  total: number
+}
+
 export interface OperationStatus {
   service: 'online' | 'offline'
   database: 'online' | 'offline' | 'checking'

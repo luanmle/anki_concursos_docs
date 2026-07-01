@@ -10,6 +10,7 @@ from app.models import (
     CardVersion,
     Deck,
     DeckCard,
+    NoteComment,
     NoteSuggestion,
     NoteSuggestionComment,
 )
@@ -132,6 +133,19 @@ class NoteSuggestionRepository:
     def create_comment(
         self, comment: NoteSuggestionComment
     ) -> NoteSuggestionComment:
+        self.session.add(comment)
+        self.session.flush()
+        return comment
+
+    def list_note_comments(self, card_id: uuid.UUID) -> list[NoteComment]:
+        statement = (
+            select(NoteComment)
+            .where(NoteComment.card_id == card_id)
+            .order_by(NoteComment.created_at, NoteComment.id)
+        )
+        return list(self.session.scalars(statement))
+
+    def create_note_comment(self, comment: NoteComment) -> NoteComment:
         self.session.add(comment)
         self.session.flush()
         return comment

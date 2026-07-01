@@ -14,7 +14,6 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+psycopg://anki:anki@localhost:5432/anki_concursos"
     )
-    redis_url: str = "redis://localhost:6379/0"
     database_sslmode: str | None = None
     database_pool_size: int = 5
     database_max_overflow: int = 5

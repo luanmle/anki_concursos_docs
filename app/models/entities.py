@@ -473,6 +473,30 @@ class NoteSuggestionComment(TimestampMixin, Base):
     )
 
 
+class NoteComment(TimestampMixin, Base):
+    __tablename__ = "note_comments"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    card_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cards.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    author_user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    author_email: Mapped[str] = mapped_column(String(320), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+
+    card: Mapped["Card"] = relationship(foreign_keys=[card_id])
+    author: Mapped["User"] = relationship(foreign_keys=[author_user_id])
+
+    __table_args__ = (
+        CheckConstraint("length(body) > 0", name="note_comment_body_not_empty"),
+        Index("ix_note_comments_card_created", "card_id", "created_at"),
+    )
+
+
 class ReviewTask(TimestampMixin, Base):
     __tablename__ = "review_tasks"
 

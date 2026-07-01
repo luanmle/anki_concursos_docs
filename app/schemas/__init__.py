@@ -55,6 +55,8 @@ from app.schemas.reports import (
     ReportReviewRequest,
 )
 from app.schemas.suggestions import (
+    NoteCommentListResponse,
+    NoteCommentResponse,
     NoteSuggestionCommentCreateRequest,
     NoteSuggestionCommentListResponse,
     NoteSuggestionCommentResponse,
@@ -113,6 +115,8 @@ __all__ = [
     "CardReportResponse",
     "ReportCreateRequest",
     "ReportReviewRequest",
+    "NoteCommentListResponse",
+    "NoteCommentResponse",
     "NoteSuggestionCommentCreateRequest",
     "NoteSuggestionCommentListResponse",
     "NoteSuggestionCommentResponse",

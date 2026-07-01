@@ -1,6 +1,0 @@
-interface:
-  display_name: "GitHub Publish Flow"
-  short_description: "Commit, PR and push workflow aligned to this repository"
-  default_prompt: "Use $github-publish-flow when the user asks to commit, open a PR, merge, tag, or push changes to GitHub in this repository. Follow the branch policy, Heroku pipeline, and release conventions documented in the repo before acting."
-policy:
-  allow_implicit_invocation: true
