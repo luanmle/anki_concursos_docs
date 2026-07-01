@@ -13,6 +13,8 @@ from app.models import User
 from app.models.enums import NoteSuggestionStatus
 from app.repositories import NoteSuggestionRepository
 from app.schemas import (
+    NoteCommentListResponse,
+    NoteCommentResponse,
     NoteSuggestionCommentCreateRequest,
     NoteSuggestionCommentListResponse,
     NoteSuggestionCommentResponse,
@@ -142,3 +144,29 @@ def create_note_suggestion_comment(
     service: NoteSuggestionService = Depends(get_note_suggestion_service),
 ) -> NoteSuggestionCommentResponse:
     return service.add_comment(suggestion_id, payload, user)
+
+
+@community_router.get(
+    "/cards/{card_id}/note-comments",
+    response_model=NoteCommentListResponse,
+)
+def list_note_comments(
+    card_id: uuid.UUID,
+    _user: User = Depends(require_authenticated_user),
+    service: NoteSuggestionService = Depends(get_note_suggestion_service),
+) -> NoteCommentListResponse:
+    return service.list_note_comments(card_id)
+
+
+@community_router.post(
+    "/cards/{card_id}/note-comments",
+    response_model=NoteCommentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_note_comment(
+    card_id: uuid.UUID,
+    payload: NoteSuggestionCommentCreateRequest,
+    user: User = Depends(require_authenticated_user),
+    service: NoteSuggestionService = Depends(get_note_suggestion_service),
+) -> NoteCommentResponse:
+    return service.add_note_comment(card_id, payload, user)

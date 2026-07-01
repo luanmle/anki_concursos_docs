@@ -266,6 +266,39 @@ def test_comment_on_missing_suggestion_raises(session: Session) -> None:
     assert exc.value.status_code == 404
 
 
+def test_add_and_list_note_comments(session: Session) -> None:
+    user = create_user(session)
+    card, _version = create_published_card(session)
+
+    created = service(session).add_note_comment(
+        card.id,
+        NoteSuggestionCommentCreateRequest(body="Macete: HC = caminhar."),
+        user,
+    )
+    assert created.body == "Macete: HC = caminhar."
+    assert created.author_email == user.email
+    assert created.card_id == card.id
+
+    listed = service(session).list_note_comments(card.id)
+    assert listed.total == 1
+    assert listed.items[0].comment_id == created.comment_id
+
+    # outro card nao ve o comentario
+    other_card, _ = create_published_card(session)
+    assert service(session).list_note_comments(other_card.id).total == 0
+
+
+def test_note_comment_on_missing_card_raises(session: Session) -> None:
+    user = create_user(session)
+    with pytest.raises(HTTPException) as exc:
+        service(session).add_note_comment(
+            uuid.uuid4(),
+            NoteSuggestionCommentCreateRequest(body="orfao"),
+            user,
+        )
+    assert exc.value.status_code == 404
+
+
 def create_native_published_card(session: Session) -> tuple[Card, CardVersion]:
     discipline = Discipline(name=f"Disc Nativa {uuid.uuid4().hex}")
     session.add(discipline)

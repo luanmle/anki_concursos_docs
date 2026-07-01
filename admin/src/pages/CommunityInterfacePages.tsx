@@ -21,7 +21,6 @@ import {
   SlidersHorizontal,
   Stack,
   Sparkle as Sparkles,
-  ThumbsUp,
   LinkSimple,
   ListBullets,
   ListNumbers,
@@ -37,12 +36,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ApiError, apiRequest } from '../api/client'
 import { useAuth } from '../auth/auth-context'
-import {
-  changeTypes,
-  initialComments,
-  type CommentKind,
-  type StudentComment,
-} from '../data/communityData'
+import { changeTypes } from '../data/communityData'
 import {
   EmptyState,
   ErrorState,
@@ -78,11 +72,11 @@ import {
   formatDeckDate,
 } from '../components/MuriaeDeckCard'
 import { cn } from '../lib/utils'
-import { useLocalStorageState } from '../hooks/useLocalStorageState'
 import { formatDate } from '../lib/presentation'
 import type {
   AnkiDeckSync,
   AnkiSyncChange,
+  NoteCommentList,
   NoteSuggestion,
   NoteSuggestionList,
   NoteSuggestionStatus,
@@ -517,11 +511,17 @@ function NoteModal({
   onClose: () => void
 }) {
   const [showComments, setShowComments] = useState(false)
-  const [allComments] = useLocalStorageState<StudentComment[]>(
-    'anki-concursos-comments',
-    initialComments,
-  )
-  const commentCount = allComments.filter((c) => c.publicId === note.public_id).length
+  const { token } = useAuth()
+  const commentsQuery = useQuery({
+    queryKey: ['note-comments', note.card_id],
+    queryFn: () =>
+      apiRequest<NoteCommentList>(
+        `/cards/${note.card_id}/note-comments`,
+        {},
+        token,
+      ),
+  })
+  const commentCount = commentsQuery.data?.total ?? 0
   const fields = note.fields || {}
   const category = CATEGORY[deckCategory(deck)]
 
@@ -660,7 +660,7 @@ function NoteModal({
 
             {showComments && (
               <aside className="w-full shrink-0 overflow-y-auto border-t border-mu-border bg-mu-bg px-6 py-6 md:w-[448px] md:border-l md:border-t-0">
-                <NoteCommentsPanel publicId={note.public_id} />
+                <NoteCommentsPanel cardId={note.card_id} />
               </aside>
             )}
           </div>
@@ -816,42 +816,30 @@ function SuggestChangePanel({
   )
 }
 
-const COMMENT_KIND_LABELS: Record<CommentKind, string> = {
-  comment: 'Comentário',
-  tip: 'Dica',
-  mnemonic: 'Mnemônico',
-  question: 'Dúvida',
-  correction: 'Correção',
-}
-
-function NoteCommentsPanel({ publicId }: { publicId: string }) {
-  const [comments, setComments] = useLocalStorageState<StudentComment[]>(
-    'anki-concursos-comments',
-    initialComments,
-  )
+function NoteCommentsPanel({ cardId }: { cardId: string }) {
+  const { token } = useAuth()
+  const queryClient = useQueryClient()
   const [body, setBody] = useState('')
-  const noteComments = comments.filter((comment) => comment.publicId === publicId)
 
-  function addComment() {
-    if (!body.trim()) return
-    setComments([
-      {
-        id: crypto.randomUUID(),
-        publicId,
-        author: 'Você',
-        kind: 'comment',
-        body,
-        score: 0,
-        createdAt: new Date().toISOString(),
-      },
-      ...comments,
-    ])
-    setBody('')
-  }
+  const commentsQuery = useQuery({
+    queryKey: ['note-comments', cardId],
+    queryFn: () =>
+      apiRequest<NoteCommentList>(`/cards/${cardId}/note-comments`, {}, token),
+  })
+  const noteComments = commentsQuery.data?.items ?? []
 
-  function handleUpvote(commentId: string) {
-    setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, score: c.score + 1 } : c)))
-  }
+  const addComment = useMutation({
+    mutationFn: (text: string) =>
+      apiRequest(
+        `/cards/${cardId}/note-comments`,
+        { method: 'POST', body: JSON.stringify({ body: text }) },
+        token,
+      ),
+    onSuccess: () => {
+      setBody('')
+      queryClient.invalidateQueries({ queryKey: ['note-comments', cardId] })
+    },
+  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -877,61 +865,52 @@ function NoteCommentsPanel({ publicId }: { publicId: string }) {
         />
         <Button
           type="button"
-          onClick={addComment}
+          disabled={!body.trim() || addComment.isPending}
+          onClick={() => addComment.mutate(body.trim())}
           className="h-[40px] gap-2 self-end rounded-[8px] bg-[#231651] px-5 text-[13.5px] font-semibold text-white hover:bg-[#1a1040]"
         >
           <MessageSquare size={15} />
           Publicar
         </Button>
+        {addComment.error && (
+          <p className="text-[12.5px] text-mu-danger">
+            {addComment.error instanceof Error
+              ? addComment.error.message
+              : 'Falha ao publicar comentário.'}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-5 border-t border-mu-border pt-7">
         {noteComments
           .slice()
-          .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+          .sort((left, right) => right.created_at.localeCompare(left.created_at))
           .map((comment) => {
             return (
-              <div key={comment.id} className="flex gap-3">
+              <div key={comment.comment_id} className="flex gap-3">
                 <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-mu-brand-bg text-[12px] font-bold uppercase text-mu-brand">
-                  {comment.author.slice(0, 2)}
+                  {comment.author_email.slice(0, 2)}
                 </span>
                 <article className="min-w-0 flex-1 rounded-[12px] border border-mu-border bg-mu-surface p-5 shadow-[0_1px_2px_-1px_rgba(31,36,48,0.06),0_4px_10px_-4px_rgba(31,36,48,0.08)]">
                   <header className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <strong className="text-[14.5px] font-semibold text-mu-text">
-                      {comment.author}
+                      {comment.author_email}
                     </strong>
-                    <Badge className="rounded-full border-mu-border bg-mu-surface-2 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.06em] text-mu-muted">
-                      {COMMENT_KIND_LABELS[comment.kind]}
-                    </Badge>
                     <small className="ml-auto text-[11px] text-mu-muted-2">
-                      {formatDate(comment.createdAt)}
+                      {formatDate(comment.created_at)}
                     </small>
                   </header>
-                  <p className="mt-3 text-[14.5px] leading-[1.7] text-mu-text-soft">
+                  <p className="mt-3 whitespace-pre-wrap text-[14.5px] leading-[1.7] text-mu-text-soft">
                     {comment.body}
                   </p>
-                  <footer className="mt-4 flex items-center gap-2 border-t border-mu-surface-2 pt-3.5">
-                    <button
-                      type="button"
-                      onClick={() => handleUpvote(comment.id)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-mu-border bg-mu-surface px-3 py-1 text-[12px] font-semibold text-mu-text-soft transition-colors hover:border-mu-brand hover:bg-mu-brand-bg hover:text-mu-brand"
-                    >
-                      <ThumbsUp size={13} weight="fill" className="text-mu-muted-2" />
-                      Útil
-                      <span className="tabular-nums">{comment.score}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="ml-auto text-[12px] font-medium text-mu-muted-2 transition-colors hover:text-mu-text"
-                    >
-                      Denunciar
-                    </button>
-                  </footer>
                 </article>
               </div>
             )
           })}
-        {!noteComments.length && (
+        {commentsQuery.isLoading && (
+          <p className="text-[13px] text-mu-muted">Carregando comentários...</p>
+        )}
+        {!commentsQuery.isLoading && !noteComments.length && (
           <div className="flex flex-col items-center gap-2 rounded-[12px] border border-dashed border-mu-border-hover bg-mu-surface px-4 py-10 text-center">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-mu-brand-bg text-mu-brand">
               <MessageSquare size={20} />

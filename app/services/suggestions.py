@@ -7,7 +7,13 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
-from app.models import CardVersion, NoteSuggestion, NoteSuggestionComment, User
+from app.models import (
+    CardVersion,
+    NoteComment,
+    NoteSuggestion,
+    NoteSuggestionComment,
+    User,
+)
 from app.models.enums import (
     CardStatus,
     CardVersionStatus,
@@ -18,6 +24,8 @@ from app.repositories import NoteSuggestionRepository
 from app.repositories.cards import CardRepository
 from app.repositories.decks import DeckRepository
 from app.schemas import (
+    NoteCommentListResponse,
+    NoteCommentResponse,
     NoteSuggestionCommentCreateRequest,
     NoteSuggestionCommentListResponse,
     NoteSuggestionCommentResponse,
@@ -189,6 +197,40 @@ class NoteSuggestionService:
         )
         self.session.commit()
         return self._comment_response(comment)
+
+    def list_note_comments(self, card_id: uuid.UUID) -> NoteCommentListResponse:
+        if self.repository.get_published_card(card_id) is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Published card not found",
+            )
+        comments = self.repository.list_note_comments(card_id)
+        return NoteCommentListResponse(
+            items=[self._note_comment_response(item) for item in comments],
+            total=len(comments),
+        )
+
+    def add_note_comment(
+        self,
+        card_id: uuid.UUID,
+        payload: NoteSuggestionCommentCreateRequest,
+        user: User,
+    ) -> NoteCommentResponse:
+        if self.repository.get_published_card(card_id) is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Published card not found",
+            )
+        comment = self.repository.create_note_comment(
+            NoteComment(
+                card_id=card_id,
+                author_user_id=user.id,
+                author_email=user.email,
+                body=payload.body,
+            )
+        )
+        self.session.commit()
+        return self._note_comment_response(comment)
 
     def review(
         self,
@@ -452,6 +494,17 @@ class NoteSuggestionService:
         return NoteSuggestionCommentResponse(
             comment_id=comment.id,
             suggestion_id=comment.suggestion_id,
+            author_user_id=comment.author_user_id,
+            author_email=comment.author_email,
+            body=comment.body,
+            created_at=NoteSuggestionService._as_utc(comment.created_at),
+        )
+
+    @staticmethod
+    def _note_comment_response(comment: NoteComment) -> NoteCommentResponse:
+        return NoteCommentResponse(
+            comment_id=comment.id,
+            card_id=comment.card_id,
             author_user_id=comment.author_user_id,
             author_email=comment.author_email,
             body=comment.body,

@@ -114,3 +114,17 @@ class NoteSuggestionCommentResponse(BaseModel):
 class NoteSuggestionCommentListResponse(BaseModel):
     items: list[NoteSuggestionCommentResponse]
     total: int
+
+
+class NoteCommentResponse(BaseModel):
+    comment_id: uuid.UUID
+    card_id: uuid.UUID
+    author_user_id: uuid.UUID
+    author_email: str
+    body: str
+    created_at: datetime
+
+
+class NoteCommentListResponse(BaseModel):
+    items: list[NoteCommentResponse]
+    total: int

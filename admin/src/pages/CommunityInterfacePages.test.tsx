@@ -4,7 +4,46 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { apiRequest } from '../api/client'
 import { AdminSuggestionsPage, DeckPage } from './CommunityInterfacePages'
-import { fallbackDecks, fallbackNotes } from '../data/communityData'
+import type { AnkiSyncChange, SubscribableDeck } from '../types'
+
+const fallbackDecks: SubscribableDeck[] = [
+  {
+    deck_id: 'demo-constitucional',
+    name: 'Direito Constitucional',
+    description:
+      'Artigo 5º, direitos e garantias fundamentais, organização do Estado e poderes da União.',
+    discipline_id: null,
+    status: 'published',
+    active_card_count: 1200,
+    latest_release: 18,
+    subscribed: true,
+    created_at: '2026-06-01T12:00:00Z',
+    updated_at: '2026-06-16T12:00:00Z',
+  },
+]
+
+const fallbackNotes: AnkiSyncChange[] = [
+  {
+    release_id: 'demo-release',
+    release_number: 18,
+    published_at: '2026-06-16T12:00:00Z',
+    action: 'added',
+    card_id: 'demo-card-1',
+    public_id: 'AC-CONST-0001',
+    old_card_version_id: null,
+    new_card_version_id: 'demo-version-1',
+    card_kind: 'basic',
+    note_type: 'Anki Concursos Basic',
+    fields: {
+      Front: 'Qual remédio constitucional protege a liberdade de locomoção?',
+      Back: 'O <b>habeas corpus</b>.',
+      Answer: 'Habeas corpus.',
+      Explanation:
+        'O <b>habeas corpus</b> protege a liberdade de locomoção quando alguém sofre ou se acha ameaçado de sofrer <i>violência ou coação ilegal</i>.&nbsp;<span style="color: #231651;">(Art. 5º, LXVIII, CF/88)</span>',
+    },
+    tags: ['deck::demo-constitucional', 'card::AC-CONST-0001'],
+  },
+]
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -65,6 +104,21 @@ vi.mock('../api/client', () => ({
         unsubscribed_at: path.endsWith('/cancel')
           ? '2026-06-26T12:00:00Z'
           : null,
+      }
+    }
+    if (path.includes('/note-comments')) {
+      return {
+        items: [
+          {
+            comment_id: 'nc-1',
+            card_id: 'demo-card-1',
+            author_user_id: 'user-1',
+            author_email: 'mariana.s@example.com',
+            body: 'Macete: HC = Habeas Corpus = Caminhar.',
+            created_at: '2026-06-15T13:30:00Z',
+          },
+        ],
+        total: 1,
       }
     }
     if (path.includes('/addon/decks/')) {
@@ -180,8 +234,8 @@ describe('DeckPage comments panel', () => {
     expect(screen.getByPlaceholderText(/escreva um comentário sobre esta nota/i)).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /todos/i })).not.toBeInTheDocument()
-    expect(screen.getByText(/Mariana S\./i)).toBeInTheDocument()
-    expect(screen.getByText(/Joao P\./i)).toBeInTheDocument()
+    expect(await screen.findByText(/mariana\.s@example\.com/i)).toBeInTheDocument()
+    expect(screen.getByText(/Macete: HC/i)).toBeInTheDocument()
   })
 
   it('cancels a subscription through the backend cancel endpoint', async () => {

@@ -45,7 +45,7 @@ def test_migrations_apply_to_postgresql(monkeypatch: pytest.MonkeyPatch) -> None
                     )
                 ).scalars()
             )
-        assert revision == "20260627_0018"
+        assert revision == "20260701_0019"
         assert {
             "trg_card_versions_immutable",
             "trg_cards_current_version_ownership",

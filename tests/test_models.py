@@ -40,7 +40,7 @@ def test_mvp_1_tables_are_declared() -> None:
         "deck_templates", "deck_template_versions",
         "releases", "release_items",
         "processing_jobs",
-        "card_reports", "note_suggestions", "suggestion_comments",
+        "card_reports", "note_suggestions", "suggestion_comments", "note_comments",
         "review_tasks", "users",
     }
 

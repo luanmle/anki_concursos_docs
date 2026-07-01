@@ -6,6 +6,41 @@ ADRs (decisões de arquitetura): `docs/adr/`.
 
 ---
 
+## 2026-07-01 — Comentários de nota no backend (fim do mock localStorage)
+
+**Branch:** `main` (trabalho local não commitado)
+**Tipo:** feature (backend + frontend)
+
+### O que mudou
+- `migrations/versions/20260701_0019_note_comments.py` + `app/models/entities.py` — nova tabela `note_comments` (comentários da comunidade por card publicado): `card_id` (FK CASCADE), `author_user_id`/`author_email`, `body` (check não-vazio), timestamps, índice `(card_id, created_at)`. Cópia da receita de `suggestion_comments`.
+- `app/repositories/suggestions.py` / `app/services/suggestions.py` / `app/schemas/suggestions.py` / `app/api/routes/suggestions.py` — `list_note_comments`/`add_note_comment` (404 se card não publicado), schemas `NoteCommentResponse`/`NoteCommentListResponse` (request reusa `NoteSuggestionCommentCreateRequest`), endpoints `GET/POST /cards/{card_id}/note-comments` no `community_router` (`require_authenticated_user`).
+- `admin/src/pages/CommunityInterfacePages.tsx` — `NoteCommentsPanel` reescrito: query + mutation reais (chave `['note-comments', cardId]`, compartilhada com o contador do `NoteModal`); removidos badge de tipo, botão "Útil" e "Denunciar" (mortos no mock). `admin/src/types.ts` — tipos `NoteComment`/`NoteCommentList`.
+- `admin/src/hooks/useLocalStorageState.ts` — deletado (último consumidor era o mock). `admin/src/data/communityData.ts` — reduzido a `changeTypes` (142 → 10 linhas).
+- `tests/test_suggestions_api.py` — criar/listar comentário por card, isolamento entre cards, 404 em card inexistente. `tests/test_models.py`/`test_postgres_integration.py` — tabela nova + head `20260701_0019`.
+
+### Decisões relevantes
+- **Sem `kind` e sem votos persistidos** — o compositor do mock só enviava `kind='comment'` (badge seria ruído) e "Útil" era contador localStorage sem idempotência; segue o precedente display-only das sugestões. Adicionar quando houver demanda real.
+- **Endpoints no vertical de suggestions** — `community_router` e service já tinham o plumbing de comentário+auth; evita novo vertical para 2 endpoints.
+
+### Impacto
+- Comentários de nota persistem no backend e aparecem para todos os usuários logados. **Deploy exige `alembic upgrade head`** (release phase já roda). Backend: 125 passed, ruff limpo. Frontend: lint limpo, 23 testes, build OK. Migration não aplicada no DB local (Postgres desligado).
+
+## 2026-07-01 — Auditoria ponytail: remoção de deps e arquivos mortos
+
+**Branch:** `main` (trabalho local não commitado)
+**Tipo:** refactor + infra
+
+### O que mudou
+- `.agents/skills/` — 55 skill-packs genéricos removidos (105 arquivos, ~25.4k linhas); mantidos os 10 referenciados (9 symlinks de `.claude/skills/` + `document-changes`).
+- `admin/package.json` — removidas deps `framer-motion` (zero imports), `shadcn` (CLI, usar `npx`), `lucide-react` e `postcss`. Ícones lucide dos 5 componentes shadcn (`dialog`, `select`, `sheet`, `sidebar`, `dropdown-menu`) trocados por phosphor via alias de import — zero mudança de JSX.
+- `admin/tailwind.config.ts` (morto no Tailwind v4 via `@tailwindcss/vite`, sem `@config` no CSS) e `admin/postcss.config.js` (vazio) deletados; `components.json` com `tailwind.config: ""`.
+- Redis removido: `redis_url` de `app/core/config.py`, serviço/volume/env do `compose.yaml`, `REDIS_URL` do `.env.example` — nenhum código importava redis.
+- Screenshots de sessão da raiz (736K) e `requirements.sublime-*` removidos do git; `*.sublime-*` no `.gitignore`.
+- `admin/src/data/communityData.ts` — `fallbackDecks`/`fallbackNotes` viraram fixtures locais de `CommunityInterfacePages.test.tsx`; tipo morto `StudentSuggestion` removido.
+
+### Impacto
+- ~26.7k linhas e 4 deps npm a menos; sem mudança de comportamento. Verificado: ruff limpo, backend 123 passed (na época), frontend lint/testes/build OK.
+
 ## 2026-06-27 — Link da sugestão para o cartão (achar aprovar/publicar)
 
 **Branch:** `fix/suggestion-link-to-card`
